@@ -1,0 +1,16 @@
+[2026-03-12 15:13:27] Dataset: syn_50sku | Method: Heuristic | Error: name 'station_ids' is not defined
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 88, in do_heur
+    heur_assignment, visits, elapsed, util_var = heuristic_cslap(op, st, pr, pl, odf)
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\Baselines\heuristic_synthetic.py", line 192, in heuristic_cslap
+    for sid in station_ids:
+NameError: name 'station_ids' is not defined
+
+[2026-03-12 15:33:37] Dataset: syn_50sku | Method: Heuristic | Error: name 'station_ids' is not defined
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 88, in do_heur
+    heur_assignment, visits, elapsed, util_var = heuristic_cslap(op, st, pr, pl, odf)
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\Baselines\heuristic_synthetic.py", line 192, in heuristic_cslap
+    for sid in station_ids:
+NameError: name 'station_ids' is not defined
+

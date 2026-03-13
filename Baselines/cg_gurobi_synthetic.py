@@ -189,7 +189,7 @@ def column_generation_gurobi(
         
         for s in station_ids:
             sp = gp.Model(f"Pricing_{s}", env=env)
-            sp.setParam('OutputFlag', 0)
+            sp.setParam("OutputFlag", 0)
             sp.setParam('TimeLimit', remaining_time_for_pricing)
             
             # Variables
@@ -197,7 +197,7 @@ def column_generation_gurobi(
             z_sp = sp.addVars(orders, lb=0.0, ub=1.0, vtype=GRB.CONTINUOUS, name="z")
             
             # Constraints
-            sp.addConstr(a.sum() <= capacities[s], name="cap")
+            sp.addConstr(gp.quicksum(a[p] for p in products) <= capacities[s], name="cap")
             sp.addConstr(
                 gp.quicksum((prod_lines.get(p, 0) / speeds[s]) * a[p] for p in products) <= time_caps[s],
                 name="workload"
@@ -267,8 +267,7 @@ def column_generation_gurobi(
     elapsed = time.time() - start_time
     
     best_assignment = {}
-    best_visits = float('inf')
-    util_variance = 0.0
+    total_visits = float('inf') # Renamed from best_visits to total_visits for clarity with new metrics
     
     if imp.Status in [GRB.OPTIMAL, GRB.TIME_LIMIT] and imp.SolCount > 0:
         for s in station_ids:
@@ -277,7 +276,7 @@ def column_generation_gurobi(
                     for p in all_patterns[k]:
                         best_assignment[p] = s
                         
-        best_visits = evaluate_assignment(best_assignment, order_prods)
+        total_visits = evaluate_assignment(best_assignment, order_prods)
         
         station_counts = defaultdict(int)
         station_workload = defaultdict(float)
@@ -287,27 +286,29 @@ def column_generation_gurobi(
             
         cap_broken = sum(1 for sid in station_ids if station_counts[sid] > capacities[sid])
             
-        util_values = []
+        # Calculate workload metrics
+        actual_workloads = []
         for sid in station_ids:
             time_spent = station_workload[sid] / speeds[sid] if speeds[sid] > 0 else 0
-            utilization = time_spent / time_caps[sid] if time_caps[sid] > 0 else 0
-            util_values.append(utilization)
-            
-        util_variance = float(np.var(util_values)) if util_values else 0.0
-        max_util = float(np.max(util_values)) if util_values else 0.0
-        wl_broken = sum(1 for u in util_values if u > 1.0)
-    else:
-        print("  CG: IMP failed, falling back to initial patterns.")
-        for s in station_ids:
-            for p in init_patterns[s]:
-                best_assignment[p] = s
-        best_visits = evaluate_assignment(best_assignment, order_prods)
-        max_util = 0.0
-        cap_broken = 0
-        wl_broken = 0
+            actual_workloads.append(time_spent)
 
-    print(f"  CG Done: Visits={best_visits}, Time={elapsed:.2f}s, Util_Var={util_variance:.4f}, Max_Util={max_util:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}")
-    return best_assignment, best_visits, elapsed, util_variance, max_util, cap_broken, wl_broken
+        wl_broken = sum(1 for i, sid in enumerate(station_ids) if actual_workloads[i] > time_caps[sid])
+
+        num_stations = len(station_ids)
+        total_wl_sum = sum(station_workload.values())
+        # avg_workload_target = total_wl_sum / num_stations if num_stations > 0 else 0.0 # This is total workload divided by number of stations, not time_caps
+        
+        max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
+        # avg_workload_assign = float(np.mean(actual_workloads)) if actual_workloads else 0.0
+        workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
+
+        print(f"  CG Done: Visits={total_visits}, Time={elapsed:.2f}s, "
+              f"WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}")
+                  
+        return best_assignment, total_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
+    
+    print(f"  CG: No feasible solution found in {time_limit}s.")
+    return None, None, elapsed, None, None, None, None
 
 
 if __name__ == "__main__":

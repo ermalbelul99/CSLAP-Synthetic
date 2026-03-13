@@ -61,125 +61,169 @@ def do_sac(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
     print(f"\n[{prefix}] SA-C Started")
     try:
         op, st, pr, pl = sa_read_data(prefix, data_dir)
-        _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = simulated_annealing_correlated(op, st, pr, pl, time_limit=tl, quick=quick)
+        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = simulated_annealing_correlated(op, st, pr, pl, time_limit=tl, quick=quick)
         print(f"  [{prefix}] SA-C Done ({elapsed:.2f}s)")
-        return {"visits": visits, "time": elapsed, "util_var": util_var, "max_util": max_util, "cap_broken": cap_broken, "wl_broken": wl_broken, "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}
+        return {
+            "visits": visits, "time": elapsed, 
+            "max_workload": max_wl, "workload_variance": wl_var,
+            "cap_broken": cap_broken, "wl_broken": wl_broken, 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
     except Exception as e:
         print(f"  [{prefix}] SA-C failed: {e}")
         log_error(prefix, "SA-C", f"{e}\n{traceback.format_exc()}")
-        return {"visits": "-", "time": "-", "util_var": "-", "max_util": "-", "cap_broken": "-", "wl_broken": "-", "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}
+        return {
+            "visits": "-", "time": "-", 
+            "max_workload": "-", "workload_variance": "-",
+            "cap_broken": "-", "wl_broken": "-", 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
 
 def do_ga(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
     print(f"\n[{prefix}] GA Started")
     try:
         op, st, pr, pl = ga_read_data(prefix, data_dir)
-        _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = genetic_algorithm(op, st, pr, pl, time_limit=tl, quick=quick)
+        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = genetic_algorithm(op, st, pr, pl, time_limit=tl, quick=quick)
         print(f"  [{prefix}] GA Done ({elapsed:.2f}s)")
-        return {"visits": visits, "time": elapsed, "util_var": util_var, "max_util": max_util, "cap_broken": cap_broken, "wl_broken": wl_broken, "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}
+        return {
+            "visits": visits, "time": elapsed, 
+            "max_workload": max_wl, "workload_variance": wl_var,
+            "cap_broken": cap_broken, "wl_broken": wl_broken, 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
     except Exception as e:
         print(f"  [{prefix}] GA failed: {e}")
         log_error(prefix, "GA", f"{e}\n{traceback.format_exc()}")
-        return {"visits": "-", "time": "-", "util_var": "-", "max_util": "-", "cap_broken": "-", "wl_broken": "-", "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}
+        return {
+            "visits": "-", "time": "-", 
+            "max_workload": "-", "workload_variance": "-",
+            "cap_broken": "-", "wl_broken": "-", 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
 
 def do_heur(N, prefix, data_dir, num_orders, num_skus, num_stations):
     print(f"\n[{prefix}] Heuristic Started")
     try:
         op, st, pr, pl, odf = heur_read_data(prefix, data_dir)
-        heur_assignment, visits, elapsed, util_var, max_util, cap_broken, wl_broken = heuristic_cslap(op, st, pr, pl, odf)
+        heur_assignment, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = heuristic_cslap(op, st, pr, pl, odf)
         print(f"  [{prefix}] Heuristic Done ({elapsed:.2f}s)")
-        return {"visits": visits, "time": elapsed, "util_var": util_var, "max_util": max_util, "cap_broken": cap_broken, "wl_broken": wl_broken, "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}, heur_assignment
+        res = {
+            "visits": visits, "time": elapsed, 
+            "max_workload": max_wl, "workload_variance": wl_var,
+            "cap_broken": cap_broken, "wl_broken": wl_broken, 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
+        return res, heur_assignment, max_wl, wl_var
     except Exception as e:
         print(f"  [{prefix}] Heuristic failed: {e}")
         log_error(prefix, "Heuristic", f"{e}\n{traceback.format_exc()}")
-        return {"visits": "-", "time": "-", "util_var": "-", "max_util": "-", "cap_broken": "-", "wl_broken": "-", "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}, None
+        res = {
+            "visits": "-", "time": "-", 
+            "max_workload": "-", "workload_variance": "-",
+            "cap_broken": "-", "wl_broken": "-", 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
+        return res, None, None, None
 
 def do_milp_gurobi(N, prefix, data_dir, tl, heur_assignment, num_orders, num_skus, num_stations):
     print(f"\n[{prefix}] MILP Gurobi Started")
     try:
         op, st, pr, pl = milp_read_data(prefix, data_dir)
-        milp_assignment, visits, elapsed, util_var, max_util, cap_broken, wl_broken, best_bound = run_milp_gurobi(
+        milp_assignment, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken, best_bound = run_milp_gurobi(
             op, st, pr, pl, time_limit=tl, warm_start_assignment=heur_assignment
         )
         print(f"  [{prefix}] MILP Gurobi Done ({elapsed:.2f}s)")
         res = {
-            "visits": visits if visits is not None else "-",
-            "time": elapsed,
-            "util_var": util_var if util_var is not None else "-",
-            "max_util": max_util if max_util is not None else "-",
-            "cap_broken": cap_broken if cap_broken is not None else "-",
-            "wl_broken": wl_broken if wl_broken is not None else "-",
+            "visits": visits, "time": elapsed, 
+            "max_workload": max_wl, "workload_variance": wl_var,
+            "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
         return res, milp_assignment, best_bound
     except Exception as e:
         print(f"  [{prefix}] MILP Gurobi failed: {e}")
         log_error(prefix, "MILP Gurobi", f"{e}\n{traceback.format_exc()}")
-        return {"visits": "-", "time": "-", "util_var": "-", "max_util": "-", "cap_broken": "-", "wl_broken": "-", "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}, None, None
+        res = {
+            "visits": "-", "time": "-", 
+            "max_workload": "-", "workload_variance": "-",
+            "cap_broken": "-", "wl_broken": "-", 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
+        return res, None, None
 
 def do_milp_hexaly(N, prefix, data_dir, tl, heur_assignment, num_orders, num_skus, num_stations):
     print(f"\n[{prefix}] MILP Hexaly Started")
     try:
         op, st, pr, pl = milp_hexaly_read_data(prefix, data_dir)
-        milp_hexaly_assignment, visits, elapsed, util_var, max_util, cap_broken, wl_broken = run_milp_hexaly(
+        milp_hexaly_assignment, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = run_milp_hexaly(
             op, st, pr, pl, time_limit=tl, warm_start_assignment=heur_assignment
         )
         print(f"  [{prefix}] MILP Hexaly Done ({elapsed:.2f}s)")
         res = {
-            "visits": visits if visits is not None else "-",
-            "time": elapsed,
-            "util_var": util_var if util_var is not None else "-",
-            "max_util": max_util if max_util is not None else "-",
-            "cap_broken": cap_broken if cap_broken is not None else "-",
-            "wl_broken": wl_broken if wl_broken is not None else "-",
+            "visits": visits, "time": elapsed, 
+            "max_workload": max_wl, "workload_variance": wl_var,
+            "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
         return res, milp_hexaly_assignment
     except Exception as e:
         print(f"  [{prefix}] MILP Hexaly failed: {e}")
         log_error(prefix, "MILP Hexaly", f"{e}\n{traceback.format_exc()}")
-        return {"visits": "-", "time": "-", "util_var": "-", "max_util": "-", "cap_broken": "-", "wl_broken": "-", "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}, None
+        res = {
+            "visits": "-", "time": "-", 
+            "max_workload": "-", "workload_variance": "-",
+            "cap_broken": "-", "wl_broken": "-", 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
+        return res, None
 
 def do_cg_gurobi(N, prefix, data_dir, tl, warm_start, num_orders, num_skus, num_stations):
     print(f"\n[{prefix}] CG Gurobi Started")
     try:
         op, st, pr, pl = cg_read_data(prefix, data_dir)
-        _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = column_generation_gurobi(
+        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = column_generation_gurobi(
             op, st, pr, pl, time_limit=tl, warm_start_assignment=warm_start
         )
         print(f"  [{prefix}] CG Gurobi Done ({elapsed:.2f}s)")
         return {
-            "visits": visits if visits is not None else "-", "time": elapsed,
-            "util_var": util_var if util_var is not None else "-",
-            "max_util": max_util if max_util is not None else "-",
-            "cap_broken": cap_broken if cap_broken is not None else "-",
-            "wl_broken": wl_broken if wl_broken is not None else "-",
+            "visits": visits, "time": elapsed, 
+            "max_workload": max_wl, "workload_variance": wl_var,
+            "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
     except Exception as e:
         print(f"  [{prefix}] CG Gurobi failed: {e}")
         log_error(prefix, "CG Gurobi", f"{e}\n{traceback.format_exc()}")
-        return {"visits": "-", "time": "-", "util_var": "-", "max_util": "-", "cap_broken": "-", "wl_broken": "-", "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}
+        return {
+            "visits": "-", "time": "-", 
+            "max_workload": "-", "workload_variance": "-",
+            "cap_broken": "-", "wl_broken": "-", 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
 
 def do_cg_hexaly(N, prefix, data_dir, tl, warm_start, num_orders, num_skus, num_stations):
     print(f"\n[{prefix}] CG Hexaly Started")
     try:
         op, st, pr, pl = cg_hexaly_read_data(prefix, data_dir)
-        _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = column_generation_hexaly(
+        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = column_generation_hexaly(
             op, st, pr, pl, time_limit=tl, warm_start_assignment=warm_start
         )
         print(f"  [{prefix}] CG Hexaly Done ({elapsed:.2f}s)")
         return {
-            "visits": visits if visits is not None else "-", "time": elapsed,
-            "util_var": util_var if util_var is not None else "-",
-            "max_util": max_util if max_util is not None else "-",
-            "cap_broken": cap_broken if cap_broken is not None else "-",
-            "wl_broken": wl_broken if wl_broken is not None else "-",
+            "visits": visits, "time": elapsed, 
+            "max_workload": max_wl, "workload_variance": wl_var,
+            "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
     except Exception as e:
         print(f"  [{prefix}] CG Hexaly failed: {e}")
         log_error(prefix, "CG Hexaly", f"{e}\n{traceback.format_exc()}")
-        return {"visits": "-", "time": "-", "util_var": "-", "max_util": "-", "cap_broken": "-", "wl_broken": "-", "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations}
+        return {
+            "visits": "-", "time": "-", 
+            "max_workload": "-", "workload_variance": "-",
+            "cap_broken": "-", "wl_broken": "-", 
+            "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
+        }
 
 # -
 #  RUNNER
@@ -205,7 +249,7 @@ def run_all_benchmarks(
         orders_path = os.path.join(data_dir, f"{prefix}_orders.csv")
         if regenerate or not os.path.exists(orders_path):
             generate_synthetic_data_zhang(
-                num_skus=N, alpha=0.7, seed=42, output_dir=data_dir
+                num_skus=N, theta=0.7, seed=42, output_dir=data_dir
             )
         else:
             print(f"[Exists] {prefix} data already generated, skipping.\n")
@@ -236,7 +280,8 @@ def run_all_benchmarks(
             future_heur = executor.submit(do_heur, N, prefix, data_dir, num_orders, num_skus, num_stations)
 
             # Heuristic assignment is needed for Phase B
-            res_heur, heur_assignment = future_heur.result()
+            # res_heur, heur_assignment = future_heur.result()
+            res_heur, heur_assignment, h_max_wl, h_wl_var = future_heur.result()
             results[N]["Heuristic"] = res_heur
 
             # Phase B: MILPs
@@ -247,12 +292,15 @@ def run_all_benchmarks(
             res_milp_g, milp_g_assignment, best_bound = future_milp_g.result()
             res_milp_h, milp_h_assignment = future_milp_h.result()
             
+            # launches independent tasks with ThreadPoolExecutor
             # --- Fallback: If MILP failed to find improvement, return Heuristic ---
             if res_milp_g["visits"] == "-":
                 print(f"  [{prefix}] MILP Gurobi failed to find solution, falling back to heuristic warm start.")
                 res_milp_g["visits"] = res_heur["visits"]
-                res_milp_g["util_var"] = res_heur["util_var"]
-                res_milp_g["max_util"] = res_heur["max_util"]
+                res_milp_g["max_workload"] = res_heur["max_workload"]
+                res_milp_g["avg_workload_assign"] = res_heur["avg_workload_assign"]
+                res_milp_g["avg_workload_target"] = res_heur["avg_workload_target"]
+                res_milp_g["workload_variance"] = res_heur["workload_variance"]
                 res_milp_g["cap_broken"] = res_heur["cap_broken"]
                 res_milp_g["wl_broken"] = res_heur["wl_broken"]
                 milp_g_assignment = heur_assignment
@@ -261,8 +309,10 @@ def run_all_benchmarks(
             if res_milp_h["visits"] == "-":
                 print(f"  [{prefix}] MILP Hexaly failed to find solution, falling back to heuristic warm start.")
                 res_milp_h["visits"] = res_heur["visits"]
-                res_milp_h["util_var"] = res_heur["util_var"]
-                res_milp_h["max_util"] = res_heur["max_util"]
+                res_milp_h["max_workload"] = res_heur["max_workload"]
+                res_milp_h["avg_workload_assign"] = res_heur["avg_workload_assign"]
+                res_milp_h["avg_workload_target"] = res_heur["avg_workload_target"]
+                res_milp_h["workload_variance"] = res_heur["workload_variance"]
                 res_milp_h["cap_broken"] = res_heur["cap_broken"]
                 res_milp_h["wl_broken"] = res_heur["wl_broken"]
                 milp_h_assignment = heur_assignment
@@ -288,6 +338,18 @@ def run_all_benchmarks(
             results[N]["SA-C"] = future_sac.result()
             results[N]["GA"] = future_ga.result()
 
+        # Calculate global workload metrics once per dataset
+        op_list, st_list, pr_list, pl_dict, odf_df = heur_read_data(prefix, data_dir)
+        num_stations = len(st_list)
+        total_workload = sum(pl_dict.values())
+        avg_wl_assign_global = total_workload / num_stations if num_stations > 0 else 0.0
+        avg_wl_max_global = st_list[0]['TIME_CAPACITY'] if st_list else 0.0
+        
+        # Inject global metrics into all results
+        for method in results[N]:
+            results[N][method]["avg_workload_assign"] = avg_wl_assign_global
+            results[N][method]["avg_workload_max"] = avg_wl_max_global
+
         # --- Optimality Gap Calculation ---
         for method, metrics in results[N].items():
             v = metrics.get("visits", "-")
@@ -307,7 +369,12 @@ def run_all_benchmarks(
             df = pd.DataFrame(results[N]).T
             df.index.name = "Method"
             # Reorder columns for readability if possible
-            expected_cols = ["visits", "gap_pct", "time", "util_var", "max_util", "cap_broken", "wl_broken", "num_orders", "num_skus", "num_stations"]
+            expected_cols = [
+                "visits", "gap_pct", "time", 
+                "max_workload", "avg_workload_assign", "avg_workload_max", "workload_variance", 
+                "cap_broken", "wl_broken", 
+                "num_orders", "num_skus", "num_stations"
+            ]
             existing_cols = [c for c in expected_cols if c in df.columns]
             df = df[existing_cols]
             

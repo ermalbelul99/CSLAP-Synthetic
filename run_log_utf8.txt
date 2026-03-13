@@ -1,0 +1,138 @@
+﻿conda : Traceback (most recent call last):
+At line:1 char:1
++ conda run -n savoye2023 python run_benchmarks.py --quick --sizes 50 - ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 415, in <module>
+
+    results = run_all_benchmarks(
+
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 283, in run_all_benchmarks
+
+    res_heur, heur_assignment = future_heur.result()
+
+ValueError: too many values to unpack (expected 2)
+
+
+ERROR conda.cli.main_run:execute(47): `conda run python run_benchmarks.py --quick --sizes 50 --regenerate` failed. 
+(See above for error)
+======================================================================
+
+PHASE 1: Synthetic Data Generation (Zhang et al. 2019)
+
+======================================================================
+
+[Zhang Generator] N=50 | Orders: 2336 | Itemsets: 12
+
+======================================================================
+
+BENCHMARKING: N = 50 SKUs (syn_50sku)
+
+======================================================================
+
+
+
+[Phase A] Launching SA-C, GA, and Heuristic concurrently...
+
+
+
+[syn_50sku] SA-C Started
+
+
+
+[syn_50sku] GA Started
+
+
+
+[syn_50sku] Heuristic Started
+
+  Building co-occurrence matrix...
+
+  GA starting: pop=20, gens=10, cx=0.8, mut=0.1
+
+  Building co-occurrence matrix...
+
+  Co-occurrence pairs: 1225, Groups: 11
+
+  COI initialization...
+
+  SA-C starting: T0=800, T_min=286.7887379268335, alpha=0.95, inner=100
+
+  Initializing population...
+
+    Gen 1/10 | Best Energy=9594.0 | Best Visits=8868 | Time=0.1s
+
+    Gen 2/10 | Best Energy=9594.0 | Best Visits=8868 | Time=0.2s
+
+    Gen 3/10 | Best Energy=9594.0 | Best Visits=8868 | Time=0.4s
+
+    T=760.0 | Energy=9970.7 | Best Visits=9129 | Iter=100 | Time=1.0s
+
+    Gen 4/10 | Best Energy=9561.8 | Best Visits=8836 | Time=1.0s
+
+    Gen 5/10 | Best Energy=9509.6 | Best Visits=8786 | Time=1.5s
+
+    T=722.0 | Energy=10062.1 | Best Visits=9110 | Iter=200 | Time=2.0s
+
+    Gen 6/10 | Best Energy=9509.6 | Best Visits=8786 | Time=1.8s
+
+  Heuristic Done: Visits=9178, Time=2.99s, WL_Var=1722661.8400, Max_WL=6891.0000
+
+  [syn_50sku] Heuristic Done (2.99s)
+
+    Gen 7/10 | Best Energy=9509.6 | Best Visits=8786 | Time=2.4s
+
+    Gen 8/10 | Best Energy=9509.6 | Best Visits=8786 | Time=2.6s
+
+    T=685.9 | Energy=10055.5 | Best Visits=9110 | Iter=300 | Time=2.8s
+
+    Gen 9/10 | Best Energy=9509.6 | Best Visits=8786 | Time=2.7s
+
+    Gen 10/10 | Best Energy=9503.2 | Best Visits=8778 | Time=2.8s
+
+  GA Done: Visits=8778, Energy=9503.2, Time=2.77s, WL_Var=4222463.8400, Max_WL=6028.0000
+
+  [syn_50sku] GA Done (2.77s)
+
+    T=651.6 | Energy=9701.8 | Best Visits=8969 | Iter=400 | Time=3.4s
+
+    T=619.0 | Energy=9790.6 | Best Visits=8909 | Iter=500 | Time=3.7s
+
+    T=588.1 | Energy=9794.3 | Best Visits=8850 | Iter=600 | Time=4.1s
+
+    T=558.7 | Energy=9815.9 | Best Visits=8850 | Iter=700 | Time=4.4s
+
+    T=530.7 | Energy=10070.8 | Best Visits=8834 | Iter=800 | Time=4.8s
+
+    T=504.2 | Energy=9681.2 | Best Visits=8834 | Iter=900 | Time=5.1s
+
+    T=479.0 | Energy=9918.4 | Best Visits=8834 | Iter=1000 | Time=5.4s
+
+    T=455.0 | Energy=9952.2 | Best Visits=8834 | Iter=1100 | Time=5.7s
+
+    T=432.3 | Energy=9780.0 | Best Visits=8834 | Iter=1200 | Time=6.1s
+
+    T=410.7 | Energy=10098.2 | Best Visits=8834 | Iter=1300 | Time=6.4s
+
+    T=390.1 | Energy=10050.1 | Best Visits=8834 | Iter=1400 | Time=6.7s
+
+    T=370.6 | Energy=9910.1 | Best Visits=8834 | Iter=1500 | Time=7.0s
+
+    T=352.1 | Energy=9815.1 | Best Visits=8834 | Iter=1600 | Time=7.3s
+
+    T=334.5 | Energy=9877.8 | Best Visits=8834 | Iter=1700 | Time=7.6s
+
+    T=317.8 | Energy=9720.6 | Best Visits=8834 | Iter=1800 | Time=7.9s
+
+    T=301.9 | Energy=9759.9 | Best Visits=8834 | Iter=1900 | Time=8.2s
+
+    T=286.8 | Energy=9928.0 | Best Visits=8830 | Iter=2000 | Time=8.5s
+
+  SA-C Done: Visits=8830, Energy=9558.3, Time=8.45s, WL_Var=4511461.8400, Max_WL=6125.0000
+
+  [syn_50sku] SA-C Done (8.45s)
+
+

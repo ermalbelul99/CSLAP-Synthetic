@@ -37,15 +37,16 @@ def generate_synthetic_data_zhang(
     # Number of orders is proportional to N: N * U[30, 50]
     num_orders = int(num_skus * rng.uniform(30.0, 50.0))
 
-    # --- 4. Stations (Baseline setup for downstream algorithms) ---
+    # --- 4. Stations (Flat Setup) ---
     num_stations = max(5, num_skus // 100)
-    base_cap = num_skus // num_stations
+    
+    # Flat slot capacity: ceil(Total Skus / Num Stations) + 2 extra slots for safety
+    base_cap = int(np.ceil(num_skus / num_stations)) + 2
     capacities = np.full(num_stations, base_cap)
-    capacities[-1] += num_skus - (base_cap * num_stations)
-
+    
     station_ids = np.arange(1, num_stations + 1)
-    speeds = rng.uniform(0.5, 1.5, size=num_stations)
-    # df_stations and time_capacities will be generated at step 6.5 to guarantee feasibility
+    # Uniform speeds for all stations
+    speeds = np.ones(num_stations)
 
     # --- 5. Generate Orders with Batch Correlation Injection ---
     order_data = []
@@ -97,30 +98,20 @@ def generate_synthetic_data_zhang(
 
     df_products = all_prods[["PRODUCT_ID", "CATEGORY", "POPULARITY"]].copy()
 
-    # --- 6.5. Constructive Feasibility for Time Capacity ---
-    # We guarantee feasibility by building a hidden assignment that strictly respects
-    # station physical capacities. Then we calculate the total time workload per station
-    # and add a 20% slack padding.
-    shuffled_products = products.copy()
-    rng.shuffle(shuffled_products)
-
-    hidden_assignment = {}
-    current_idx = 0
-    for s_idx, cap in enumerate(capacities):
-        for _ in range(cap):
-            hidden_assignment[shuffled_products[current_idx]] = s_idx
-            current_idx += 1
-
-    station_workloads = np.zeros(num_stations)
-    freq_dict = dict(zip(all_prods["PRODUCT_ID"], all_prods["FREQUENCY"]))
-
-    for p in products:
-        freq = freq_dict.get(p, 0)
-        s_idx = hidden_assignment[p]
-        station_workloads[s_idx] += (freq / speeds[s_idx])
-
-    slack_factor = 1.20 # 20% slack padding
-    time_capacities = np.ceil(station_workloads * slack_factor).astype(int)
+    # --- 6.5. Constructive Feasibility for Workload Capacity ---
+    # We guarantee feasibility by enforcing a flat workload ceiling across all stations.
+    # Total workload = sum of all product frequencies
+    total_workload = all_prods["FREQUENCY"].sum()
+    
+    # Mathematical average if spread perfectly
+    target_workload_per_station = total_workload / num_stations
+    
+    # Calculate a dynamic slack factor between 10% and 30% depending on constraints
+    slack_factor = max(1.10, min(1.30, 20 / num_stations))
+    
+    # Fix the workload capacity identical across all stations
+    flat_time_cap = int(np.ceil(target_workload_per_station * slack_factor))
+    time_capacities = np.full(num_stations, flat_time_cap)
 
     df_stations = pd.DataFrame({
         "STATION_ID": station_ids,

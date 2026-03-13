@@ -87,11 +87,12 @@ def fitness(chromosome, products, order_prods, stations, prod_lines,
     for s in stations:
         sid = s["STATION_ID"]
         cap = s["CAPACITY"]
-        speed = s["SPEED"]
         time_cap = s["TIME_CAPACITY"]
+        
         if station_counts[sid] > cap:
             penalty += w_penalty * (station_counts[sid] - cap)
-        wl = station_workload[sid] / speed if speed > 0 else 0
+            
+        wl = station_workload.get(sid, 0.0)
         if wl > time_cap:
             penalty += w_penalty * (wl - time_cap)
 
@@ -316,36 +317,32 @@ def genetic_algorithm(
 
     elapsed = time.time() - start_time
 
-    # Utilization and capacity tracking
+    # --- Workload distribution tracking ---
     state = {products[i]: best_chrom[i] for i in range(N)}
     
     station_counts = defaultdict(int)
-    station_workload = defaultdict(float)
+    station_actions = defaultdict(float)
+    
     for p, sid in state.items():
         station_counts[sid] += 1
-        station_workload[sid] += prod_lines.get(p, 0)
+        qty = prod_lines.get(p, 0)
+        station_actions[sid] += qty
         
     station_ids = [s["STATION_ID"] for s in stations]
     station_caps = {s["STATION_ID"]: s["CAPACITY"] for s in stations}
-    speeds = {s["STATION_ID"]: s["SPEED"] for s in stations}
     time_caps = {s["STATION_ID"]: s["TIME_CAPACITY"] for s in stations}
 
     cap_broken = sum(1 for sid in station_ids if station_counts[sid] > station_caps[sid])
-
-    util_values = []
-    for sid in station_ids:
-        time_spent = station_workload[sid] / speeds[sid] if speeds[sid] > 0 else 0
-        utilization = time_spent / time_caps[sid] if time_caps[sid] > 0 else 0
-        util_values.append(utilization)
-        
-    util_variance = float(np.var(util_values)) if util_values else 0.0
-    max_util = float(np.max(util_values)) if util_values else 0.0
-    wl_broken = sum(1 for u in util_values if u > 1.0)
+    wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])
+    
+    actual_workloads = [station_actions[sid] for sid in station_ids]
+    max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
+    workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
 
     print(f"  GA Done: Visits={best_visits}, Energy={best_energy:.1f}, "
-          f"Time={elapsed:.2f}s, Util_Var={util_variance:.4f}, Max_Util={max_util:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}")
+          f"Time={elapsed:.2f}s, WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
 
-    return state, best_visits, elapsed, util_variance, max_util, cap_broken, wl_broken
+    return state, best_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
 
 
 # -

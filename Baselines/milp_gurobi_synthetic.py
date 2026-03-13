@@ -91,10 +91,10 @@ def run_milp_gurobi(
         name="capacity"
     )
     
-    # Constraint 3: Workload limit
+    # Constraint 3: Workload limit (flat setup)
     for s in station_ids:
         model.addConstr(
-            gp.quicksum((prod_lines.get(p, 0) / speeds[s]) * x[p, s] for p in products) <= time_caps[s],
+            gp.quicksum(prod_lines.get(p, 0) * x[p, s] for p in products) <= time_caps[s],
             name=f"workload_{s}"
         )
         
@@ -122,31 +122,29 @@ def run_milp_gurobi(
         if model.SolCount > 0:
             total_visits = round(model.ObjVal)
             
-            # Extract assignment
+            # --- Workload distribution tracking ---
             assignment = {}
             station_counts = defaultdict(int)
-            station_workload = defaultdict(float)
+            station_actions = defaultdict(float)
+            
             for p in products:
                 for s in station_ids:
                     if x[p, s].X > 0.5:
                         assignment[p] = s
                         station_counts[s] += 1
-                        station_workload[s] += prod_lines.get(p, 0)
+                        qty = prod_lines.get(p, 0)
+                        station_actions[s] += qty
                         
-            cap_broken = sum(1 for s in station_ids if station_counts[s] > capacities[s])
-                        
-            util_values = []
-            for sid in station_ids:
-                time_spent = station_workload[sid] / speeds[sid] if speeds[sid] > 0 else 0
-                utilization = time_spent / time_caps[sid] if time_caps[sid] > 0 else 0
-                util_values.append(utilization)
-                
-            util_variance = float(np.var(util_values)) if util_values else 0.0
-            max_util = float(np.max(util_values)) if util_values else 0.0
-            wl_broken = sum(1 for u in util_values if u > 1.0)
+            cap_broken = sum(1 for sid in station_ids if station_counts[sid] > capacities[sid])
+            wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])
+            
+            actual_workloads = [station_actions[sid] for sid in station_ids]
+            max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
+            workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
 
-            print(f"  MILP Done: Visits={total_visits}, Time={elapsed:.2f}s, Util_Var={util_variance:.4f}, Max_Util={max_util:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}, BestBound={best_bound}")
-            return assignment, total_visits, elapsed, util_variance, max_util, cap_broken, wl_broken, best_bound
+            print(f"  MILP Done: Visits={total_visits}, Time={elapsed:.2f}s, "
+                  f"WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
+            return assignment, total_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken, best_bound
     
     try:
         best_bound = model.ObjBound

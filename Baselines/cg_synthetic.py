@@ -110,7 +110,7 @@ def heuristic_pricing(
     for p in products:
         lp = prod_lines.get(p, 0)
         base_sigma = sigma_p.get(p, 0)
-        penalty = w_s * (lp / station_speed) if station_speed > 0 else 0
+        penalty = w_s * lp
         score = base_sigma - penalty
         scored.append((p, score, lp))
 
@@ -122,10 +122,9 @@ def heuristic_pricing(
     for p, score, lp in scored:
         if len(pattern) >= station_cap:
             break
-        wl_add = lp / station_speed if station_speed > 0 else 0
-        if total_workload + wl_add <= station_time_cap:
+        if total_workload + lp <= station_time_cap:
             pattern.append(p)
-            total_workload += wl_add
+            total_workload += lp
 
     if not pattern:
         return None
@@ -350,29 +349,26 @@ def column_generation_hexaly(
                 best_assignment[p] = s
         best_visits = evaluate_assignment(best_assignment, order_prods)
 
-    # Utilization variance
+    # --- Workload distribution tracking ---
     station_counts = defaultdict(int)
-    station_workload = defaultdict(float)
+    station_actions = defaultdict(float)
+    
     for p, sid in best_assignment.items():
         station_counts[sid] += 1
-        station_workload[sid] += prod_lines.get(p, 0)
+        qty = prod_lines.get(p, 0)
+        station_actions[sid] += qty
         
     cap_broken = sum(1 for sid in station_ids if station_counts[sid] > capacities[sid])
-    
-    util_values = []
-    for sid in station_ids:
-        time_spent = station_workload[sid] / speeds[sid] if speeds[sid] > 0 else 0
-        utilization = time_spent / time_caps[sid] if time_caps[sid] > 0 else 0
-        util_values.append(utilization)
-        
-    util_variance = float(np.var(util_values)) if util_values else 0.0
-    max_util = float(np.max(util_values)) if util_values else 0.0
-    wl_broken = sum(1 for u in util_values if u > 1.0)
+    wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])
+
+    actual_workloads = [station_actions[sid] for sid in station_ids]
+    max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
+    workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
 
     print(f"  CG Done: Visits={best_visits}, Time={elapsed:.2f}s, "
-          f"Util_Var={util_variance:.4f}, Max_Util={max_util:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}")
+          f"WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
 
-    return best_assignment, best_visits, elapsed, util_variance, max_util, cap_broken, wl_broken
+    return best_assignment, best_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
 
 
 if __name__ == "__main__":

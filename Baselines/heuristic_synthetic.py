@@ -183,35 +183,30 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df):
                 visited.add(assignment[p])
         total_visits += len(visited)
 
-    # Workload and capacity tracking
+    # --- Workload distribution tracking ---
     station_counts = defaultdict(int)
-    station_workload = defaultdict(float)
+    station_actions = defaultdict(float)
+    
     for p, sid in assignment.items():
         station_counts[sid] += 1
-        station_workload[sid] += prod_lines.get(p, 0)
+        qty = prod_lines.get(p, 0)
+        station_actions[sid] += qty
         
     station_ids = [s["STATION_ID"] for s in stations]
     station_caps = {s["STATION_ID"]: s["CAPACITY"] for s in stations}
-    speeds = {s["STATION_ID"]: s["SPEED"] for s in stations}
     time_caps = {s["STATION_ID"]: s["TIME_CAPACITY"] for s in stations}
     
     cap_broken = sum(1 for sid in station_ids if station_counts[sid] > station_caps[sid])
+    wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])
 
-    util_values = []
-    for sid in station_ids:
-        time_spent = station_workload.get(sid, 0.0) / speeds.get(sid, 1.0) if speeds.get(sid, 1.0) > 0 else 0
-        time_cap = time_caps.get(sid, 1)
-        utilization = time_spent / time_cap if time_cap > 0 else 0
-        util_values.append(utilization)
-        
-    util_variance = float(np.var(util_values)) if util_values else 0.0
-    max_util = float(np.max(util_values)) if util_values else 0.0
-    wl_broken = sum(1 for u in util_values if u > 1.0)
+    actual_workloads = [station_actions[sid] for sid in station_ids]
+    max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
+    workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
 
     print(f"  Heuristic Done: Visits={total_visits}, "
-          f"Time={elapsed:.2f}s, Util_Var={util_variance:.4f}, Max_Util={max_util:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}")
+          f"Time={elapsed:.2f}s, WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
 
-    return assignment, total_visits, elapsed, util_variance, max_util, cap_broken, wl_broken
+    return assignment, total_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
 
 
 if __name__ == "__main__":

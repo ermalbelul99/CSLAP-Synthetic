@@ -144,12 +144,13 @@ def calculate_objective(state, order_prods, stations, prod_lines,
         sid = s["STATION_ID"]
         cap = s["CAPACITY"]
         time_cap = s["TIME_CAPACITY"]
-        speed = s["SPEED"]
+        
         if station_counts[sid] > cap:
             penalty += w_penalty * (station_counts[sid] - cap)
-        wl_time = station_workload[sid] / speed if speed > 0 else 0
-        if wl_time > time_cap:
-            penalty += w_penalty * (wl_time - time_cap)
+            
+        wl = station_workload.get(sid, 0.0)
+        if wl > time_cap:
+            penalty += w_penalty * (wl - time_cap)
 
     # --- Secondary: dispersion of correlated items ---
     dispersion = 0.0
@@ -280,34 +281,30 @@ def simulated_annealing_correlated(
 
     elapsed = time.time() - start_time
 
-    # Compute utilization and capacity tracking
+    # --- Workload distribution tracking ---
     station_counts = defaultdict(int)
-    station_workload = defaultdict(float)
+    station_actions = defaultdict(float)
+    
     for p, sid in best_state.items():
         station_counts[sid] += 1
-        station_workload[sid] += prod_lines.get(p, 0)
+        qty = prod_lines.get(p, 0)
+        station_actions[sid] += qty
         
     station_ids = [s["STATION_ID"] for s in stations]
     station_caps = {s["STATION_ID"]: s["CAPACITY"] for s in stations}
-    speeds = {s["STATION_ID"]: s["SPEED"] for s in stations}
     time_caps = {s["STATION_ID"]: s["TIME_CAPACITY"] for s in stations}
 
     cap_broken = sum(1 for sid in station_ids if station_counts[sid] > station_caps[sid])
+    wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])
 
-    util_values = []
-    for sid in station_ids:
-        time_spent = station_workload[sid] / speeds[sid] if speeds[sid] > 0 else 0
-        utilization = time_spent / time_caps[sid] if time_caps[sid] > 0 else 0
-        util_values.append(utilization)
-        
-    util_variance = float(np.var(util_values)) if util_values else 0.0
-    max_util = float(np.max(util_values)) if util_values else 0.0
-    wl_broken = sum(1 for u in util_values if u > 1.0)
+    actual_workloads = [station_actions[sid] for sid in station_ids]
+    max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
+    workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
 
     print(f"  SA-C Done: Visits={best_visits}, Energy={best_energy:.1f}, "
-          f"Time={elapsed:.2f}s, Util_Var={util_variance:.4f}, Max_Util={max_util:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}")
+          f"Time={elapsed:.2f}s, WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
 
-    return best_state, best_visits, elapsed, util_variance, max_util, cap_broken, wl_broken
+    return best_state, best_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
 
 
 # ----------------------------------------------------------------

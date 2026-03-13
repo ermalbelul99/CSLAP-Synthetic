@@ -14,3 +14,27 @@ Traceback (most recent call last):
     for sid in station_ids:
 NameError: name 'station_ids' is not defined
 
+[2026-03-13 16:46:41] Dataset: syn_50sku | Method: Heuristic | Error: too many values to unpack (expected 7)
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 88, in do_heur
+    heur_assignment, visits, elapsed, util_var, max_util, cap_broken, wl_broken = heuristic_cslap(op, st, pr, pl, odf)
+ValueError: too many values to unpack (expected 7)
+
+[2026-03-13 16:48:30] Dataset: syn_50sku | Method: SA-C | Error: too many values to unpack (expected 7)
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 64, in do_sac
+    _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = simulated_annealing_correlated(op, st, pr, pl, time_limit=tl, quick=quick)
+ValueError: too many values to unpack (expected 7)
+
+[2026-03-13 16:48:36] Dataset: syn_50sku | Method: GA | Error: too many values to unpack (expected 7)
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 76, in do_ga
+    _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = genetic_algorithm(op, st, pr, pl, time_limit=tl, quick=quick)
+ValueError: too many values to unpack (expected 7)
+
+[2026-03-13 16:52:42] Dataset: syn_50sku | Method: CG Gurobi | Error: too many values to unpack (expected 7)
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 146, in do_cg_gurobi
+    _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = column_generation_gurobi(
+ValueError: too many values to unpack (expected 7)
+

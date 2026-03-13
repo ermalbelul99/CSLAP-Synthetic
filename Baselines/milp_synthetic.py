@@ -105,41 +105,41 @@ def run_milp_hexaly(
         elapsed = time.time() - start_time
 
         try:
-            val = optimizer.solution.get_value(model.objectives[0])
+            val = optimizer.solution.get_objective_bound(0) if optimizer.solution.status == hexaly.HxSolutionStatus.OPTIMAL else optimizer.solution.get_value(model.objectives[0])
             total_visits = int(val)
+            
+            # --- Workload distribution tracking ---
+            assignment = {}
+            station_counts = defaultdict(int)
+            station_actions = defaultdict(float)
+            
+            for s in station_ids:
+                # Extract indices from Hexaly set
+                indices = station_products[s].value
+                for idx in indices:
+                    p = products[idx]
+                    assignment[p] = s
+                    station_counts[s] += 1
+                    qty = prod_lines.get(p, 0)
+                    station_actions[s] += qty
+            
+            cap_broken = sum(1 for sid in station_ids if station_counts[sid] > capacities[sid])
+            wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])
+            
+            actual_workloads = [station_actions[sid] for sid in station_ids]
+            max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
+            workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
+
+            print(f"  MILP Done: Visits={total_visits}, Time={elapsed:.2f}s, "
+                  f"WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
+                  
+            return assignment, total_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
+
         except Exception as e:
-            print(f"  MILP: No feasible solution found ({e})")
-            return None, None, elapsed, None
+            print(f"  MILP: No feasible solution found or error during extraction ({e})")
+            return None, None, elapsed, None, None, None, None, None, None
 
-        # Extract assignment INSIDE the with block
-        assignment = {}
-        station_counts = defaultdict(int)
-        station_workload = defaultdict(float)
-        for s in station_ids:
-            assigned_set = optimizer.solution.get_value(station_products[s])
-            for idx in assigned_set:
-                p = products[idx]
-                assignment[p] = s
-                station_counts[s] += 1
-                station_workload[s] += prod_lines.get(p, 0)
-
-    cap_broken = sum(1 for sid in station_ids if station_counts[sid] > capacities[sid])
-
-    # Utilization variance
-    util_values = []
-    for sid in station_ids:
-        time_spent = station_workload[sid] / speeds[sid] if speeds[sid] > 0 else 0
-        utilization = time_spent / time_caps[sid] if time_caps[sid] > 0 else 0
-        util_values.append(utilization)
-        
-    util_variance = float(np.var(util_values)) if util_values else 0.0
-    max_util = float(np.max(util_values)) if util_values else 0.0
-    wl_broken = sum(1 for u in util_values if u > 1.0)
-
-    print(f"  MILP Done: Visits={total_visits}, Time={elapsed:.2f}s, "
-          f"Util_Var={util_variance:.4f}, Max_Util={max_util:.4f}, Cap_Broken={cap_broken}, WL_Broken={wl_broken}")
-
-    return assignment, total_visits, elapsed, util_variance, max_util, cap_broken, wl_broken
+    return None, None, elapsed, None, None, None, None, None, None
 
 
 if __name__ == "__main__":

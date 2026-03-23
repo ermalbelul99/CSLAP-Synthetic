@@ -299,12 +299,13 @@ def simulated_annealing_correlated(
 
     actual_workloads = [station_actions[sid] for sid in station_ids]
     max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
-    workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
+    workload_std_dev = float(np.std(actual_workloads)) if actual_workloads else 0.0
 
-    print(f"  SA-C Done: Visits={best_visits}, Energy={best_energy:.1f}, "
-          f"Time={elapsed:.2f}s, WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
-
-    return best_state, best_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
+    if not quick:
+        print(f"  SA-C Done: Best Visits={best_visits}, "
+              f"Time={elapsed:.2f}s, WL_Std={workload_std_dev:.4f}, Max_WL={max_workload:.4f}")
+              
+    return best_state, best_visits, elapsed, max_workload, workload_std_dev, cap_broken, wl_broken
 
 
 # ----------------------------------------------------------------

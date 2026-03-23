@@ -1,0 +1,11 @@
+scenario_name: unknown
+num_orders: 2336
+num_products: 50
+num_stations: 5
+station_capacity: 10
+station_time_capacity: 5198
+starting_master_obj: 9984.0
+total_iterations: 50
+heuristic_pricing_calls: 250
+exact_pricing_calls: 0
+lower_bound: Not rigorosly proven bound due to heuristic pricing / time limit

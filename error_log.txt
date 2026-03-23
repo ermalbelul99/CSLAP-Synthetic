@@ -38,3 +38,48 @@ Traceback (most recent call last):
     _, visits, elapsed, util_var, max_util, cap_broken, wl_broken = column_generation_gurobi(
 ValueError: too many values to unpack (expected 7)
 
+[2026-03-19 14:12:24] Dataset: syn_2000sku | Method: MILP Gurobi | Error: Out of memory
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 197, in do_milp_gurobi
+    milp_assignment, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken, best_bound = run_milp_gurobi(
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\Baselines\milp_gurobi_synthetic.py", line 113, in run_milp_gurobi
+    model.optimize()
+  File "src/gurobipy/_model.pyx", line 926, in gurobipy._model.Model.optimize
+gurobipy._exception.GurobiError: Out of memory
+
+[2026-03-19 16:13:26] Dataset: syn_2000sku | Method: MILP Gurobi | Error: Out of memory
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 197, in do_milp_gurobi
+    milp_assignment, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken, best_bound = run_milp_gurobi(
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\Baselines\milp_gurobi_synthetic.py", line 113, in run_milp_gurobi
+    model.optimize()
+  File "src/gurobipy/_model.pyx", line 926, in gurobipy._model.Model.optimize
+gurobipy._exception.GurobiError: Out of memory
+
+[2026-03-19 17:47:53] Dataset: syn_2000sku | Method: MILP Gurobi | Error: Fell back to Heuristic warm start due to no solution found within limit.
+[2026-03-19 22:23:41] Dataset: syn_5000sku | Method: MILP Gurobi | Error: Out of memory
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 197, in do_milp_gurobi
+    milp_assignment, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken, best_bound = run_milp_gurobi(
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\Baselines\milp_gurobi_synthetic.py", line 113, in run_milp_gurobi
+    model.optimize()
+  File "src/gurobipy/_model.pyx", line 926, in gurobipy._model.Model.optimize
+gurobipy._exception.GurobiError: Out of memory
+
+[2026-03-19 22:41:18] Dataset: syn_50sku | Method: Heuristic | Error: name 'skip_logging' is not defined
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 173, in do_heur
+    heur_assignment, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = heuristic_cslap(op, st, pr, pl, odf)
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\Baselines\heuristic_synthetic.py", line 206, in heuristic_cslap
+    if not skip_logging:
+NameError: name 'skip_logging' is not defined
+
+[2026-03-20 09:14:42] Dataset: syn_2000sku | Method: CG Gurobi | Error: Could not resolve host: token.gurobi.com (code 6, command POST https://token.gurobi.com/api/v1/tokens)
+Traceback (most recent call last):
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\run_benchmarks.py", line 249, in do_cg_gurobi
+    _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = column_generation_gurobi(
+  File "C:\Users\ebelul\Downloads\CSLAP_Project_All\Baselines\cg_gurobi_synthetic.py", line 379, in column_generation_gurobi
+    rmp.optimize()
+  File "src/gurobipy/_model.pyx", line 926, in gurobipy._model.Model.optimize
+gurobipy._exception.GurobiError: Could not resolve host: token.gurobi.com (code 6, command POST https://token.gurobi.com/api/v1/tokens)
+

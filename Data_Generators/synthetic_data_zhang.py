@@ -40,8 +40,8 @@ def generate_synthetic_data_zhang(
     # --- 4. Stations (Flat Setup) ---
     num_stations = max(5, num_skus // 100)
     
-    # Flat slot capacity: ceil(Total Skus / Num Stations) + 2 extra slots for safety
-    base_cap = int(np.ceil(num_skus / num_stations)) + 2
+    # Exact slot capacity to ensure uniform product counts across stations
+    base_cap = num_skus // num_stations
     capacities = np.full(num_stations, base_cap)
     
     station_ids = np.arange(1, num_stations + 1)
@@ -107,8 +107,8 @@ def generate_synthetic_data_zhang(
     target_workload_per_station = total_workload / num_stations
     
     # Calculate a dynamic slack factor between 10% and 30% depending on constraints
-    slack_factor = max(1.10, min(1.30, 20 / num_stations))
-    
+    #slack_factor = max(1.10, min(1.30, 20 / num_stations))
+    slack_factor = 1.10 
     # Fix the workload capacity identical across all stations
     flat_time_cap = int(np.ceil(target_workload_per_station * slack_factor))
     time_capacities = np.full(num_stations, flat_time_cap)

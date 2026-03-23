@@ -201,12 +201,12 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df):
 
     actual_workloads = [station_actions[sid] for sid in station_ids]
     max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
-    workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
+    workload_std_dev = float(np.std(actual_workloads)) if actual_workloads else 0.0
 
     print(f"  Heuristic Done: Visits={total_visits}, "
-          f"Time={elapsed:.2f}s, WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
+          f"Time={elapsed:.2f}s, WL_Std={workload_std_dev:.4f}, Max_WL={max_workload:.4f}")
 
-    return assignment, total_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
+    return assignment, total_visits, elapsed, max_workload, workload_std_dev, cap_broken, wl_broken
 
 
 if __name__ == "__main__":

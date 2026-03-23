@@ -128,12 +128,12 @@ def run_milp_hexaly(
             
             actual_workloads = [station_actions[sid] for sid in station_ids]
             max_workload = float(np.max(actual_workloads)) if actual_workloads else 0.0
-            workload_variance = float(np.var(actual_workloads)) if actual_workloads else 0.0
+            workload_std_dev = float(np.std(actual_workloads)) if actual_workloads else 0.0
 
             print(f"  MILP Done: Visits={total_visits}, Time={elapsed:.2f}s, "
-                  f"WL_Var={workload_variance:.4f}, Max_WL={max_workload:.4f}")
+                  f"WL_Std={workload_std_dev:.4f}, Max_WL={max_workload:.4f}")
                   
-            return assignment, total_visits, elapsed, max_workload, workload_variance, cap_broken, wl_broken
+            return assignment, total_visits, elapsed, max_workload, workload_std_dev, cap_broken, wl_broken
 
         except Exception as e:
             print(f"  MILP: No feasible solution found or error during extraction ({e})")

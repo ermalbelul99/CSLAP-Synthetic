@@ -1,0 +1,11 @@
+scenario_name: unknown
+num_orders: 16675
+num_products: 500
+num_stations: 5
+station_capacity: 100
+station_time_capacity: 36663
+starting_master_obj: 71798
+total_iterations: 2
+heuristic_pricing_calls: 5
+exact_pricing_calls: 5
+lower_bound: Not available (Hexaly gives UBs, no exact duals for LP bounds)

@@ -472,7 +472,95 @@ The effectiveness of our heuristic approach was rigorously evaluated against the
 
 \subsection{Meta-Heuristic Benchmarking and Synthetic Scaling Validation}
 
-(To be fleshed out with the new script's results—demonstrating performance on synthetic datasets with 500 to 5000 SKUs against GA/SA frameworks, ensuring the exact methods and CG scale properly.)
+\begin{table}[H]
+  \centering
+  \small\setlength{\tabcolsep}{4pt}
+  \begin{threeparttable}
+  \begin{tabularx}{\linewidth}{@{}l*5{>{\centering\arraybackslash}X}@{}}
+    \toprule
+    \textbf{Method} & \textbf{Visits} & \textbf{Gap (\%)} & \textbf{Time (s)} & \textbf{Max Workload} & \textbf{Std Dev} \\ \midrule
+    Heuristic & 9,178 & 2.93 & 3.66 & \textcolor{red}{\textbf{6,891}} & 1312.50 \\
+    Feasible Start & 9,993 & 12.07 & 0.16 & 4,740 & \textcolor{green!60!black}{\textbf{27.84}} \\
+    MILP Gurobi & 9,809 & 10.00 & 125.54 & 5,105 & 361.66 \\
+    MILP Hexaly & \textcolor{green!60!black}{\textbf{8,917}} & 0.00 & 241.19 & 5,095 & 247.14 \\
+    CG Gurobi & 9,989 & 12.02 & 112.15 & 4,808 & 51.76 \\
+    CG Hexaly & 9,922 & 11.27 & 120.51 & 5,277 & 347.22 \\
+    SA-C & 9,149 & 2.60 & 120.56 & 4,928 & 132.53 \\
+    GA & 9,213 & 3.32 & 120.06 & 5,061 & 279.20 \\
+    \bottomrule
+  \end{tabularx}
+  \end{threeparttable}
+  \caption{Computational Results on Synthetic Dataset with 50 SKUs. Best visits and lowest standard deviation are highlighted in \textcolor{green!60!black}{\textbf{green}}, while the highest maximum workload is completely highlighted in \textcolor{red}{\textbf{red}}}
+  \label{tab:syn_50sku}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \small\setlength{\tabcolsep}{4pt}
+  \begin{threeparttable}
+  \begin{tabularx}{\linewidth}{@{}l*5{>{\centering\arraybackslash}X}@{}}
+    \toprule
+    \textbf{Method} & \textbf{Visits} & \textbf{Gap (\%)} & \textbf{Time (s)} & \textbf{Max Workload} & \textbf{Std Dev} \\ \midrule
+    Heuristic & 62,462 & 4.05 & 17.02 & \textcolor{red}{\textbf{46,671}} & 7787.02 \\
+    Feasible Start & 72,114 & 20.12 & 0.16 & 33,342 & \textcolor{green!60!black}{\textbf{12.78}} \\
+    MILP Gurobi & 72,099 & 20.10 & 1237.67 & 33,350 & 14.74 \\
+    MILP Hexaly & \textcolor{green!60!black}{\textbf{60,033}} & 0.00 & 2419.04 & 36,663 & 5256.84 \\
+    CG Gurobi & 71,829 & 19.65 & 722.51 & 34,122 & 416.62 \\
+    CG Hexaly & 71,798 & 19.60 & 1214.58 & 34,066 & 604.12 \\
+    SA-C & 70,837 & 18.00 & 1222.53 & 35,705 & 1597.48 \\
+    GA & 66,263 & 10.38 & 1202.43 & 36,627 & 2476.38 \\
+    \bottomrule
+  \end{tabularx}
+  \end{threeparttable}
+  \caption{Computational Results on Synthetic Dataset with 500 SKUs. Best visits and lowest standard deviation are highlighted in \textcolor{green!60!black}{\textbf{green}}, while the highest maximum workload is completely highlighted in \textcolor{red}{\textbf{red}}}
+  \label{tab:syn_500sku}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \small\setlength{\tabcolsep}{4pt}
+  \begin{threeparttable}
+  \begin{tabularx}{\linewidth}{@{}l*5{>{\centering\arraybackslash}X}@{}}
+    \toprule
+    \textbf{Method} & \textbf{Visits} & \textbf{Gap (\%)} & \textbf{Time (s)} & \textbf{Max Workload} & \textbf{Std Dev} \\ \midrule
+    Heuristic & 235,551 & 2.09 & 44.28 & \textcolor{red}{\textbf{58,938}} & 6927.87 \\
+    Feasible Start & 290,549 & 25.92 & 0.37 & 46,169 & \textcolor{green!60!black}{\textbf{32.73}} \\
+    MILP Gurobi & 290,549 & 25.92 & 3892.12 & 46,169 & \textcolor{green!60!black}{\textbf{32.73}} \\
+    MILP Hexaly & \textcolor{green!60!black}{\textbf{230,739}} & 0.00 & 7513.57 & 50,730 & 5957.95 \\
+    CG Gurobi & 290,285 & 25.81 & 3710.76 & 47,332 & 652.14 \\
+    CG Hexaly & 290,159 & 25.75 & 3883.75 & 47,294 & 681.19 \\
+    SA-C & 287,167 & 24.46 & 3875.27 & 49,706 & 2594.84 \\
+    GA & 276,861 & 19.99 & 3619.30 & 49,166 & 2434.40 \\
+    \bottomrule
+  \end{tabularx}
+  \end{threeparttable}
+  \caption{Computational Results on Synthetic Dataset with 1000 SKUs. Best visits and lowest standard deviation are highlighted in \textcolor{green!60!black}{\textbf{green}}, while the highest maximum workload is completely highlighted in \textcolor{red}{\textbf{red}}}
+  \label{tab:syn_1000sku}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \small\setlength{\tabcolsep}{4pt}
+  \begin{threeparttable}
+  \begin{tabularx}{\linewidth}{@{}l*5{>{\centering\arraybackslash}X}@{}}
+    \toprule
+    \textbf{Method} & \textbf{Visits} & \textbf{Gap (\%)} & \textbf{Time (s)} & \textbf{Max Workload} & \textbf{Std Dev} \\ \midrule
+    Heuristic & 385,596 & 2.47 & 21.79 & \textcolor{red}{\textbf{42,249}} & 5370.26 \\
+    Feasible Start & 492,260 & 30.82 & 0.01 & 31,262 & \textcolor{green!60!black}{\textbf{16.45}} \\
+    MILP Gurobi & 492,260 & 30.82 & 7462.56 & 31,262 & \textcolor{green!60!black}{\textbf{16.45}} \\
+    MILP Hexaly & \textcolor{green!60!black}{\textbf{376,289}} & 0.00 & 7279.93 & 34,307 & 2781.03 \\
+    CG Gurobi & - & - & - & - & - \\
+    CG Hexaly & 491,188 & 30.53 & 7642.39 & 32,447 & 513.17 \\
+    SA-C & 484,690 & 28.81 & 7464.75 & 33,528 & 1230.74 \\
+    GA & 467,144 & 24.15 & 3204.47 & 32,783 & 1238.48 \\
+    \bottomrule
+  \end{tabularx}
+  \end{threeparttable}
+  \caption{Computational Results on Synthetic Dataset with 2000 SKUs. Best visits and lowest standard deviation are highlighted in \textcolor{green!60!black}{\textbf{green}}, while the highest maximum workload is completely highlighted in \textcolor{red}{\textbf{red}}}
+  \label{tab:syn_2000sku}
+\end{table}
+
+
 
 \subsection{Synthetic Data Generation}
 To rigorously evaluate the mathematical scalability of our theoretical frameworks outside the bounds of a single industrial instance, we generated synthetic numerical instances. We adapted the "Common Itemset" correlation approach proposed by \cite{zhang2019cie}, who generated synthetic data to evaluate storage location assignments by mimicking real-world demand dependency. 

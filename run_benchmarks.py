@@ -46,6 +46,71 @@ import concurrent.futures
 import traceback
 
 # -
+#  FEASIBILITY WARM START (LPT Load Balancing)
+# -
+def generate_feasible_start(products_list, stations, prod_lines):
+    """
+    Generate a strictly feasible {product: station_ID} assignment using
+    Longest Processing Time (LPT) load balancing. Guarantees:
+      - EXACT physical capacity per station (num_skus // num_stations)
+      - Balanced TIME_CAPACITY constraints
+
+    Note: This completely ignores order co-occurrence, focusing ONLY on
+    getting a mathematically feasible starting point for Exact/CG solvers.
+    """
+    station_ids = [s["STATION_ID"] for s in stations]
+    capacities  = {s["STATION_ID"]: s["CAPACITY"]     for s in stations}
+    time_caps   = {s["STATION_ID"]: s["TIME_CAPACITY"] for s in stations}
+    speeds      = {s["STATION_ID"]: s["SPEED"]         for s in stations}
+
+    assigned = {}
+    st_count = {sid: 0 for sid in station_ids}
+    st_workload = {sid: 0.0 for sid in station_ids}
+
+    # Sort all products by their workload impact (LPT strategy)
+    # Use average speed just for sorting rank
+    avg_speed = sum(speeds.values()) / len(speeds) if speeds else 1.0
+    sorted_prods = sorted(
+        products_list,
+        key=lambda p: prod_lines.get(p, 0) / avg_speed,
+        reverse=True
+    )
+
+    for p in sorted_prods:
+        freq = prod_lines.get(p, 0)
+        best_sid = None
+        min_curr_wl = float('inf')
+
+        # Find the station with lowest workload that still has physical capacity
+        for sid in station_ids:
+            if st_count[sid] >= capacities[sid]:
+                continue
+            
+            # We strictly enforce CAPACITY. We aim for TIME_CAPACITY but
+            # prioritize CAPACITY. If all stations are somehow tight on time,
+            # we just pick the emptiest one (the solver will repair/handle it).
+            if st_workload[sid] < min_curr_wl:
+                min_curr_wl = st_workload[sid]
+                best_sid = sid
+        
+        if best_sid is None:
+            # Fallback (should never hit if exact capacities are defined properly)
+            best_sid = station_ids[0]
+            
+        # Assign
+        assigned[p] = best_sid
+        st_count[best_sid] += 1
+        st_workload[best_sid] += freq / speeds.get(best_sid, 1.0)
+        
+    print(f"  [Feasible Start] LPT generated for {len(products_list)} items.")
+    for sid in station_ids:
+        print(f"    St {sid}: {st_count[sid]}/{capacities[sid]} items, "
+              f"WL: {st_workload[sid]:.1f}/{time_caps[sid]}")
+
+    return assigned
+
+
+# -
 #  ERROR LOGGING
 # -
 def log_error(prefix, method, error_msg):
@@ -65,7 +130,7 @@ def do_sac(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
         print(f"  [{prefix}] SA-C Done ({elapsed:.2f}s)")
         return {
             "visits": visits, "time": elapsed, 
-            "max_workload": max_wl, "workload_variance": wl_var,
+            "max_workload": max_wl, "workload_std_dev": wl_var,
             "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -74,7 +139,7 @@ def do_sac(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
         log_error(prefix, "SA-C", f"{e}\n{traceback.format_exc()}")
         return {
             "visits": "-", "time": "-", 
-            "max_workload": "-", "workload_variance": "-",
+            "max_workload": "-", "workload_std_dev": "-",
             "cap_broken": "-", "wl_broken": "-", 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -87,7 +152,7 @@ def do_ga(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
         print(f"  [{prefix}] GA Done ({elapsed:.2f}s)")
         return {
             "visits": visits, "time": elapsed, 
-            "max_workload": max_wl, "workload_variance": wl_var,
+            "max_workload": max_wl, "workload_std_dev": wl_var,
             "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -96,7 +161,7 @@ def do_ga(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
         log_error(prefix, "GA", f"{e}\n{traceback.format_exc()}")
         return {
             "visits": "-", "time": "-", 
-            "max_workload": "-", "workload_variance": "-",
+            "max_workload": "-", "workload_std_dev": "-",
             "cap_broken": "-", "wl_broken": "-", 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -109,7 +174,7 @@ def do_heur(N, prefix, data_dir, num_orders, num_skus, num_stations):
         print(f"  [{prefix}] Heuristic Done ({elapsed:.2f}s)")
         res = {
             "visits": visits, "time": elapsed, 
-            "max_workload": max_wl, "workload_variance": wl_var,
+            "max_workload": max_wl, "workload_std_dev": wl_var,
             "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -119,7 +184,7 @@ def do_heur(N, prefix, data_dir, num_orders, num_skus, num_stations):
         log_error(prefix, "Heuristic", f"{e}\n{traceback.format_exc()}")
         res = {
             "visits": "-", "time": "-", 
-            "max_workload": "-", "workload_variance": "-",
+            "max_workload": "-", "workload_std_dev": "-",
             "cap_broken": "-", "wl_broken": "-", 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -135,7 +200,7 @@ def do_milp_gurobi(N, prefix, data_dir, tl, heur_assignment, num_orders, num_sku
         print(f"  [{prefix}] MILP Gurobi Done ({elapsed:.2f}s)")
         res = {
             "visits": visits, "time": elapsed, 
-            "max_workload": max_wl, "workload_variance": wl_var,
+            "max_workload": max_wl, "workload_std_dev": wl_var,
             "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -145,7 +210,7 @@ def do_milp_gurobi(N, prefix, data_dir, tl, heur_assignment, num_orders, num_sku
         log_error(prefix, "MILP Gurobi", f"{e}\n{traceback.format_exc()}")
         res = {
             "visits": "-", "time": "-", 
-            "max_workload": "-", "workload_variance": "-",
+            "max_workload": "-", "workload_std_dev": "-",
             "cap_broken": "-", "wl_broken": "-", 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -161,7 +226,7 @@ def do_milp_hexaly(N, prefix, data_dir, tl, heur_assignment, num_orders, num_sku
         print(f"  [{prefix}] MILP Hexaly Done ({elapsed:.2f}s)")
         res = {
             "visits": visits, "time": elapsed, 
-            "max_workload": max_wl, "workload_variance": wl_var,
+            "max_workload": max_wl, "workload_std_dev": wl_var,
             "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -171,7 +236,7 @@ def do_milp_hexaly(N, prefix, data_dir, tl, heur_assignment, num_orders, num_sku
         log_error(prefix, "MILP Hexaly", f"{e}\n{traceback.format_exc()}")
         res = {
             "visits": "-", "time": "-", 
-            "max_workload": "-", "workload_variance": "-",
+            "max_workload": "-", "workload_std_dev": "-",
             "cap_broken": "-", "wl_broken": "-", 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -187,7 +252,7 @@ def do_cg_gurobi(N, prefix, data_dir, tl, warm_start, num_orders, num_skus, num_
         print(f"  [{prefix}] CG Gurobi Done ({elapsed:.2f}s)")
         return {
             "visits": visits, "time": elapsed, 
-            "max_workload": max_wl, "workload_variance": wl_var,
+            "max_workload": max_wl, "workload_std_dev": wl_var,
             "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -196,7 +261,7 @@ def do_cg_gurobi(N, prefix, data_dir, tl, warm_start, num_orders, num_skus, num_
         log_error(prefix, "CG Gurobi", f"{e}\n{traceback.format_exc()}")
         return {
             "visits": "-", "time": "-", 
-            "max_workload": "-", "workload_variance": "-",
+            "max_workload": "-", "workload_std_dev": "-",
             "cap_broken": "-", "wl_broken": "-", 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -211,7 +276,7 @@ def do_cg_hexaly(N, prefix, data_dir, tl, warm_start, num_orders, num_skus, num_
         print(f"  [{prefix}] CG Hexaly Done ({elapsed:.2f}s)")
         return {
             "visits": visits, "time": elapsed, 
-            "max_workload": max_wl, "workload_variance": wl_var,
+            "max_workload": max_wl, "workload_std_dev": wl_var,
             "cap_broken": cap_broken, "wl_broken": wl_broken, 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -220,7 +285,7 @@ def do_cg_hexaly(N, prefix, data_dir, tl, warm_start, num_orders, num_skus, num_
         log_error(prefix, "CG Hexaly", f"{e}\n{traceback.format_exc()}")
         return {
             "visits": "-", "time": "-", 
-            "max_workload": "-", "workload_variance": "-",
+            "max_workload": "-", "workload_std_dev": "-",
             "cap_broken": "-", "wl_broken": "-", 
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
@@ -272,65 +337,110 @@ def run_all_benchmarks(
             num_orders, num_skus, num_stations = "-", "-", "-"
 
         # Launch independent tasks with ThreadPoolExecutor
-        print("\n[Phase A] Launching SA-C, GA, and Heuristic concurrently...")
+        is_large_scale = (N > 1000)
+        workers_count = 1 if is_large_scale else 8
+        
+        if is_large_scale:
+            print(f"\n[Phase A] Launching solvers sequentially (N={N} > 1000 to prevent Out-Of-Memory)...")
+        else:
+            print("\n[Phase A] Launching SA-C, GA, and Heuristic concurrently...")
+            
         tl = time_limit if not quick else min(60, time_limit)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers_count) as executor:
+            # Submitting Heuristic first is better when max_workers=1 since we block on future_heur.result()
+            future_heur = executor.submit(do_heur, N, prefix, data_dir, num_orders, num_skus, num_stations)
             future_sac = executor.submit(do_sac, N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations)
             future_ga = executor.submit(do_ga, N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations)
-            future_heur = executor.submit(do_heur, N, prefix, data_dir, num_orders, num_skus, num_stations)
 
-            # Heuristic assignment is needed for Phase B
-            # res_heur, heur_assignment = future_heur.result()
-            res_heur, heur_assignment, h_max_wl, h_wl_var = future_heur.result()
+            # Heuristic assignment is needed for logging, but not for Exact methods anymore
+            res_heur, heur_assignment, h_max_wl, h_wl_std = future_heur.result()
             results[N]["Heuristic"] = res_heur
 
-            # Phase B: MILPs
-            print("\n[Phase B] Heuristic finished. Launching exact MILPs concurrently...")
-            future_milp_g = executor.submit(do_milp_gurobi, N, prefix, data_dir, tl, heur_assignment, num_orders, num_skus, num_stations)
-            future_milp_h = executor.submit(do_milp_hexaly, N, prefix, data_dir, tl, heur_assignment, num_orders, num_skus, num_stations)
+            # Generate LPT Feasible Warm Start
+            print("\n[Warm Start] Generating feasibility-only (LPT) warm start...")
+            fs_start_time = time.time()
+            feasible_warm_start = generate_feasible_start(
+                pr_dim, st_dim, pl_dim
+            )
+            fs_elapsed = time.time() - fs_start_time
+            
+            # Evaluate Feasible Warm Start as an approach
+            fs_visits = 0
+            for o, prods in op_dim.items():
+                visited = set()
+                for p in prods:
+                    if p in feasible_warm_start:
+                        visited.add(feasible_warm_start[p])
+                fs_visits += len(visited)
+            
+            st_ids = [s["STATION_ID"] for s in st_dim]
+            caps = {s["STATION_ID"]: s["CAPACITY"] for s in st_dim}
+            time_caps = {s["STATION_ID"]: s["TIME_CAPACITY"] for s in st_dim}
+            spds = {s["STATION_ID"]: s["SPEED"] for s in st_dim}
+            
+            fc_count = {sid: 0 for sid in st_ids}
+            fc_wl = {sid: 0.0 for sid in st_ids}
+            for p, sid in feasible_warm_start.items():
+                fc_count[sid] += 1
+                fc_wl[sid] += pl_dim.get(p, 0) / spds.get(sid, 1.0)
+                
+            fs_cap_broken = sum(1 for sid in st_ids if fc_count[sid] > caps[sid])
+            fs_actual_wls = [fc_wl[sid] for sid in st_ids]
+            fs_wl_broken = sum(1 for idx, sid in enumerate(st_ids) if fs_actual_wls[idx] > time_caps[sid])
+            fs_max_wl = float(np.max(fs_actual_wls)) if fs_actual_wls else 0.0
+            fs_wl_std = float(np.std(fs_actual_wls)) if fs_actual_wls else 0.0
+
+            results[N]["Feasible Start"] = {
+                "visits": fs_visits,
+                "time": fs_elapsed,
+                "max_workload": fs_max_wl,
+                "workload_std_dev": fs_wl_std,
+                "cap_broken": fs_cap_broken,
+                "wl_broken": fs_wl_broken,
+                "num_orders": num_orders,
+                "num_skus": num_skus,
+                "num_stations": num_stations
+            }
+
+            # Phase B: MILPs + CGs
+            if is_large_scale:
+                print("\n[Phase B] Launching exact MILPs and CG Solvers sequentially...")
+            else:
+                print("\n[Phase B] Launching exact MILPs and CG Solvers concurrently...")
+            
+            future_milp_g = executor.submit(do_milp_gurobi, N, prefix, data_dir, tl, feasible_warm_start, num_orders, num_skus, num_stations)
+            future_milp_h = executor.submit(do_milp_hexaly, N, prefix, data_dir, tl, feasible_warm_start, num_orders, num_skus, num_stations)
+            future_cg_g = executor.submit(do_cg_gurobi, N, prefix, data_dir, tl, feasible_warm_start, num_orders, num_skus, num_stations)
+            future_cg_h = executor.submit(do_cg_hexaly, N, prefix, data_dir, tl, feasible_warm_start, num_orders, num_skus, num_stations)
 
             res_milp_g, milp_g_assignment, best_bound = future_milp_g.result()
             res_milp_h, milp_h_assignment = future_milp_h.result()
-            
-            # launches independent tasks with ThreadPoolExecutor
-            # --- Fallback: If MILP failed to find improvement, return Heuristic ---
+
+            # --- Fallback: If MILP failed to find improvement, return feasibility start metrics ---
             if res_milp_g["visits"] == "-":
-                print(f"  [{prefix}] MILP Gurobi failed to find solution, falling back to heuristic warm start.")
+                print(f"  [{prefix}] MILP Gurobi failed to find solution, falling back to heuristic.")
                 res_milp_g["visits"] = res_heur["visits"]
                 res_milp_g["max_workload"] = res_heur["max_workload"]
-                res_milp_g["avg_workload_assign"] = res_heur["avg_workload_assign"]
-                res_milp_g["avg_workload_target"] = res_heur["avg_workload_target"]
-                res_milp_g["workload_variance"] = res_heur["workload_variance"]
+                res_milp_g["workload_std_dev"] = res_heur["workload_std_dev"]
                 res_milp_g["cap_broken"] = res_heur["cap_broken"]
                 res_milp_g["wl_broken"] = res_heur["wl_broken"]
-                milp_g_assignment = heur_assignment
                 log_error(prefix, "MILP Gurobi", "Fell back to Heuristic warm start due to no solution found within limit.")
 
             if res_milp_h["visits"] == "-":
-                print(f"  [{prefix}] MILP Hexaly failed to find solution, falling back to heuristic warm start.")
+                print(f"  [{prefix}] MILP Hexaly failed to find solution, falling back to heuristic.")
                 res_milp_h["visits"] = res_heur["visits"]
                 res_milp_h["max_workload"] = res_heur["max_workload"]
-                res_milp_h["avg_workload_assign"] = res_heur["avg_workload_assign"]
-                res_milp_h["avg_workload_target"] = res_heur["avg_workload_target"]
-                res_milp_h["workload_variance"] = res_heur["workload_variance"]
+                res_milp_h["workload_std_dev"] = res_heur["workload_std_dev"]
                 res_milp_h["cap_broken"] = res_heur["cap_broken"]
                 res_milp_h["wl_broken"] = res_heur["wl_broken"]
-                milp_h_assignment = heur_assignment
                 log_error(prefix, "MILP Hexaly", "Fell back to Heuristic warm start due to no solution found within limit.")
 
             global_lb = best_bound if best_bound is not None and best_bound > 0 else None
-            
+
             results[N]["MILP Gurobi"] = res_milp_g
             results[N]["MILP Hexaly"] = res_milp_h
 
-            # Phase C: CGs
-            print("\n[Phase C] MILPs finished. Launching CG Solvers concurrently...")
-            warm_start_g = milp_g_assignment if milp_g_assignment is not None else heur_assignment
-            warm_start_h = milp_h_assignment if milp_h_assignment is not None else heur_assignment
-
-            future_cg_g = executor.submit(do_cg_gurobi, N, prefix, data_dir, tl, warm_start_g, num_orders, num_skus, num_stations)
-            future_cg_h = executor.submit(do_cg_hexaly, N, prefix, data_dir, tl, warm_start_h, num_orders, num_skus, num_stations)
-
+            # Collect CG results (already running in parallel)
             results[N]["CG Gurobi"] = future_cg_g.result()
             results[N]["CG Hexaly"] = future_cg_h.result()
 
@@ -347,18 +457,26 @@ def run_all_benchmarks(
         
         # Inject global metrics into all results
         for method in results[N]:
+            results[N][method]["time_limit"] = tl
             results[N][method]["avg_workload_assign"] = avg_wl_assign_global
             results[N][method]["avg_workload_max"] = avg_wl_max_global
+            results[N][method]["lb_gurobi"] = global_lb
 
-        # --- Optimality Gap Calculation ---
+        # --- Best Known Solution Gap Calculation ---
+        # Find BKS (Best Known Solution) = minimum visits across all methods
+        all_visits = []
         for method, metrics in results[N].items():
             v = metrics.get("visits", "-")
-            if v != "-" and v is not None and global_lb is not None and global_lb > 0:
-                try:
-                    gap = ((float(v) - global_lb) / global_lb)
-                    metrics["gap_pct"] = round(gap, 2)
-                except Exception:
-                    metrics["gap_pct"] = "-"
+            if v != "-" and v is not None:
+                all_visits.append(float(v))
+
+        bks = min(all_visits) if all_visits else None
+
+        for method, metrics in results[N].items():
+            v = metrics.get("visits", "-")
+            if v != "-" and v is not None and bks is not None and bks > 0:
+                rpd = ((float(v) - bks) / bks) * 100  # in percentage
+                metrics["gap_pct"] = round(rpd, 2)
             else:
                 metrics["gap_pct"] = "-"
 
@@ -370,8 +488,8 @@ def run_all_benchmarks(
             df.index.name = "Method"
             # Reorder columns for readability if possible
             expected_cols = [
-                "visits", "gap_pct", "time", 
-                "max_workload", "avg_workload_assign", "avg_workload_max", "workload_variance", 
+                "visits", "gap_pct", "lb_gurobi", "time", "time_limit",
+                "max_workload", "avg_workload_assign", "avg_workload_max", "workload_std_dev", 
                 "cap_broken", "wl_broken", 
                 "num_orders", "num_skus", "num_stations"
             ]
@@ -423,5 +541,5 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 70)
     print("ALL BENCHMARKS COMPLETED.")
-    print("Granular results have been saved to CSV files (e.g., results_syn_500sku.csv).")
+    print("Granular results have been saved to CSV files")
     print("=" * 70)

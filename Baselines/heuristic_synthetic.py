@@ -186,11 +186,12 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df):
     # --- Workload distribution tracking ---
     station_counts = defaultdict(int)
     station_actions = defaultdict(float)
+    speeds = {s["STATION_ID"]: s["SPEED"] for s in stations}
     
     for p, sid in assignment.items():
         station_counts[sid] += 1
         qty = prod_lines.get(p, 0)
-        station_actions[sid] += qty
+        station_actions[sid] += qty / speeds.get(sid, 1.0) if speeds.get(sid, 1.0) > 0 else 0
         
     station_ids = [s["STATION_ID"] for s in stations]
     station_caps = {s["STATION_ID"]: s["CAPACITY"] for s in stations}

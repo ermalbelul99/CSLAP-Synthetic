@@ -79,9 +79,10 @@ def fitness(chromosome, products, order_prods, stations, prod_lines,
     # Capacity / workload violations
     station_counts = defaultdict(int)
     station_workload = defaultdict(float)
+    speeds = {s["STATION_ID"]: s["SPEED"] for s in stations}
     for p, sid in state.items():
         station_counts[sid] += 1
-        station_workload[sid] += prod_lines.get(p, 0)
+        station_workload[sid] += prod_lines.get(p, 0) / speeds.get(sid, 1.0) if speeds.get(sid, 1.0) > 0 else 0
 
     penalty = 0.0
     for s in stations:
@@ -322,11 +323,12 @@ def genetic_algorithm(
     
     station_counts = defaultdict(int)
     station_actions = defaultdict(float)
+    speeds = {s["STATION_ID"]: s["SPEED"] for s in stations}
     
     for p, sid in state.items():
         station_counts[sid] += 1
         qty = prod_lines.get(p, 0)
-        station_actions[sid] += qty
+        station_actions[sid] += qty / speeds.get(sid, 1.0) if speeds.get(sid, 1.0) > 0 else 0
         
     station_ids = [s["STATION_ID"] for s in stations]
     station_caps = {s["STATION_ID"]: s["CAPACITY"] for s in stations}

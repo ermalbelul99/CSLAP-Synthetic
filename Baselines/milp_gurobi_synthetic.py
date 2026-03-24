@@ -91,10 +91,10 @@ def run_milp_gurobi(
         name="capacity"
     )
     
-    # Constraint 3: Workload limit (flat setup)
+    # Constraint 3: Workload limit (incorporating station speed)
     for s in station_ids:
         model.addConstr(
-            gp.quicksum(prod_lines.get(p, 0) * x[p, s] for p in products) <= time_caps[s],
+            gp.quicksum((prod_lines.get(p, 0) / speeds[s] if speeds[s] > 0 else 0) * x[p, s] for p in products) <= time_caps[s],
             name=f"workload_{s}"
         )
         
@@ -133,7 +133,7 @@ def run_milp_gurobi(
                         assignment[p] = s
                         station_counts[s] += 1
                         qty = prod_lines.get(p, 0)
-                        station_actions[s] += qty
+                        station_actions[s] += qty / speeds[s] if speeds[s] > 0 else 0
                         
             cap_broken = sum(1 for sid in station_ids if station_counts[sid] > capacities[sid])
             wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])

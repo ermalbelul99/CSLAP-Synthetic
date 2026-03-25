@@ -132,7 +132,53 @@ def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
             "num_skus": num_skus,
             "num_stations": num_stations
         }
-        
+
+    output_csv = os.path.join(BASE_DIR, "results_industrial_benchmark.csv")
+    
+    def save_current_results():
+        # --- Best Known Solution Gap Calculation ---
+        all_visits = []
+        for m, r in results.items():
+            v = r.get("visits", "-")
+            if v != "-" and v is not None:
+                all_visits.append(float(v))
+                
+        bks = min(all_visits) if all_visits else None
+        global_lb = results.get("MILP Gurobi", {}).get("lb_gurobi", None)
+
+        save_dict = {}
+        for m, r in results.items():
+            # Create a copy so we don't permanently mutate the stored result dict with gap_pct in-place if BKS changes
+            row_dict = r.copy()
+            v = row_dict.get("visits", "-")
+            if v != "-" and v is not None and bks is not None and bks > 0:
+                row_dict["gap_pct"] = round(((float(v) - bks) / bks) * 100, 2)
+            else:
+                row_dict["gap_pct"] = "-"
+            row_dict["time_limit"] = tl
+            row_dict["lb_gurobi"] = global_lb
+            save_dict[m] = row_dict
+
+        try:
+            df = pd.DataFrame(save_dict).T
+            df.index.name = "Method"
+            expected_cols = [
+                "visits", "gap_pct", "lb_gurobi", "time", "time_limit",
+                "max_workload", "utilization_std_dev", 
+                "cap_broken", "wl_broken", 
+                "num_orders", "num_skus", "num_stations"
+            ]
+            existing_cols = [c for c in expected_cols if c in df.columns]
+            df = df[existing_cols]
+            
+            for col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='ignore')
+                
+            df.to_csv(output_csv)
+            print(f"  [I/O] Results checkpoint explicitly saved to {output_csv}")
+        except Exception as e:
+            print(f"  [I/O Error] Failed to save CSV: {e}")
+
     tl = time_limit if not quick else min(60, time_limit)
 
     # 1. Heuristic

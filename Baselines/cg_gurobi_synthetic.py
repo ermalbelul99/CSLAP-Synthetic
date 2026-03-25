@@ -348,6 +348,10 @@ def column_generation_gurobi(
         # -------------------------------------------------------------------
         rmp = gp.Model("RMP", env=env)
         rmp.setParam('OutputFlag', 0)
+        
+        # Memory optimization for RMP
+        rmp.setParam('Threads', 2)
+        rmp.setParam('Method', 2)
 
         y = {}
         for s in station_ids:
@@ -431,6 +435,11 @@ def column_generation_gurobi(
             # Solution pool settings
             sp.setParam('PoolSearchMode', 2)
             sp.setParam('PoolSolutions', 10)
+            
+            # Memory optimization for Pricing
+            sp.setParam("NodefileStart", 4.0)
+            sp.setParam("Threads", 2)
+            sp.setParam("Presolve", 1)
 
             a    = sp.addVars(products, vtype=GRB.BINARY, name="a")
             z_sp = sp.addVars(orders, lb=0.0, ub=1.0,
@@ -485,6 +494,10 @@ def column_generation_gurobi(
     imp = gp.Model("IMP", env=env)
     imp.setParam('OutputFlag', 0)
     imp.setParam('TimeLimit', max(10, time_limit - (time.time() - start_time)))
+    
+    # Memory optimization for IMP
+    imp.setParam("NodefileStart", 4.0)
+    imp.setParam("Threads", 2)
 
     y = {}
     for s in station_ids:

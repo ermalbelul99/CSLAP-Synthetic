@@ -337,7 +337,7 @@ def run_all_benchmarks(
             num_orders, num_skus, num_stations = "-", "-", "-"
 
         # Launch independent tasks with ThreadPoolExecutor
-        is_large_scale = (N > 1000)
+        is_large_scale = (N > 3000)
         workers_count = 1 if is_large_scale else 8
         
         if is_large_scale:

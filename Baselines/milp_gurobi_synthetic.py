@@ -60,6 +60,12 @@ def run_milp_gurobi(
     model.setParam("TimeLimit", time_limit)
     model.setParam("MIPFocus", 1)  # Prioritize finding feasible solutions
     
+    # --- Memory Optimization Parameters ---
+    model.setParam("NodefileStart", 4.0)  # Write nodes to disk once tree RAM exceeds 4 GB
+    model.setParam("Threads", 2)          # Limit multi-threading overhead
+    model.setParam("Presolve", 1)         # Conservative presolve to avoid massive matrix explosion
+    model.setParam("Method", 2)           # Force interior-point method for root relaxation
+    
     print(f"  MILP: Solving with Gurobi (time_limit={time_limit}s)...")
 
     # Decision variables

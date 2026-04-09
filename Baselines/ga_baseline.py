@@ -223,6 +223,7 @@ def genetic_algorithm(
     order_prods, stations, products, prod_lines,
     pop_size=50, generations=200, cx_rate=0.8, mut_rate=0.1,
     time_limit=72000, quick=False,
+    warm_start_assignment=None
 ):
     rng = np.random.RandomState(42)
     N = len(products)
@@ -241,6 +242,12 @@ def genetic_algorithm(
     # Initialize population
     print("  Initializing population...")
     population = [random_feasible(products, stations, rng) for _ in range(pop_size)]
+
+    if warm_start_assignment is not None:
+        print("  Injecting warm start assignment into population[0]...")
+        # Chromosome is an array of station IDs parallel to the products list
+        ws_chrom = np.array([warm_start_assignment.get(p, population[0][i]) for i, p in enumerate(products)])
+        population[0] = ws_chrom
 
     # Evaluate initial fitness
     fit_vals = []

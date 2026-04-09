@@ -17,11 +17,6 @@ load_dotenv()
 
 from sa_correlated import simulated_annealing_correlated
 from ga_baseline import genetic_algorithm
-from heuristic_synthetic import heuristic_cslap
-from milp_gurobi_synthetic import run_milp_gurobi
-from cg_gurobi_synthetic import column_generation_gurobi
-from milp_synthetic import run_milp_hexaly
-from cg_synthetic import column_generation_hexaly
 
 from data_loader_industrial import load_industrial_data
 
@@ -83,7 +78,7 @@ def log_error(method, error_msg):
     log_file = os.path.join(BASE_DIR, "error_log.txt")
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     with open(log_file, "a") as f:
-        f.write(f"[{timestamp}] Dataset: Industrial | Method: {method} | Error: {error_msg}\n")
+        f.write(f"[{timestamp}] Dataset: Industrial isolated Metaheuristics | Method: {method} | Error: {error_msg}\n")
 
 
 def run_solver_wrapper(method_name, func, op_solver, st_solver, pr_solver, pl_solver, 
@@ -114,7 +109,7 @@ def run_solver_wrapper(method_name, func, op_solver, st_solver, pr_solver, pl_so
 
 def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
     print("=" * 70)
-    print("PHASE 1: Loading and Preprocessing Industrial Data")
+    print("PHASE 1: Loading and Preprocessing Industrial Data for Metaheuristics")
     print("=" * 70)
     
     try:
@@ -128,7 +123,6 @@ def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
     st_solver = data["st_solver"]
     pr_solver = data["pr_solver"]
     pl_solver = data["pl_solver"]
-    odf_solver = data["odf_solver"]
     warm_start_assignment = data["warm_start_assignment"]
     static_assignment = data["static_assignment"]
     op_full = data["op_full"]
@@ -160,7 +154,7 @@ def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
             "num_stations": num_stations
         }
 
-    output_csv = os.path.join(BASE_DIR, "results_industrial_benchmark.csv")
+    output_csv = os.path.join(BASE_DIR, "results_metaheuristics_industrial_alone.csv")
     
     def save_current_results():
         # --- Best Known Solution Gap Calculation ---
@@ -211,22 +205,6 @@ def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
 
     tl = time_limit if not quick else min(60, time_limit)
 
-    # 1. Heuristic
-    print("\n[Heuristic] Started")
-    try:
-        heur_assignment, _, elapsed, _, _, _, _ = heuristic_cslap(
-            op_solver, st_solver, pr_solver, pl_solver, odf_solver
-        )
-        visits, max_wl, wl_std, cap_b, wl_b = evaluate_full_metrics(
-            heur_assignment, static_assignment, op_full, st_full, pl_full
-        )
-        results["Heuristic"] = format_res("Heuristic", visits, elapsed, max_wl, wl_std, cap_b, wl_b)
-        print(f"  [Heuristic] Done in {elapsed:.2f}s | Full Visits: {visits}")
-    except Exception as e:
-        print(f"  [Heuristic] Failed: {e}")
-        log_error("Heuristic", traceback.format_exc())
-        heur_assignment = None
-
     # We use the warm start provided directly by the industrial initial assignments
     print("\n[Warm Start] Using base industrial assignment for initial locations...")
     warm_start_time = time.time()
@@ -239,8 +217,7 @@ def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
     results["Industrial Current"] = format_res("Industrial Current", visits_ws, ws_elapsed, max_wl_ws*1.1, wl_std_ws, cap_b_ws, wl_b_ws)
     print(f"  [Industrial Current] Initial real-world configuration | Full Visits: {visits_ws}")
 
-    # Fallback to heuristic for exact solvers if warm start lacks products for some reason
-    active_warm_start = warm_start_assignment if warm_start_assignment else heur_assignment
+    active_warm_start = warm_start_assignment
 
     # Metaheuristics (Parallel execution restored for Server)
     with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
@@ -262,51 +239,12 @@ def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
             m, v, el, mw, wls, cb, wb, _ = f.result()
             results[m] = format_res(m, v, el, mw, wls, cb, wb)
             save_current_results()
-
-    # Exact Solvers (Parallel Execution mapping all 32 logical cores)
-    exact_tasks = [
-        ("MILP Gurobi", run_milp_gurobi, {"time_limit": tl, "warm_start_assignment": active_warm_start}),
-        ("MILP Hexaly", run_milp_hexaly, {"time_limit": tl, "warm_start_assignment": active_warm_start}),
-        ("CG Gurobi", column_generation_gurobi, {"time_limit": tl, "warm_start_assignment": active_warm_start, "scenario_name": "industrial_gurobi"}),
-        ("CG Hexaly", column_generation_hexaly, {"time_limit": tl, "warm_start_assignment": active_warm_start, "scenario_name": "industrial_hexaly"})
-    ]
-
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
-        future_to_name = {
-            executor.submit(
-                run_solver_wrapper, name, func, 
-                op_solver, st_solver, pr_solver, pl_solver,
-                static_assignment, op_full, st_full, pl_full,
-                **kwargs
-            ): name for name, func, kwargs in exact_tasks
-        }
-        
-        for f in concurrent.futures.as_completed(future_to_name):
-            name = future_to_name[f]
-            m, v, el, mw, wls, cb, wb, lb = f.result()
             
-            # Handle fallback logic if a exact solver fails to find a solution
-            if v == "-":
-                print(f"  [{name}] Failed to find solution in time limit, falling back to industrial current.")
-                res = results.get("Industrial Current", results["Heuristic"]).copy()
-                res["Method"] = name
-                if name == "MILP Gurobi":
-                    res["lb_gurobi"] = lb
-                results[name] = res
-            else:
-                if name == "MILP Gurobi":
-                    results[m] = format_res(m, v, el, mw, wls, cb, wb, lb)
-                else:
-                    results[m] = format_res(m, v, el, mw, wls, cb, wb)
-                    
-            # Safe iterative save as each process finishes natively
-            save_current_results()
-            
-    print(f"\n[Success] Industrial benchmark pipeline finished.")
+    print(f"\n[Success] Metaheuristics industrial isolated benchmark pipeline finished.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CSLAP Benchmark Runner for Industrial Data")
+    parser = argparse.ArgumentParser(description="CSLAP Metaheuristics Runner for Industrial Data")
     parser.add_argument("--data_path", type=str, default="Heuristic_Connex_Set_Project/data/BERNER_ORDER_LINES_09-12.csv")
     parser.add_argument("--quick", action="store_true", help="Fast smoke test (1 min per method)")
     parser.add_argument("--time_limit", type=int, default=72000, help="Time limit in seconds")

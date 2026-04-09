@@ -122,11 +122,11 @@ def log_error(prefix, method, error_msg):
 # -
 #  CONCURRENT WORKERS
 # -
-def do_sac(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
+def do_sac(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations, warm_start=None):
     print(f"\n[{prefix}] SA-C Started")
     try:
         op, st, pr, pl = sa_read_data(prefix, data_dir)
-        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = simulated_annealing_correlated(op, st, pr, pl, time_limit=tl, quick=quick)
+        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = simulated_annealing_correlated(op, st, pr, pl, time_limit=tl, quick=quick, warm_start_assignment=warm_start)
         print(f"  [{prefix}] SA-C Done ({elapsed:.2f}s)")
         return {
             "visits": visits, "time": elapsed, 
@@ -144,11 +144,11 @@ def do_sac(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
             "num_orders": num_orders, "num_skus": num_skus, "num_stations": num_stations
         }
 
-def do_ga(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations):
+def do_ga(N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations, warm_start=None):
     print(f"\n[{prefix}] GA Started")
     try:
         op, st, pr, pl = ga_read_data(prefix, data_dir)
-        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = genetic_algorithm(op, st, pr, pl, time_limit=tl, quick=quick)
+        _, visits, elapsed, max_wl, wl_var, cap_broken, wl_broken = genetic_algorithm(op, st, pr, pl, time_limit=tl, quick=quick, warm_start_assignment=warm_start)
         print(f"  [{prefix}] GA Done ({elapsed:.2f}s)")
         return {
             "visits": visits, "time": elapsed, 
@@ -345,24 +345,24 @@ def run_all_benchmarks(
         else:
             print("\n[Phase A] Launching SA-C, GA, and Heuristic concurrently...")
             
+        # Generate LPT Feasible Warm Start
+        print("\n[Warm Start] Generating feasibility-only (LPT) warm start...")
+        fs_start_time = time.time()
+        feasible_warm_start = generate_feasible_start(
+            pr_dim, st_dim, pl_dim
+        )
+        fs_elapsed = time.time() - fs_start_time
+            
         tl = time_limit if not quick else min(60, time_limit)
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers_count) as executor:
             # Submitting Heuristic first is better when max_workers=1 since we block on future_heur.result()
             future_heur = executor.submit(do_heur, N, prefix, data_dir, num_orders, num_skus, num_stations)
-            future_sac = executor.submit(do_sac, N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations)
-            future_ga = executor.submit(do_ga, N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations)
+            future_sac = executor.submit(do_sac, N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations, feasible_warm_start)
+            future_ga = executor.submit(do_ga, N, prefix, data_dir, tl, quick, num_orders, num_skus, num_stations, feasible_warm_start)
 
             # Heuristic assignment is needed for logging, but not for Exact methods anymore
             res_heur, heur_assignment, h_max_wl, h_wl_std = future_heur.result()
             results[N]["Heuristic"] = res_heur
-
-            # Generate LPT Feasible Warm Start
-            print("\n[Warm Start] Generating feasibility-only (LPT) warm start...")
-            fs_start_time = time.time()
-            feasible_warm_start = generate_feasible_start(
-                pr_dim, st_dim, pl_dim
-            )
-            fs_elapsed = time.time() - fs_start_time
             
             # Evaluate Feasible Warm Start as an approach
             fs_visits = 0

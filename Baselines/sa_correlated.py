@@ -202,6 +202,7 @@ def simulated_annealing_correlated(
     order_prods, stations, products, prod_lines,
     T0=800, T_min=1, cooling_rate=0.95, sa_iter_factor=2,
     K_groups=10, time_limit=72000, quick=False,
+    warm_start_assignment=None
 ):
     """
     SA with Correlated Interchange.
@@ -225,9 +226,13 @@ def simulated_annealing_correlated(
     correlated_groups = build_correlated_list(cooc, K=K_groups)
     print(f"  Co-occurrence pairs: {len(cooc)}, Groups: {len(correlated_groups)}")
 
-    # COI initialization
-    print("  COI initialization...")
-    state = coi_initialization(products, stations, prod_lines)
+    if warm_start_assignment is not None:
+        print("  Using supplied warm start assignment...")
+        state = warm_start_assignment.copy()
+    else:
+        # COI initialization
+        print("  COI initialization...")
+        state = coi_initialization(products, stations, prod_lines)
 
     current_energy, current_visits = calculate_objective(
         state, order_prods, stations, prod_lines, cooc

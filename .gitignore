@@ -1,0 +1,33 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ---- Claude local infrastructure (machine-local) ----
+.claude/
+
+# ---- LaTeX build artifacts ----
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.run.xml
+*.spl
+*.synctex.gz
+*.toc
+*.log
+
+# Compiled paper PDFs (regenerable build artifacts)
+Computer_and_OR.pdf
+
+# ---- Local backups ----
+exp02a_results_rev2_backup/
+*_backup/

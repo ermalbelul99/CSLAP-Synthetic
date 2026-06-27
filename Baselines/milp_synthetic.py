@@ -31,11 +31,18 @@ def read_data(prefix, data_dir):
 
 def run_milp_hexaly(
     order_prods, stations, products, prod_lines,
-    time_limit=120, verbosity=0, warm_start_assignment=None
+    time_limit=120, verbosity=0, warm_start_assignment=None,
+    max_reassignments=None, original_assignment=None
 ):
     """
     Solve CSLAP MILP using Hexaly with set decision variables.
     Uses the same formulation as Sub-approach 4 in the paper.
+
+    Optional limited-reassignment extension: if both `max_reassignments` (k) and
+    `original_assignment` (legacy station s'(p) per product) are provided, a global
+    constraint bounds the number of products allowed to leave their legacy station
+    to at most k, i.e. sum_p [p stays at s'(p)] >= (#stayable products) - k.
+    Defaults (None) preserve the original unrestricted behaviour.
     """
     start_time = time.time()
 
@@ -75,6 +82,20 @@ def run_milp_hexaly(
                 for p in products
             )
             model.constraint(workload <= time_caps[s])
+
+        # Optional limited-reassignment constraint: bound moves from legacy layout to <= k
+        if max_reassignments is not None and original_assignment is not None:
+            stay_terms = []
+            for p in products:
+                s0 = original_assignment.get(p)
+                if s0 in station_products:
+                    stay_terms.append(
+                        model.contains(station_products[s0], product_to_index[p])
+                    )
+            if stay_terms:
+                model.constraint(
+                    model.sum(stay_terms) >= len(stay_terms) - int(max_reassignments)
+                )
 
         # Objective: minimize total station visits
         objective = model.sum(

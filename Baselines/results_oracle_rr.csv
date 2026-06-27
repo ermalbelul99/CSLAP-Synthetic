@@ -1,0 +1,13 @@
+instance,solver,k,test_prefix,theta_prime,rho,test_seed,V_te_layout,V_te_oracle,RR,note
+syn_50sku,heuristic,1,syn_50sku_te_t0.7_r0.0_s43,0.7,0.0,43,10323,9340,0.10525,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,heuristic,2,syn_50sku_te_t0.7_r0.0_s43,0.7,0.0,43,10537,9340,0.12816,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,heuristic,1,syn_50sku_te_t0.7_r1.0_s43,0.7,1.0,43,6713,5405,0.242,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,heuristic,2,syn_50sku_te_t0.7_r1.0_s43,0.7,1.0,43,6520,5405,0.20629,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,sa,1,syn_50sku_te_t0.7_r0.0_s43,0.7,0.0,43,10588,10170,0.0411,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,sa,2,syn_50sku_te_t0.7_r0.0_s43,0.7,0.0,43,10535,10170,0.03589,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,sa,1,syn_50sku_te_t0.7_r1.0_s43,0.7,1.0,43,6599,6006,0.09873,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,sa,2,syn_50sku_te_t0.7_r1.0_s43,0.7,1.0,43,6468,6006,0.07692,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,ga,1,syn_50sku_te_t0.7_r0.0_s43,0.7,0.0,43,10401,10735,-0.03111,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,ga,2,syn_50sku_te_t0.7_r0.0_s43,0.7,0.0,43,10749,10735,0.0013,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,ga,1,syn_50sku_te_t0.7_r1.0_s43,0.7,1.0,43,6395,5854,0.09242,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only
+syn_50sku,ga,2,syn_50sku_te_t0.7_r1.0_s43,0.7,1.0,43,6535,5854,0.11633,oracle=test-reoptimized normalizer (eq.12); test data seen BY DESIGN as normalizer only

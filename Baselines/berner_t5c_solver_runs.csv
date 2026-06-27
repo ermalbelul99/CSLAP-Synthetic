@@ -1,0 +1,10 @@
+arm,solver,status,visits,elapsed,wall,n_assigned,layout,quick,err
+berner_10w3w_train,heuristic,OK,578111,28.9,32.2,21316,berner_10w3w_train__heuristic.json,False,
+berner_10w3w_train_pkk2,heuristic,OK,597776,40.2,44.2,21316,berner_10w3w_train_pkk2__heuristic.json,False,
+berner_10w3w_train_pkk3,heuristic,OK,586900,47.9,52.8,21316,berner_10w3w_train_pkk3__heuristic.json,False,
+berner_10w3w_train,sa,OK,578337,1215.5,1218.7,21316,berner_10w3w_train__sa.json,False,"NOTE: completed but 1215s (~1 cooling step only); pkk2/pkk3 SA skipped as each would be >20min, over chunk budget, and 1-step SA carries no metaheuristic signal."
+berner_10w3w_train,ga,OK,757771,210.4,214.4,21316,berner_10w3w_train__ga.json,False,
+berner_10w3w_train_pkk2,ga,OK,912442,345.4,350.8,21316,berner_10w3w_train_pkk2__ga.json,False,
+berner_10w3w_train_pkk3,ga,OK,1010192,326.3,332.6,21316,berner_10w3w_train_pkk3__ga.json,False,
+berner_10w3w_train_pkk2,sa,SKIP,,,,,,,"SKIP: SA calculate_objective=1.14s/call (4.5M cooc pairs + 219k-order visit loop); inner_iters=1000 => ~19min/temp-step; 120s budget allows ~105 obj-calls (<1 cooling step). Knob-halving (inner 1000->500) still ~9.5min/step, invariant to per-call cost. Unscalable as written."
+berner_10w3w_train_pkk3,sa,SKIP,,,,,,,"SKIP: SA calculate_objective=1.14s/call (4.5M cooc pairs + 219k-order visit loop); inner_iters=1000 => ~19min/temp-step; 120s budget allows ~105 obj-calls (<1 cooling step). Knob-halving (inner 1000->500) still ~9.5min/step, invariant to per-call cost. Unscalable as written."

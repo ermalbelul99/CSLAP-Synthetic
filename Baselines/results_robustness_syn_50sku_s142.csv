@@ -1,0 +1,4 @@
+instance,solver,k,variant,nominal_visits,mean_test_visits,PoR,G,n_test_cells,c_bar,degenerate
+syn_50sku_s142,ga,1,exact,10002,9201.955555555556,0.0,0.0,45,1.0,False
+syn_50sku_s142,ga,2,exact,10123,9201.68888888889,0.01209758048390322,2.897934738507053e-05,45,1.7641,False
+syn_50sku_s142,ga,3,exact,10276,9259.888888888889,0.027394521095780843,-0.0062957632194122065,45,2.2343,False

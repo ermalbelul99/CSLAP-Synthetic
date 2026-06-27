@@ -1,0 +1,21 @@
+{
+  "out_prefix": "syn_50sku_pkk3",
+  "orders_path": "../synthetic_datasets\\syn_50sku_pkk3_orders.csv",
+  "products_path": "../synthetic_datasets\\syn_50sku_pkk3_products.csv",
+  "stations_path": "../synthetic_datasets\\syn_50sku_pkk3_stations.csv",
+  "k": 3,
+  "variant": "exact",
+  "pi_star": 10,
+  "num_patterns": 19,
+  "num_orders": 2336,
+  "universe_size": 50,
+  "mean_closure_size": 19.72303082191781,
+  "mean_support_size": 9.059075342465754,
+  "max_closure_size": 35,
+  "frac_strict_growth": 1.0,
+  "c_bar": 2.1771571685095927,
+  "degenerate": false,
+  "new_time_capacity": 10137,
+  "orig_time_capacity": 5198,
+  "cover_max_supports": 350
+}

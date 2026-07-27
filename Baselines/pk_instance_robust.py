@@ -187,6 +187,7 @@ def transform_instance(
     verbose: bool = True,
     cover_max_supports: Optional[int] = None,
     cooccurrence_pairs: int = 0,
+    recalibrate_time_capacity: bool = True,
 ) -> Dict[str, object]:
     r"""Write the enlarged CSLAP instance :math:`\mathcal{T}(\text{instance})`.
 
@@ -206,6 +207,15 @@ def transform_instance(
         out_dir: Output directory (defaults to ``data_dir``).
         slack: Workload slack factor in eq. (10) (default 1.10, the generator's).
         verbose: Console progress flag.
+        recalibrate_time_capacity: If ``True`` (default, the synthetic/BERNER
+            behaviour) recompute ``TIME_CAPACITY`` from the **enlarged** line counts
+            :math:`\bar{L}_p` via eq. (10). If ``False`` (plan.md Phase C / gap G4
+            for ISCF) carry ``TIME_CAPACITY`` over **unchanged** from the training
+            stations file -- the kappa-invariant-capacity setting that removes the
+            recalibration side-channel by construction (a station's capacity must
+            not depend on the covering knob :math:`\kappa`). With ISCF this keeps
+            the kappa=1 vs kappa>=2 comparison clean; any workload cap is then a
+            fixed, real-frequency quantity, never a closure line count.
 
     Returns:
         Metadata dict: output prefix, file paths, ``pi_star``, closure-size
@@ -251,17 +261,26 @@ def transform_instance(
             bar_L[p] += 1
     transformed_orders = pd.DataFrame(rows, columns=["ORDER", "PRODUCT", "QTY", "STATION"])
 
-    # --- Recalibrate TIME_CAPACITY (eq. 10); CAPACITY/SPEED unchanged. ------
+    # --- TIME_CAPACITY: recalibrate (eq. 10) OR keep kappa-invariant (G4). ---
     # eq. (10): bar_T_s = ceil( slack * (sum_p bar_L_p / V_s) / |S| ).
     # With homogeneous V_s the numerator is identical across stations.
+    # When recalibrate_time_capacity is False (plan.md Phase C, ISCF), the
+    # capacity is carried over UNCHANGED so it does not depend on kappa -- the
+    # closures only reshape the visit objective, never the capacity.
     n_stations = len(stations_df)
     new_stations = stations_df.copy()
-    new_time_caps = []
-    for _, srow in stations_df.iterrows():
-        v_s = float(srow["SPEED"]) if float(srow["SPEED"]) > 0 else 1.0
-        load = sum(bar_L.get(f"PROD_{pid}", 0) / v_s for pid in products_df["PRODUCT_ID"])
-        new_time_caps.append(int(math.ceil(slack * load / n_stations)))
-    new_stations["TIME_CAPACITY"] = new_time_caps
+    if recalibrate_time_capacity:
+        new_time_caps = []
+        for _, srow in stations_df.iterrows():
+            v_s = float(srow["SPEED"]) if float(srow["SPEED"]) > 0 else 1.0
+            load = sum(
+                bar_L.get(f"PROD_{pid}", 0) / v_s for pid in products_df["PRODUCT_ID"]
+            )
+            new_time_caps.append(int(math.ceil(slack * load / n_stations)))
+        new_stations["TIME_CAPACITY"] = new_time_caps
+    else:
+        # kappa-invariant: keep the training stations' TIME_CAPACITY verbatim.
+        new_time_caps = [int(t) for t in stations_df["TIME_CAPACITY"].tolist()]
 
     # --- Write outputs. ------------------------------------------------------
     os.makedirs(out_dir, exist_ok=True)
@@ -391,7 +410,11 @@ def main() -> None:
     parser.add_argument("--variant", type=str, default="exact",
                         choices=["exact", "cover"])
     parser.add_argument("--backend", type=str, default="auto",
-                        choices=["auto", "highs", "hexaly"])
+                        choices=["auto", "highs", "hexaly", "cplex"])
+    parser.add_argument("--no-recalibrate-time-capacity", action="store_true",
+                        help="plan.md Phase C / G4: keep TIME_CAPACITY unchanged "
+                             "(kappa-invariant capacity, for ISCF) instead of the "
+                             "eq.(10) recalibration from enlarged line counts.")
     parser.add_argument("--cover-json", type=str, default=None,
                         help="Optional cached cover JSON to load instead of "
                              "recomputing the construction.")
@@ -418,6 +441,7 @@ def main() -> None:
         out_dir=args.out_dir,
         cover_max_supports=args.cover_max_supports,
         cooccurrence_pairs=args.cooccurrence_pairs,
+        recalibrate_time_capacity=not args.no_recalibrate_time_capacity,
     )
 
 

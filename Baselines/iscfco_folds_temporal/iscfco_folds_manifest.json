@@ -1,0 +1,60 @@
+{
+  "prefix": "iscfco",
+  "data_dir": "../../../../iscf_instances",
+  "k_folds": 5,
+  "repeats": 1,
+  "seed": 12345,
+  "slack": 1.1,
+  "folds": [
+    {
+      "repeat": 0,
+      "fold": 0,
+      "tag": "iscfco_r0f0",
+      "train_prefix": "iscfco_r0f0_train",
+      "test_prefix": "iscfco_r0f0_test",
+      "n_train_orders": 7500,
+      "n_test_orders": 7500,
+      "time_capacity": 3653
+    },
+    {
+      "repeat": 0,
+      "fold": 1,
+      "tag": "iscfco_r0f1",
+      "train_prefix": "iscfco_r0f1_train",
+      "test_prefix": "iscfco_r0f1_test",
+      "n_train_orders": 9000,
+      "n_test_orders": 6000,
+      "time_capacity": 4356
+    },
+    {
+      "repeat": 0,
+      "fold": 2,
+      "tag": "iscfco_r0f2",
+      "train_prefix": "iscfco_r0f2_train",
+      "test_prefix": "iscfco_r0f2_test",
+      "n_train_orders": 10500,
+      "n_test_orders": 4500,
+      "time_capacity": 5033
+    },
+    {
+      "repeat": 0,
+      "fold": 3,
+      "tag": "iscfco_r0f3",
+      "train_prefix": "iscfco_r0f3_train",
+      "test_prefix": "iscfco_r0f3_test",
+      "n_train_orders": 12000,
+      "n_test_orders": 3000,
+      "time_capacity": 5713
+    },
+    {
+      "repeat": 0,
+      "fold": 4,
+      "tag": "iscfco_r0f4",
+      "train_prefix": "iscfco_r0f4_train",
+      "test_prefix": "iscfco_r0f4_test",
+      "n_train_orders": 13500,
+      "n_test_orders": 1500,
+      "time_capacity": 6406
+    }
+  ]
+}

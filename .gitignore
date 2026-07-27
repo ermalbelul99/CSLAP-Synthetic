@@ -1,6 +1,7 @@
 # ---- Python ----
 __pycache__/
 *.py[cod]
+*.pyo
 *.egg-info/
 .ipynb_checkpoints/
 .venv/
@@ -27,6 +28,18 @@ venv/
 
 # Compiled paper PDFs (regenerable build artifacts)
 Computer_and_OR.pdf
+
+# ---- Generated solver artifacts (do not commit) ----
+Baselines/layouts/
+Baselines/covers/
+Baselines/logs/
+
+# ---- Results CSVs (large, generated — store externally or reference in reports/) ----
+Baselines/results_*.csv
+Baselines/berner_t5c_solver_runs.csv
+
+# ---- Synthetic datasets (retired — removed from test infrastructure) ----
+synthetic_datasets/
 
 # ---- Local backups ----
 exp02a_results_rev2_backup/

@@ -92,8 +92,12 @@ from typing import Dict, FrozenSet, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import Bounds, LinearConstraint, linprog, milp
-from scipy.sparse import csr_matrix
+
+# NOTE: SciPy (HiGHS backend) and docplex (CPLEX backend) are imported **lazily**
+# inside the backend-specific functions, not at module load. This lets the module
+# be imported in an environment that has only one of the two solver stacks -- e.g.
+# the CPLEX virtual env (docplex, no scipy) used for the exact cover in plan.md
+# Phase B, or the HiGHS/Hexaly env (scipy, no docplex).
 
 # Column-acceptance threshold (negated reduced cost), identical to the notebook.
 COLUMN_EPS: float = 1e-6
@@ -296,6 +300,7 @@ def _seed_initial_columns(
     k: int,
     max_combo_columns: int = 50_000,
     cooccurrence_pairs: int = 0,
+    seed_chunks: bool = True,
 ) -> List[FrozenSet[str]]:
     r"""Seed the initial pattern pool exactly as the reference notebooks do.
 
@@ -336,13 +341,19 @@ def _seed_initial_columns(
     for item in universe:
         _add(frozenset({item}))
 
-    # (b) Size-k chunks of each support.
-    for support in distinct_supports:
-        ordered = sorted(support)
-        for start in range(0, len(ordered), k):
-            chunk = ordered[start:start + k]
-            if 1 <= len(chunk) <= k:
-                _add(frozenset(chunk))
+    # (b) Size-k chunks of each support. Skipped when seed_chunks is False: at
+    #     high distinct-support counts (e.g. tens of thousands of ISCF orders)
+    #     the chunk pool floods the master with ~10^5 columns, making each LP
+    #     re-solve heavy. With chunks off, the master starts from singletons (+
+    #     optional co-occurrence merges) and the exact CPLEX pricing generates the
+    #     needed multi-item columns on demand -- proper column generation.
+    if seed_chunks:
+        for support in distinct_supports:
+            ordered = sorted(support)
+            for start in range(0, len(ordered), k):
+                chunk = ordered[start:start + k]
+                if 1 <= len(chunk) <= k:
+                    _add(frozenset(chunk))
 
     # (c) k-combinations of supports (sampled when large), as in the notebook,
     #     with a deterministic global cap (U7a) to bound the initial pool.
@@ -406,6 +417,9 @@ class _HighsPricing:
         k: int,
         time_limit: float,
     ) -> None:
+        from scipy.optimize import Bounds, LinearConstraint
+        from scipy.sparse import csr_matrix
+
         self.universe = universe
         self.supports = distinct_supports
         self.k = k
@@ -454,6 +468,8 @@ class _HighsPricing:
 
         ``scipy.optimize.milp`` minimises, so the objective vector is negated.
         """
+        from scipy.optimize import milp
+
         c = np.zeros(self.n_items + self.n_supp)
         for p, i in self.item_idx.items():
             c[i] = -alpha.get(p, 0.0)
@@ -580,6 +596,289 @@ def _ensure_hexaly_license() -> None:
 
 
 # ---------------------------------------------------------------------------
+#  CPLEX BACKEND  (docplex) -- the exact backend for plan.md Phase B
+# ---------------------------------------------------------------------------
+# This is the native backend of the reference P-K notebooks
+# (``new_alban_version_exact.ipynb``), restored now that a working CPLEX runtime
+# is available (``Virtual_Environment_CPLEX_1``). It solves the master LP (eqs.
+# 6-8) for exact duals :math:`\alpha_p, \beta_o`, the pricing MIP (eq. 9), and the
+# binary integer master -- all with CPLEX via ``docplex``. Unlike the HiGHS
+# fallback it certifies the integer master to optimality at scale, so the achieved
+# bottleneck :math:`\Pi^*` is the **true** min-max value (closes plan.md gaps
+# G1/G2: no subsampling, reproduces the notebook's :math:`\Pi^* = 6` acceptance).
+class _CplexPricing:
+    r"""Pricing MIP (eq. 9) solved with CPLEX via :mod:`docplex`.
+
+    Maximises :math:`\sum_p \alpha_p z_p + \sum_o \beta_o w_o` subject to
+    :math:`1 \le \sum_p z_p \le k` and the linking :math:`w_o \ge z_p\
+    \forall p \in P_o`, all variables binary. Since every :math:`\beta_o \le 0`
+    (dual of a :math:`\le` row in a minimisation), only supports with a **nonzero**
+    dual contribute, so the model is rebuilt per call over just those supports --
+    far smaller than the full linking set and matching the Hexaly backend's
+    ``beta == 0`` skip.
+    """
+
+    def __init__(
+        self,
+        distinct_supports: List[FrozenSet[str]],
+        universe: List[str],
+        k: int,
+        time_limit: float,
+    ) -> None:
+        from docplex.mp.model import Model  # noqa: F401  (import probe)
+
+        self.universe = universe
+        self.supports = distinct_supports
+        self.k = k
+        self.time_limit = time_limit
+        self.item_idx = {p: i for i, p in enumerate(universe)}
+        # Per-support item indices (restricted to the universe), precomputed once.
+        self.support_items: List[List[int]] = [
+            [self.item_idx[p] for p in support if p in self.item_idx]
+            for support in distinct_supports
+        ]
+
+    def solve(
+        self, alpha: Dict[str, float], beta: Dict[int, float]
+    ) -> Optional[Tuple[float, FrozenSet[str]]]:
+        r"""Solve eq. (9) for the given duals; same accept rule as HiGHS."""
+        from docplex.mp.model import Model
+
+        n = len(self.universe)
+        mdl = Model(name="pk_pricing")
+        mdl.parameters.timelimit = float(self.time_limit)
+        z = mdl.binary_var_list(n, name="z")
+
+        size = mdl.sum(z)
+        mdl.add_constraint(size <= self.k)
+        mdl.add_constraint(size >= 1)
+
+        obj = mdl.sum(
+            alpha.get(self.universe[i], 0.0) * z[i]
+            for i in range(n)
+            if alpha.get(self.universe[i], 0.0) != 0.0
+        )
+        # w_o = OR_{p in support_o} z_p, only where beta_o < 0 (strictly binding).
+        for s_idx, b in beta.items():
+            if b >= 0.0:
+                continue
+            items = self.support_items[s_idx]
+            if not items:
+                continue
+            w = mdl.binary_var(name=f"w_{s_idx}")
+            for i in items:
+                mdl.add_constraint(w >= z[i])
+            obj = obj + b * w
+
+        mdl.maximize(obj)
+        sol = mdl.solve(log_output=False)
+        if sol is None:
+            mdl.end()
+            return None
+        pattern = frozenset(
+            self.universe[i] for i in range(n) if z[i].solution_value > 0.5
+        )
+        mdl.end()
+        if not pattern:
+            return None
+        return _score(pattern, alpha, beta, self.supports), pattern
+
+
+class _CplexMasterLP:
+    r"""Incremental CPLEX master (eqs. 6-8) via the low-level ``cplex`` API.
+
+    Built **once**: variable 0 is :math:`\Pi`; the cover rows (7, one per item,
+    sense ``E`` for the exact variant / ``G`` for the cover variant, rhs 1) and the
+    sample rows (8, one per distinct support, ``sum x - \Pi \le 0``) are created up
+    front, with :math:`\Pi` carrying coefficient :math:`-1` in every sample row.
+    Pattern columns are then inserted **in place** with :func:`add_column` (the
+    classic column-generation interface ``variables.add(columns=[SparsePair...])``),
+    so each CG iteration only re-solves a warm-started LP instead of rebuilding the
+    whole model. This is what makes the full-support ISCF cover tractable -- the
+    ~109k sample rows are assembled once, not per iteration.
+
+    Duals follow CPLEX's reduced-cost identity
+    :math:`\bar c_q = c_q - \sum_i a_{iq} y_i`: with :math:`c_q = 0` and unit
+    coefficients, :math:`\bar c_q = -(\sum_{p\in q}\alpha_p + \sum_{o}\beta_o)`,
+    so the score :math:`\sum\alpha + \sum\beta` (>``COLUMN_EPS`` to accept) equals
+    the negated reduced cost -- identical to the HiGHS path and the notebook.
+    """
+
+    def __init__(
+        self,
+        columns: List[FrozenSet[str]],
+        universe: List[str],
+        distinct_supports: List[FrozenSet[str]],
+        variant: str,
+        item_support_index: Dict[str, List[int]],
+        objective: str = "minmax",
+    ) -> None:
+        import cplex
+
+        self.cplex = cplex
+        self.objective = objective
+        self.universe = universe
+        self.distinct_supports = distinct_supports
+        self.item_support_index = item_support_index
+        self.item_row = {p: i for i, p in enumerate(universe)}
+        self.n_items = len(universe)
+        self.n_supp = len(distinct_supports)
+        self.sample_row0 = self.n_items  # sample rows live after the cover rows
+        self.columns: List[FrozenSet[str]] = []
+
+        cpx = cplex.Cplex()
+        cpx.set_log_stream(None)
+        cpx.set_error_stream(None)
+        cpx.set_warning_stream(None)
+        cpx.set_results_stream(None)
+        cpx.objective.set_sense(cpx.objective.sense.minimize)
+
+        # Variable 0 = Pi. In the min-max objective it carries the cost (obj 1) and
+        # the bottleneck rows; in the min-sum objective it is an unused dummy
+        # (obj 0) and the cost is carried by each pattern column's coefficient c_q
+        # (the number of distinct supports it hits), with NO bottleneck rows.
+        pi_obj = 1.0 if objective == "minmax" else 0.0
+        cpx.variables.add(obj=[pi_obj], lb=[0.0], ub=[cplex.infinity], names=["Pi"])
+
+        cover_sense = "E" if variant == "exact" else "G"
+        cpx.linear_constraints.add(
+            rhs=[1.0] * self.n_items,
+            senses=[cover_sense] * self.n_items,
+            names=[f"cov_{i}" for i in range(self.n_items)],
+        )
+        if objective == "minmax":
+            cpx.linear_constraints.add(
+                rhs=[0.0] * self.n_supp,
+                senses=["L"] * self.n_supp,
+                names=[f"smp_{j}" for j in range(self.n_supp)],
+            )
+            # Pi (col 0) carries coefficient -1 in every sample row.
+            if self.n_supp:
+                cpx.linear_constraints.set_coefficients(
+                    [(self.sample_row0 + j, 0, -1.0) for j in range(self.n_supp)]
+                )
+        self.cpx = cpx
+        for col in columns:
+            self.add_column(col)
+
+    def add_column(self, col: FrozenSet[str]) -> None:
+        """Insert one pattern column into the cover/sample rows it participates in."""
+        rows: List[int] = []
+        vals: List[float] = []
+        for item in col:
+            ri = self.item_row.get(item)
+            if ri is not None:
+                rows.append(ri)
+                vals.append(1.0)
+        hit: set = set()
+        for item in col:
+            hit.update(self.item_support_index.get(item, ()))
+        # min-max: the pattern participates (coef 1) in the bottleneck row of every
+        # support it hits, and carries no objective cost. min-sum: no bottleneck
+        # rows; the objective coefficient is c_q = #distinct supports the pattern
+        # hits, so minimising sum_q c_q x_q minimises total pattern-order hits.
+        obj_coef = 0.0
+        if self.objective == "minmax":
+            for sj in hit:
+                rows.append(self.sample_row0 + sj)
+                vals.append(1.0)
+        else:  # minsum
+            obj_coef = float(len(hit))
+        self.cpx.variables.add(
+            obj=[obj_coef], lb=[0.0], ub=[1.0],
+            columns=[self.cplex.SparsePair(ind=rows, val=vals)],
+        )
+        self.columns.append(col)
+
+    def solve_lp(self) -> Tuple[float, Dict[str, float], Dict[int, float], bool]:
+        r"""Solve the relaxed master; return ``(obj, alpha, beta, ok)``.
+
+        ``obj`` is the relaxed :math:`\Pi` (min-max) or the relaxed total hits
+        (min-sum). ``alpha`` are the partition-row duals. ``beta`` are the
+        bottleneck-row duals (min-max) or the implicit unit hit cost
+        :math:`\beta_o \equiv -1` (min-sum), so the same pricing MIP serves both.
+        """
+        self.cpx.set_problem_type(self.cpx.problem_type.LP)
+        self.cpx.solve()
+        if self.cpx.solution.get_status() not in (
+            self.cpx.solution.status.optimal,
+            self.cpx.solution.status.optimal_infeasible,
+        ):
+            try:
+                _ = float(self.cpx.solution.get_objective_value())
+            except Exception:  # noqa: BLE001
+                return float("nan"), {}, {}, False
+        obj_val = float(self.cpx.solution.get_objective_value())
+        duals = self.cpx.solution.get_dual_values()
+        alpha = {self.universe[i]: float(duals[i]) for i in range(self.n_items)}
+        if self.objective == "minmax":
+            beta = {
+                j: float(duals[self.sample_row0 + j]) for j in range(self.n_supp)
+            }
+        else:  # minsum: every hit costs 1
+            beta = {j: -1.0 for j in range(self.n_supp)}
+        return obj_val, alpha, beta, True
+
+    def solve_integer(
+        self, time_limit: float
+    ) -> Tuple[List[FrozenSet[str]], float, bool]:
+        r"""Flip pattern vars to binary and solve the integer master (eqs. 6-8).
+
+        Returns ``(selected_patterns, objective, optimal_flag)``. The singleton
+        partition is a guaranteed-feasible fallback if no incumbent is found.
+        """
+        n = len(self.columns)
+        idxs = list(range(1, 1 + n))  # var 0 is Pi (stays continuous)
+        self.cpx.variables.set_types(
+            [(i, self.cpx.variables.type.binary) for i in idxs]
+        )
+        self.cpx.parameters.timelimit.set(float(time_limit))
+        self.cpx.parameters.mip.tolerances.mipgap.set(0.0)
+        self.cpx.solve()
+        sol = self.cpx.solution
+        # CPLEX raises (error 1217) on get_values when NO incumbent exists, so
+        # probe feasibility first rather than relying on a None return.
+        has_incumbent = False
+        try:
+            has_incumbent = bool(sol.is_primal_feasible())
+        except Exception:  # noqa: BLE001
+            has_incumbent = False
+        if not has_incumbent:
+            import sys as _sys
+            print(
+                "  [WARN] CPLEX integer master found no incumbent in "
+                f"{time_limit:.0f}s over {n} columns; falling back to the "
+                "SINGLETON partition (DEGENERATE).",
+                file=_sys.stderr, flush=True,
+            )
+            singletons = [frozenset({item}) for item in self.universe]
+            if self.objective == "minmax":
+                obj_fallback = float(
+                    max((len(s) for s in self.distinct_supports), default=0)
+                )
+            else:  # minsum: singleton partition's total hits = sum of support sizes
+                obj_fallback = float(sum(len(s) for s in self.distinct_supports))
+            return singletons, obj_fallback, False
+
+        xvals = sol.get_values(idxs)
+        selected = [self.columns[i] for i in range(n) if xvals[i] > 0.5]
+        obj = float(sol.get_objective_value())
+        try:
+            gap = sol.MIP.get_mip_relative_gap()
+        except Exception:  # noqa: BLE001
+            gap = None
+        optimal = bool(gap is not None and gap <= 1e-9)
+        return selected, obj, optimal
+
+    def end(self) -> None:
+        """Release the CPLEX problem object."""
+        try:
+            self.cpx.end()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+# ---------------------------------------------------------------------------
 #  MASTER LP / MIP  (HiGHS via SciPy)
 # ---------------------------------------------------------------------------
 def _build_item_support_index(
@@ -616,6 +915,8 @@ def _build_master_matrices(
         rows :math:`\sum_{q\cap P_o\neq\emptyset} x_q - \Pi \le 0` and ``A_cover``
         encodes eq. (7) rows :math:`\sum_{q \ni p} x_q\ (=|\ge)\ 1`.
     """
+    from scipy.sparse import csr_matrix
+
     n_col = len(columns)
     n_var = 1 + n_col
     item_to_cols: Dict[str, List[int]] = {p: [] for p in universe}
@@ -668,6 +969,8 @@ def _solve_master_lp(
         normalised so that ``beta <= 0`` and the score reproduces the notebook's
         negated reduced cost.
     """
+    from scipy.optimize import linprog
+
     n_col = len(columns)
     n_var = 1 + n_col
     A_sample, A_cover, cover_rhs = _build_master_matrices(
@@ -741,6 +1044,8 @@ def _solve_master_integer(
 
     Returns ``(selected_patterns, objective, optimal_flag)``.
     """
+    from scipy.optimize import Bounds, LinearConstraint, milp
+
     n_col = len(columns)
     n_var = 1 + n_col
     A_sample, A_cover, cover_rhs = _build_master_matrices(
@@ -809,6 +1114,8 @@ def run_pk_cover(
     backend: str = "highs",
     max_iter: int = 10_000_000,
     cooccurrence_pairs: int = 0,
+    seed_chunks: bool = True,
+    objective: str = "minmax",
     verbose: bool = True,
 ) -> Tuple[List[FrozenSet[str]], int, Dict[str, float]]:
     r"""Run the P-K column generation :math:`C_k^{var}` (Method Report eqs. 6-9).
@@ -829,8 +1136,10 @@ def run_pk_cover(
         master_time_limit: Wall-clock budget (s) shared by the CG loop and the
             integer re-solve.
         pricing_time_limit: Wall-clock budget (s) for each pricing MIP solve.
-        backend: ``"highs"`` (master LP + pricing via HiGHS) or ``"hexaly"``
-            (master LP via HiGHS, pricing via Hexaly). ``"auto"`` -> ``"highs"``.
+        backend: ``"cplex"`` (master LP + pricing + integer master all via CPLEX/
+            docplex, the exact backend of plan.md Phase B), ``"highs"`` (all via
+            HiGHS/SciPy), or ``"hexaly"`` (master LP via HiGHS, pricing via
+            Hexaly). ``"auto"`` -> ``"highs"``.
         max_iter: Hard cap on CG iterations.
         verbose: Whether to print progress to the console.
 
@@ -841,10 +1150,16 @@ def run_pk_cover(
     """
     if variant not in ("exact", "cover"):
         raise ValueError(f"variant must be 'exact' or 'cover', got {variant!r}")
+    if objective not in ("minmax", "minsum"):
+        raise ValueError(f"objective must be 'minmax' or 'minsum', got {objective!r}")
     if backend == "auto":
         backend = "highs"
-    if backend not in ("highs", "hexaly"):
-        raise ValueError(f"backend must be highs|hexaly|auto, got {backend!r}")
+    if backend not in ("highs", "hexaly", "cplex"):
+        raise ValueError(
+            f"backend must be highs|hexaly|cplex|auto, got {backend!r}"
+        )
+    if objective == "minsum" and backend != "cplex":
+        raise ValueError("objective='minsum' is implemented for backend='cplex' only")
 
     timing = {
         "model_building": 0.0,
@@ -863,7 +1178,8 @@ def run_pk_cover(
     # ---- Seed columns and the item->supports inverted index. ---------------
     build_start = time.time()
     columns: List[FrozenSet[str]] = _seed_initial_columns(
-        distinct_supports, universe, k, cooccurrence_pairs=cooccurrence_pairs
+        distinct_supports, universe, k, cooccurrence_pairs=cooccurrence_pairs,
+        seed_chunks=seed_chunks,
     )
     column_set = set(columns)
     item_support_index = _build_item_support_index(universe, distinct_supports)
@@ -871,10 +1187,19 @@ def run_pk_cover(
     if verbose:
         print(f"Initial columns: {len(columns)} | backend={backend}")
 
-    # ---- Pricing engine. ---------------------------------------------------
+    # ---- Pricing engine + (CPLEX) the persistent incremental master. -------
+    cplex_master: Optional[_CplexMasterLP] = None
     if backend == "hexaly":
         pricing: object = _HexalyPricing(
             distinct_supports, universe, k, pricing_time_limit
+        )
+    elif backend == "cplex":
+        pricing = _CplexPricing(
+            distinct_supports, universe, k, pricing_time_limit
+        )
+        cplex_master = _CplexMasterLP(
+            columns, universe, distinct_supports, variant, item_support_index,
+            objective=objective,
         )
     else:
         pricing = _HighsPricing(
@@ -889,9 +1214,13 @@ def run_pk_cover(
         iteration += 1
 
         lp_start = time.time()
-        pi_value, alpha, beta, ok = _solve_master_lp(
-            columns, universe, distinct_supports, variant, item_support_index
-        )
+        if backend == "cplex":
+            assert cplex_master is not None
+            pi_value, alpha, beta, ok = cplex_master.solve_lp()
+        else:
+            pi_value, alpha, beta, ok = _solve_master_lp(
+                columns, universe, distinct_supports, variant, item_support_index
+            )
         timing["lp_solve_time"] += time.time() - lp_start
         if not ok:
             if verbose:
@@ -912,6 +1241,8 @@ def run_pk_cover(
         if new_col not in column_set:
             columns.append(new_col)
             column_set.add(new_col)
+            if cplex_master is not None:
+                cplex_master.add_column(new_col)
         else:
             # Pricing returned an existing column: CG has stalled.
             timing["column_adding_time"] += time.time() - add_start
@@ -948,29 +1279,47 @@ def run_pk_cover(
     # ---- Integer phase. ----------------------------------------------------
     int_start = time.time()
     remaining = max(10.0, master_time_limit - (time.time() - relaxed_start))
-    selected, int_obj, int_optimal = _solve_master_integer(
-        unique_patterns, universe, distinct_supports, variant, remaining,
-        item_support_index,
-    )
+    if backend == "cplex":
+        assert cplex_master is not None
+        selected, int_obj, int_optimal = cplex_master.solve_integer(remaining)
+        cplex_master.end()
+    else:
+        selected, int_obj, int_optimal = _solve_master_integer(
+            unique_patterns, universe, distinct_supports, variant, remaining,
+            item_support_index,
+        )
     timing["integer_solving"] = time.time() - int_start
 
-    # Achieved Pi* = max over training orders of #patterns hitting that order.
+    # Achieved Pi* = max over training orders of #patterns hitting that order;
+    # total_hits = sum over orders of that count (the min-sum objective value).
     pi_star = 0
+    total_hits = 0
     for support in distinct_supports:
         hits = sum(1 for col in selected if col & support)
+        total_hits += hits
         pi_star = max(pi_star, hits)
+
+    # Pattern-size histogram + total set count (user-requested cover composition).
+    from collections import Counter as _Counter
+    size_hist = {int(s): int(c) for s, c in
+                 sorted(_Counter(len(p) for p in selected).items())}
 
     timing["total"] = time.time() - phase_start
     timing["int_obj"] = round(int_obj)
     timing["int_optimal"] = int_optimal
     timing["lp_pi"] = float(pi_value)
+    timing["objective"] = objective
+    timing["num_patterns"] = len(selected)
+    timing["total_hits"] = int(total_hits)
+    timing["pattern_size_histogram"] = size_hist
 
     if verbose:
+        headline = (f"total_hits = {total_hits}" if objective == "minsum"
+                    else f"Objective (Pi) = {timing['int_obj']}")
         print(
-            f"\n==== INTEGER SOLUTION ====\n"
-            f"Patterns selected: {len(selected)}\n"
-            f"Objective (Pi) = {timing['int_obj']}  "
-            f"(achieved Pi* = {pi_star}, "
+            f"\n==== INTEGER SOLUTION ({objective}) ====\n"
+            f"Patterns selected: {len(selected)}  size_hist={size_hist}\n"
+            f"{headline}  (achieved Pi* = {pi_star}, total_hits = {total_hits}, "
             f"{'optimal' if int_optimal else 'incumbent only'})\n"
             f"Total time: {timing['total']:.1f}s "
             f"(int phase {timing['integer_solving']:.1f}s)"
@@ -1053,13 +1402,26 @@ def main() -> None:
     parser.add_argument("--k", type=int, default=6)
     parser.add_argument("--variant", type=str, default="exact",
                         choices=["exact", "cover"])
+    parser.add_argument("--objective", type=str, default="minmax",
+                        choices=["minmax", "minsum"],
+                        help="Cover objective: 'minmax' minimises the worst-order "
+                             "pattern bottleneck Pi; 'minsum' minimises the total "
+                             "pattern-order hits (cplex backend only).")
     parser.add_argument("--backend", type=str, default="auto",
-                        choices=["auto", "highs", "hexaly"])
+                        choices=["auto", "highs", "hexaly", "cplex"],
+                        help="Master/pricing solver: 'cplex' (docplex, exact, "
+                             "plan.md Phase B), 'highs' (SciPy fallback), "
+                             "'hexaly' (pricing only). 'auto'->'highs'.")
     parser.add_argument("--max-orders", type=int, default=None)
     parser.add_argument("--max-order-size", type=int, default=None)
     parser.add_argument("--cooccurrence-pairs", type=int, default=0,
                         help="Reviewer item 2: seed N greedy co-occurrence "
                              "merges of sizes 2..k (0=off).")
+    parser.add_argument("--no-chunk-seed", action="store_true",
+                        help="Skip the size-k chunk seeding (step b). Use for "
+                             "large distinct-support instances (ISCF): start the "
+                             "master from singletons + co-occurrence merges and "
+                             "let CPLEX pricing generate columns (lean CG).")
     parser.add_argument("--orders-csv", type=str, default=None,
                         help="Path to a notebook-style filtered_dataset.csv "
                              "(ORDER, PRODUCT_LIST). Overrides --prefix.")
@@ -1095,6 +1457,8 @@ def main() -> None:
         pricing_time_limit=args.pricing_time,
         backend=args.backend,
         cooccurrence_pairs=args.cooccurrence_pairs,
+        seed_chunks=not args.no_chunk_seed,
+        objective=args.objective,
     )
 
     check_result = None
@@ -1116,12 +1480,15 @@ def main() -> None:
         "tag": tag,
         "k": args.k,
         "variant": args.variant,
+        "objective": args.objective,
         "backend": timing.get("backend"),
         "pi_star": pi_star,
         "int_obj": timing.get("int_obj"),
         "int_optimal": timing.get("int_optimal"),
         "lp_pi": timing.get("lp_pi"),
         "num_patterns": len(patterns),
+        "pattern_size_histogram": timing.get("pattern_size_histogram"),
+        "total_hits": timing.get("total_hits"),
         "universe_size": len(universe),
         "num_orders": len(supports),
         "num_distinct": len(distinct),

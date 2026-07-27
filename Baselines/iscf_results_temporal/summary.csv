@@ -1,0 +1,3 @@
+k,n_folds,mean_c_bar,mean_PoR,PoR_lo95,PoR_hi95,mean_G,G_lo95,G_hi95,wilcoxon_p_Vte,mean_N_train,mean_V_test,cap_broken_any,wl_broken_any
+1,5,1.0,0.0,0.0,0.0,0.0,0.0,0.0,,293238.2,133188.0,0,7
+2,5,1.5079,0.05116,0.0201,0.08221,-0.07029,-0.10304,-0.03754,0.0625,308372.0,141963.4,0,3

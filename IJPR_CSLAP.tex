@@ -405,11 +405,11 @@ limits the number of relocated products to at most $k$. We solve the industrial 
 Relocation cap & \% catalogue & Total visits & Reduction & \% of full benefit & WL-viol.\ stations \\
 \midrule
 Legacy ($k=0$) & 0\% & 1{,}062{,}507 & -- & -- & 0 \\
-$k=250$        & 1.1\% & 1{,}061{,}304 & 1{,}203 & 0.8\% & 11 \\
-$k=500$        & 2.3\% & 1{,}059{,}839 & 2{,}668 & 1.8\% & 10 \\
-$k=1{,}000$    & 4.6\% & 1{,}057{,}746 & 4{,}761 & 3.3\% & 13 \\
-$k=2{,}000$    & 9.1\% & 1{,}052{,}948 & 9{,}559 & 6.6\% & 10 \\
-$k=5{,}000$    & 22.9\% & 1{,}037{,}869 & 24{,}638 & 17.0\% & 11 \\
+$k=250$        & 1.1\% & 1{,}061{,}302 & 1{,}205 & 0.8\% & 0 \\
+$k=500$        & 2.3\% & 1{,}060{,}120 & 2{,}387 & 1.6\% & 0 \\
+$k=1{,}000$    & 4.6\% & 1{,}056{,}412 & 6{,}095 & 4.2\% & 0 \\
+$k=2{,}000$    & 9.1\% & 1{,}049{,}730 & 12{,}777 & 8.8\% & 0 \\
+$k=5{,}000$    & 22.9\% & 1{,}034{,}735 & 27{,}772 & 19.2\% & 0 \\
 Full re-opt.   & --     & 917{,}465 & 145{,}042 & 100\% & 0 \\
 \bottomrule
 \end{tabular}}
@@ -423,7 +423,7 @@ Full re-opt.   & --     & 917{,}465 & 145{,}042 & 100\% & 0 \\
 \label{fig:ksweep}
 \end{figure}
 
-Two findings emerge. The benefit of bounded re-slotting accrues gradually: relocating 2.3 per cent of the catalogue captures 1.8 per cent of the full reduction, and relocating 22.9 per cent captures 17 per cent. The returns are mildly increasing in $k$, so a small targeted relocation does not capture the majority of the throughput benefit; most of the gain in the full solution comes from a large rearrangement that a tight budget cannot reproduce. The curve quantifies what a manager gives up by limiting disruption, and lets the budget $k$ be matched to available labour against a known marginal benefit. Under the one-hour budget the bounded solutions, like the unconstrained heuristic, can breach the workload cap on 10 to 13 of the 26 stations as the search trades balance for visits. The legacy layout and the full re-optimisation are both feasible, so a deployment of the bounded model keeps the workload cap as a hard filter or extends the solve budget, which restores feasibility at the cost of a longer overnight cycle.
+Two findings emerge. The benefit of bounded re-slotting accrues roughly in step with the relocation effort: relocating 2.3 per cent of the catalogue captures 1.6 per cent of the full reduction, and relocating 22.9 per cent captures 19.2 per cent. No small subset of moves captures a disproportionate share, so most of the gain in the full solution still comes from a large rearrangement that a tight budget cannot reproduce. The curve quantifies what a manager gives up by limiting disruption, and lets the budget $k$ be matched to available labour against a known marginal benefit. Every bounded layout also stays feasible: at each cap the solver keeps all 26 stations within both capacity and workload, and it leaves the site's engineered balance almost intact, with the busiest station load and the spread of utilisation barely moving from their legacy values. The whole curve can therefore be deployed as it stands, without a separate workload filter or a longer overnight solve, because each station's residual time budget is reserved for the frozen low-frequency products before the bounded search runs.
 
 % =====================================================================
 \section{Managerial insights for decision makers in industry}\label{sec:managerial}
@@ -436,7 +436,7 @@ Read the labour effect as a planning figure, not a measured one. Multiplying the
 
 Match the tool to the decision. For a scheduled, quarterly re-slotting, the set-variable approach produces the highest-quality layout we obtain while holding every station within capacity. For a fast, exploratory pass where balance can be checked afterwards, the clustering heuristic runs in seconds, with the understanding that its raw output must be filtered for workload before use.
 
-Improve continuously without a shutdown. The bounded-reassignment model lets a site move only as many products as its workforce can handle in one cycle. Table~\ref{tab:reassign} gives the manager the trade-off curve directly, so the relocation budget can be set against the marginal benefit rather than guessed, and the rolling re-optimisation on an 8 to 10-week window keeps the layout current with limited engineering effort.
+Improve continuously without a shutdown. The bounded-reassignment model lets a site move only as many products as its workforce can handle in one cycle. Table~\ref{tab:reassign} gives the manager the trade-off curve directly, so the relocation budget can be set against the marginal benefit rather than guessed. Every point on that curve holds all stations within capacity and workload, so the chosen budget can be deployed as it is, and the rolling re-optimisation on an 8 to 10-week window keeps the layout current with limited engineering effort.
 
 % =====================================================================
 \section{Research perspectives}\label{sec:perspectives}

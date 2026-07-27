@@ -1,0 +1,17 @@
+{
+  "prefix": "bern",
+  "data_dir": "berner_topn",
+  "n_products": 2000,
+  "folds": [
+    {
+      "repeat": 0,
+      "fold": 0,
+      "tag": "bern",
+      "train_prefix": "bern_train",
+      "test_prefix": "bern_test",
+      "n_train_orders": 175419,
+      "n_test_orders": 49748,
+      "time_capacity": 7
+    }
+  ]
+}

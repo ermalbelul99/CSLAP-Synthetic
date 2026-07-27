@@ -6,7 +6,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-df = pd.read_csv(os.path.join(BASE, "results_reassignment_ksweep.csv"))
+# Prefer the workload-feasible v2 sweep; fall back to the original if absent.
+CSV = os.path.join(BASE, "results_reassignment_ksweep_v2.csv")
+if not os.path.exists(CSV):
+    CSV = os.path.join(BASE, "results_reassignment_ksweep.csv")
+df = pd.read_csv(CSV)
 
 FULL_REDUCTION = 145042   # canonical 10h full-optimization reduction (1,062,507 -> 917,465)
 TOTAL_CATALOG = 21877     # full SKU catalog (denominator used throughout the manuscript)

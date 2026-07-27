@@ -1,0 +1,60 @@
+{
+  "prefix": "iscf10kt",
+  "data_dir": "../../../../iscf_instances",
+  "k_folds": 5,
+  "repeats": 1,
+  "seed": 12345,
+  "slack": 1.1,
+  "folds": [
+    {
+      "repeat": 0,
+      "fold": 0,
+      "tag": "iscf10kt_r0f0",
+      "train_prefix": "iscf10kt_r0f0_train",
+      "test_prefix": "iscf10kt_r0f0_test",
+      "n_train_orders": 1000,
+      "n_test_orders": 5000,
+      "time_capacity": 372
+    },
+    {
+      "repeat": 0,
+      "fold": 1,
+      "tag": "iscf10kt_r0f1",
+      "train_prefix": "iscf10kt_r0f1_train",
+      "test_prefix": "iscf10kt_r0f1_test",
+      "n_train_orders": 1000,
+      "n_test_orders": 4000,
+      "time_capacity": 371
+    },
+    {
+      "repeat": 0,
+      "fold": 2,
+      "tag": "iscf10kt_r0f2",
+      "train_prefix": "iscf10kt_r0f2_train",
+      "test_prefix": "iscf10kt_r0f2_test",
+      "n_train_orders": 1000,
+      "n_test_orders": 3000,
+      "time_capacity": 367
+    },
+    {
+      "repeat": 0,
+      "fold": 3,
+      "tag": "iscf10kt_r0f3",
+      "train_prefix": "iscf10kt_r0f3_train",
+      "test_prefix": "iscf10kt_r0f3_test",
+      "n_train_orders": 1000,
+      "n_test_orders": 2000,
+      "time_capacity": 360
+    },
+    {
+      "repeat": 0,
+      "fold": 4,
+      "tag": "iscf10kt_r0f4",
+      "train_prefix": "iscf10kt_r0f4_train",
+      "test_prefix": "iscf10kt_r0f4_test",
+      "n_train_orders": 1000,
+      "n_test_orders": 1000,
+      "time_capacity": 340
+    }
+  ]
+}

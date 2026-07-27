@@ -89,7 +89,7 @@
 %\address{Anonymous Affiliation(s)}
 
 \begin{abstract}
-Warehouse operations strongly shape supply-chain effectiveness. We study the Correlated Storage Location Assignment Problem (CSLAP), which is a cornerstone problem of modern warehousing challenges, focusing on optimizing product placement to streamline order preparation processes. While traditional CSLAP models focus on physical travel distance, automated conveyor-driven architectures are primarily constrained by mechanical dwell times and system congestion. This paper shifts the optimization paradigm toward minimizing discrete station visits per order to enhance system-level throughput. Because optimizing this objective at an industrial scale overwhelms traditional branch-and-bound solvers, we introduce a novel set-variable Mixed-Integer Linear Programming (MILP) formulation that we solve with a hybrid local-search engine. Evaluated on a real-world dataset of 21,877 stock-keeping units (SKUs), this scalable approach achieves a 13.7\% reduction in station stops while keeping every station within its capacity limits. To ensure practical viability without prohibitive facility overhauls, we also propose a limited-reassignment extension that bounds the number of relocated products, and we characterise the resulting trade-off between re-slotting effort and throughput gain, offering a non-disruptive, continuous-improvement strategy for modern fulfillment centers.
+Automated, conveyor-driven pick-and-pass warehouses are constrained less by travel distance than by mechanical dwell times and congestion at picking stations. We therefore recast the Correlated Storage Location Assignment Problem (CSLAP) around a system-level objective: minimizing the number of discrete station visits required to complete orders, under hard per-station storage and workload-balance constraints. The resulting step-function objective induces a flat fitness landscape on which standard binary branch-and-bound and classic meta-heuristics stall at scale, so we develop three complementary methods matched to distinct operational roles. First, a compact set-variable Mixed-Integer Linear Programming (MILP) reformulation, paired with a hybrid local-search engine, serves as the strategic re-slotting tool and delivers the deepest feasible visit reductions we obtain. Second, a tuning-free greedy clustering heuristic serves near-real-time slotting decisions in which execution speed takes precedence over strict workload pacing. Third, a column generation framework prices station-indexed product bundles from a single persistent subproblem over distinct weighted order supports; for homogeneous warehouses it aggregates the master into a cardinality-constrained, station-agnostic set-partitioning form that eliminates per-station symmetry by construction, and it is driven as a price-and-complete matheuristic carrying a valid Farley-type lower bound. On a real industrial instance with 21,874 stock-keeping units the set-variable MILP reduces station visits by 13.7\% while respecting every capacity and workload cap. The column generation matches the local-search reference across a 29-instance synthetic study without ever breaching the workload cap, and its heterogeneous form feasibly improves the live industrial layout while disturbing the engineered workload equilibrium the least among the optimizing methods, though it trails the set-variable MILP on visits at that scale. Finally, a limited-reassignment extension bounds the number of relocated products and maps the trade-off between re-slotting effort and visit reduction, giving managers a non-disruptive, continuous-improvement deployment path.
 \end{abstract}
 
 % CAOR permits 1 to 7 keywords. Note it is keyword (singular) in elsarticle.
@@ -107,9 +107,20 @@ Efficient warehouse operations significantly influence the performance of supply
 
 Traditional CSLAP models primarily aim to \emph{minimize travel distance} during order preparation \cite{islam2023}. However, in automated, conveyor-driven pick-and-pass architectures, the physical movement of goods is largely mechanized. Consequently, the true operational bottlenecks shift away from human travel distance to system congestion, mechanical dwell times, and workload imbalances. In these environments, \emph{reducing the number of station stops} becomes the dominant operational concern.
 
-In this paper, we advance the state of the art with a rigorous mathematical framework specifically tailored to these automated dynamics. We propose three methods to tackle this modern CSLAP: (i) a Mixed-Integer Linear Program (MILP) that minimizes station visits while enforcing strict synchronization constraints and balanced processing times across automated stations, which we solve both with an exact branch-and-bound solver (Gurobi) and with a hybrid local-search engine (Hexaly) applied to a set-variable reformulation; (ii) a fast heuristic clustering approach that groups frequently co-ordered products; and (iii) a Column Generation (CG) framework that decomposes CSLAP into a master problem selecting assignment patterns and pricing subproblems enforcing station capacity limits. These methods are benchmarked against classic meta-heuristics established in the CSLAP literature, namely a Genetic Algorithm (GA) and Simulated Annealing with correlated interchange (SA-C). Furthermore, recognizing that established facilities cannot afford large, disruptive re-slotting waves, we extend the MILP with a \emph{limited-reassignment} mechanism that bounds the permitted relocation while pursuing continuous-improvement gains \citep{chabot2024reassignment}.
+In this paper, we advance the state of the art with a mathematical framework specifically tailored to these automated dynamics. Because different warehouse settings weight computational speed, solution quality, and feasibility guarantees differently, we propose three complementary solution methods and delineate the operational role of each:
+\begin{itemize}
+    \item \textbf{Strategic optimization via a set-variable MILP reformulation.} The binary assignment model is recast over set decision variables, one per station, whose high-level operators expose a compact move space to a hybrid metaheuristic--exact engine. This pairing navigates the flat, step-function fitness landscape at scales where standard binary branch-and-bound stalls, and it produces the deepest feasible visit reductions we obtain.
+    \item \textbf{Operational agility via a greedy clustering heuristic.} A tuning-free, graph-based procedure with scale-relative thresholds groups frequently co-ordered products in seconds, serving near-real-time re-slotting decisions in which the workload cap is treated as a soft target rather than a hard bound.
+    \item \textbf{Structural decomposition via set-partitioning column generation.} The problem is decomposed into a station-indexed set-partitioning master over product bundles, priced by a single persistent subproblem over distinct weighted order supports. For homogeneous warehouses the master aggregates further into a cardinality-constrained, station-agnostic form that eliminates per-station symmetry by construction; the framework is driven as a price-and-complete matheuristic and maintains a valid Farley-type lower bound throughout.
+\end{itemize}
+These methods are benchmarked against classic meta-heuristics established in the CSLAP literature, namely a Genetic Algorithm (GA) and Simulated Annealing with correlated interchange (SA-C). Furthermore, recognizing that established facilities cannot afford large, disruptive re-slotting waves, we extend the MILP with a \emph{limited-reassignment} mechanism that bounds the permitted relocation while pursuing continuous-improvement gains \cite{chabot2024reassignment}.
 
-The primary contribution of this research is not merely the proposal of a visit-minimization objective, but the \textbf{methodological architecture required to solve it at an industrial scale}. Specifically, we show that pairing a set-variable MILP reformulation with a hybrid local-search engine scales to instances on which traditional binary branch-and-bound stalls in the flat fitness landscape induced by the step-function objective. At this scale branch-and-bound yields only a trivial lower bound, so solution quality is reported relative to the best solution found across all methods. Furthermore, we contribute a \textbf{bounded limited-reassignment extension} that lets these gains be deployed continuously in active facilities without prohibitive layout overhauls. We map the computational limits of these frameworks against Column Generation and classic meta-heuristics, validating their industrial applicability on both diverse synthetic scenarios and a massive, confidential real-world dataset (hereafter referred to as Company A).
+The contributions of this research are threefold:
+\begin{enumerate}
+    \item \textbf{A computational characterization of visit-minimization at scale.} We show that the step-function visit objective induces a flat landscape on which binary branch-and-bound certifies only a trivial bound and classic meta-heuristics stagnate, and that pairing the set-variable reformulation with a hybrid local-search engine restores tractability up to industrial size. Solution quality at that scale is accordingly reported relative to the best solution found across all methods.
+    \item \textbf{A set-partitioning column generation architecture for CSLAP.} We formalize a station-indexed pattern master with per-station convexity rows, aggregate it for homogeneous warehouses into a single-cardinality-row master that suppresses station symmetry, and price both variants from one persistent subproblem over distinct weighted supports. A price-and-complete drive turns the stalling column-at-a-time loop into a monotone stream of feasible layouts accompanied by a valid, budget-robust lower bound.
+    \item \textbf{Industrial validation and continuous-improvement modeling.} We validate all methods on synthetic families of up to 2,000 SKUs and on a massive, confidential real-world dataset of 21,874 SKUs (hereafter referred to as Company A), and we contribute a bounded limited-reassignment extension whose effort--benefit curve lets the gains be deployed continuously in active facilities without prohibitive layout overhauls.
+\end{enumerate}
 
 
 
@@ -119,11 +130,11 @@ The primary contribution of this research is not merely the proposal of a visit-
 
 \section{Literature Review}\label{sec:lit_review}
 
-The transition from traditional, manual picker-to-parts warehouses to highly automated, conveyor-driven, and synchronized zone-picking systems necessitates a paradigm shift in operations research modeling. Historically, the Correlated Storage Location Assignment Problem (CSLAP) has been approached primarily through the lens of distance minimization \cite{islam2023}. In manual systems, where human operators traverse vast arrays of shelving, the primary operational cost driver is indeed physical travel distance. However, applying this identical objective function to automated pick-and-pass architectures or Robotic Mobile Fulfillment Systems (RMFS) \cite{azadeh2019} represents a fallacy in system dynamics. In these automated environments, the physical movement of goods across long distances is mechanized and highly efficient. Consequently, the true operational bottlenecks shift away from human travel distance to system-level metrics: station visits (stops), order splits, mechanical dwell times, and the synchronization of workload across discrete picking zones \cite{xie2021}.
+The transition from traditional, manual picker-to-parts warehouses to highly automated, conveyor-driven, and synchronized zone-picking systems necessitates a paradigm shift in operations research modeling. Historically, the Correlated Storage Location Assignment Problem (CSLAP) has been approached primarily through the lens of distance minimization \cite{islam2023, xiao2010correlated}. In manual systems, where human operators traverse vast arrays of shelving, the primary operational cost driver is indeed physical travel distance. However, applying this identical objective function to automated pick-and-pass architectures or Robotic Mobile Fulfillment Systems (RMFS) \cite{azadeh2019} represents a fallacy in system dynamics. In these automated environments, the physical movement of goods across long distances is mechanized and highly efficient. Consequently, the true operational bottlenecks shift away from human travel distance to system-level metrics: station visits (stops), order splits, mechanical dwell times, and the synchronization of workload across discrete picking zones \cite{xie2021}.
 
 These bottlenecks originate in the per-diversion mechanical setup and in the queueing dynamics of the finite spur buffers, both of which are reduced by minimizing the number of zones an order visits \cite{zhu2021, kim2020}; \cref{sec:problem_definition} develops this conveyor model in detail. The remainder of this section reviews prior models that target these system-level metrics.
 
-Recognizing these dynamics, recent literature supports reframing the objective function to minimize discrete touches and order splits. \citet{zhu2021} explored minimizing order splits across multiple warehouses using clustering algorithms, a logic that translates directly to clustering items into discrete picking zones along a conveyor to maintain order integrity. In the realm of RMFS \citep{azadeh2019}, which shares similar operational dynamics with conveyor systems, \citet{xie2021} presented a Mixed-Integer Programming (MIP) model targeting the minimization of "pod-station visits." They proved mathematically that minimizing these visits, while adequately dispersing the workload across stations, significantly increases total system throughput. Similarly, \citet{mirzaei2021} proposed "correlated dispersed storage assignment," which intelligently distributes correlated items across available automated assets to prevent queueing bottlenecks at any single workstation.
+Recognizing these dynamics, recent literature supports reframing the objective function to minimize discrete touches and order splits. \citet{zhu2021} explored minimizing order splits across multiple warehouses using clustering algorithms, a logic that translates directly to clustering items into discrete picking zones along a conveyor to maintain order integrity. In the realm of RMFS \cite{azadeh2019}, which shares similar operational dynamics with conveyor systems, \citet{xie2021} presented a Mixed-Integer Programming (MIP) model targeting the minimization of "pod-station visits." They proved mathematically that minimizing these visits, while adequately dispersing the workload across stations, significantly increases total system throughput. Similarly, \citet{mirzaei2021} proposed "correlated dispersed storage assignment," which intelligently distributes correlated items across available automated assets to prevent queueing bottlenecks at any single workstation.
 
 However, achieving this reduction in station visits without triggering queue overflows requires treating workload balancing as a mathematical imperative. \citet{tarczynski2023} addressed this integration, offering a MILP model that optimizes storage locations while enforcing hard constraints to balance the workload across all picking zones. Their model proved that mathematical load balancing is a prerequisite for reducing total picking time. Complementary studies reinforce this necessity: \citet{pan2015} utilized Group Genetic Algorithms (GGA) to balance zone workloads during order batching, while \citet{vanGils2018} demonstrated via ANOVA that storage assignment must be co-optimized with zoning logic to effectively suppress dwell times. Ultimately, as \citet{boysen2023} concluded, ensuring that the right tote arrives at a capacity-feasible station without encountering queueing blockages is the primary determinant of facility throughput.
 
@@ -147,7 +158,7 @@ While recent literature acknowledges the necessity of minimizing station visits 
     \cite{xie2021}         & Pod-station visits   & No  & RMFS                 & $\sim$10$^3$ items & MIP \\
     \cite{tarczynski2023}  & Picking time         & Yes & Pick-and-pass        & Small/medium      & LP / MILP \\
     \cite{muter2022}       & Makespan             & Yes\tnote{a} & Batching/picking & Medium            & Column generation \\
-    \textbf{This work}     & \textbf{Station visits} & \textbf{Yes} & \textbf{Pick-and-pass (automated)} & \textbf{21,877 real SKUs} & \textbf{Set-variable MILP, CG, heuristic} \\
+    \textbf{This work}     & \textbf{Station visits} & \textbf{Yes} & \textbf{Pick-and-pass (automated)} & \textbf{21,874 real SKUs} & \textbf{Set-variable MILP, CG, heuristic} \\
     \bottomrule
   \end{tabularx}
   \begin{tablenotes}\scriptsize
@@ -236,7 +247,7 @@ Aggressively concentrating picks to reduce visits poses a specific systemic risk
 To structurally prevent this outcome, "workload balancing" must act as a hard mathematical constraint. In our formulation, we explicitly bound the daily utilization distribution to stay strictly within each station's pre-established maximum capacity ($T_s$). Minimizing station visits under this rigid limit guarantees that we achieve the aforementioned buffering and overhead benefits without inadvertently creating localized bottlenecks.
 
 \subsection{Modeling Abstraction}
-To translate these dynamics into a tractable mathematical formulation, we model CSLAP at the station level rather than at the level of individual storage slots. We make the practical assumption that each station’s internal shelving is \emph{modular}: dividers can be rearranged without altering the station’s \emph{total} storage capacity. This intra-station flexibility allows us to concentrate on the fundamental decision, \emph{which products $(p \in P)$ should share the same station}, without being restricted by fixed slot geometries. Throughout our analysis, the global physical capacity constraint ($\zeta_s$) of each station is strictly respected. For clarity we model each product as occupying one unit of a station's location budget $\zeta_s$; heterogeneous product footprints can be incorporated without structural change by replacing the unit count in Constraint~\eqref{con15} with a per-product size $a_p$ (i.e. $\sum_{p} a_p x_{ps} \le \zeta_s$), which we leave to the size-aware extension noted in \cref{sec:conclusion}.
+To translate these dynamics into a tractable mathematical formulation, we model CSLAP at the station level rather than at the level of individual storage slots. We make the practical assumption that each station’s internal shelving is \emph{modular}: dividers can be rearranged without altering the station’s \emph{total} storage capacity. This intra-station flexibility allows us to concentrate on the fundamental decision, \emph{which products $(p \in P)$ should share the same station}, without being restricted by fixed slot geometries. Throughout our analysis, the global physical capacity constraint ($\zeta_s$) of each station is strictly respected. For clarity we model each product as occupying one unit of a station's location budget $\zeta_s$; heterogeneous product footprints can be incorporated without structural change by replacing the unit count in Constraint~\eqref{con15} with a per-product size $g_p$ (i.e. $\sum_{p} g_p x_{ps} \le \zeta_s$), which we leave to the size-aware extension noted in \cref{sec:conclusion}.
 
 
 \begin{table}[H]
@@ -300,12 +311,12 @@ The objective is to minimize the total number of station visits required across 
 
 \section{Solution Methods}\label{sec:methodology}
 
-Having established the mathematical model, we now present the methods used to solve it at scale: a set-variable reformulation amenable to a hybrid local-search engine, a fast greedy clustering heuristic, and a Column Generation framework. These are subsequently benchmarked against the classic meta-heuristics described in \cref{sec:meta_benchmarking}.
+Having established the mathematical model, we now present the methods used to solve it at scale, mirroring the three operational roles set out in the introduction: a set-variable reformulation amenable to a hybrid local-search engine (strategic optimization), a fast greedy clustering heuristic (operational agility), and a set-partitioning Column Generation framework (structural decomposition). These are subsequently benchmarked against the classic meta-heuristics described in \cref{sec:meta_benchmarking}.
 
-\subsection{Solving the Model: Set-Variable Reformulation}\label{sec:set_reformulation}
-To solve the mathematical model efficiently, the problem can be reformulated using \emph{set decision variables} rather than standard binary or continuous variables \cite{blaisemodeling}. When utilizing Hexaly's local-search solver engine, a set decision variable acts as a single, high-level entity representing an unordered subset of a finite domain. In this formulation, we create one such variable \( \Phi_s \) for every pick-station $s \in S$; its value is the subset of product indices assigned to that station. Consequently, the standard binary matrix $x_{ps}$ is replaced by the compact family \( \{\Phi_s\}_{s \in S} \). This shift reduces the number of declared decision variables from $|P| \times |S|$ to $|S|$ sets. The reduction concerns the representation, not the underlying combinatorial complexity: the model still encodes which of the $|P|$ products goes to which of the $|S|$ stations, and the assignment problem remains NP-hard. Its value is operational. By exposing high-level operators (\textit{partition}, \textit{contains}, and \textit{count}) and a compact move space, the set representation lets the local-search engine navigate the flat, step-function landscape more effectively than by flipping $|P|\times|S|$ individual binary flags.
+\subsection{Strategic Optimization: Set-Variable MILP Reformulation}\label{sec:set_reformulation}
+To solve the mathematical model efficiently, the problem can be reformulated using \emph{set decision variables} rather than standard binary or continuous variables \cite{blaisemodeling}. When utilizing Hexaly's local-search solver engine, a set decision variable acts as a single, high-level entity representing an unordered subset of a finite domain. In this formulation, we create one such variable \( \Phi_s \) for every pick-station $s \in S$; its value is the subset of product indices assigned to that station. Consequently, the standard binary matrix $x_{ps}$ is replaced by the compact family \( \{\Phi_s\}_{s \in S} \). This shift reduces the number of declared decision variables from $|P| \times |S|$ to $|S|$ sets. The reduction concerns the representation, not the underlying combinatorial complexity: the model still encodes which of the $|P|$ products goes to which of the $|S|$ stations, and the assignment problem remains NP-hard \cite{garey1979computers}. Its value is operational. By exposing high-level operators (\textit{partition}, \textit{contains}, and \textit{count}) and a compact move space, the set representation lets the local-search engine navigate the flat, step-function landscape more effectively than by flipping $|P|\times|S|$ individual binary flags.
 
-\subsection{Fast Greedy Clustering Heuristic}
+\subsection{Operational Agility: Greedy Clustering Heuristic}
 \label{sec:heuristic_clustering}
 
 Because the exact MILP formulation becomes computationally intractable for large-scale, industrial-sized warehouse instances, we developed a fast heuristic approach. This method bridges the gap between computational feasibility and operational quality by partitioning the product set into tightly bound ``communities'' of highly correlated items and sequentially assigning them to physical picking stations.
@@ -388,115 +399,85 @@ By addressing the dimensional complexities inherent in CSLAP computationally, th
 \label{fig:heuristic_flowchart}
 \end{figure}
 
-\noindent This heuristic approach represents an optimal balance between computational feasibility and solution quality. By aggressively addressing the dimensional complexities inherent in CSLAP, it offers a scalable framework capable of adapting to evolving order patterns and automated warehouse configurations in near-real-time.
+\noindent This heuristic approach offers a favorable balance between computational speed and solution quality. By aggressively addressing the dimensional complexities inherent in CSLAP, it provides a scalable framework capable of adapting to evolving order patterns and automated warehouse configurations in near-real-time, at the price of treating the workload cap as a soft target (\cref{sec:numerical_results}).
 
 
 
-\subsection{Column Generation Approach}
+\subsection{Structural Decomposition: Set-Partitioning Column Generation}\label{sec:cg}
 
-While the heuristic provides fast and scalable solutions, exact mathematical bounds are ultimately required for rigorous structural assessments. To circumvent the direct computational limitations of the exact MILP formulation on scale, we propose a Column Generation (CG) framework to reliably deliver high-quality bounded solutions more quickly. CG efficiently solves combinatorial optimization problems involving vast solution spaces \cite{lubbecke2005selected}, making it computationally superior to monolithic ILPs for set-covering and set-partitioning problems in logistics, scheduling, and warehouse management \cite{desrochers1989column}.
-Adapting the Set Cover formulation for CSLAP \cite{xiao2010correlated}, our CG implementation iteratively generates feasible product-station assignment patterns (columns) guided by dual variables. To maintain tractability, we adopt a localized strategy: patterns are generated independently for each station. This drastically reduces the dimensionality of the Restricted Master Problem (RMP) by removing the need to enforce cross-station product uniqueness during the continuous pricing iterations.
+The heuristic of \cref{sec:heuristic_clustering} returns fast layouts but no certificate, and the set-variable MILP of \cref{sec:set_reformulation} carries no valid bound on the visit count. We close this gap with a column generation framework built on a set-partitioning decomposition of the model of \cref{sec:LP_Approach}. Column generation solves programs over very large column sets by pricing variables on demand \cite{lubbecke2005selected}, and it is well matched to the set-covering and set-partitioning structure that recurs in logistics and scheduling \cite{desrochers1989column, muter2022}. We first state the general, station-indexed master, which handles heterogeneous stations and is the formulation we deploy on the industrial instance of \cref{sec:numerical_results}; we then derive the aggregated, station-agnostic reformulation that we use on the homogeneous synthetic family, where it eliminates the symmetry the general master carries.
 
+\subsubsection{A Station-Indexed Set-Partitioning Master}\label{sec:cg_master_general}
 
-
-\subsubsection{Master Problem Formulation}
-
-The Restricted Master Problem (RMP) aims to select the optimal combination of station assignment patterns that collectively minimize the total number of visited stations required to fulfill all orders. 
-
-\paragraph{Parameters:}
-\begin{itemize}
-    \item $\delta_{psk}$: Binary parameter equal to 1 if product $p$ is included in pattern $k$ for station $s$, 0 otherwise.
-    \item $z_{osk}$: Binary parameter equal to 1 if any product from order $o$ is included in pattern $k$ for station $s$, 0 otherwise.
-\end{itemize}
-
-\paragraph{Standing assumptions:} (i) Every feasible pricing pattern respects the station capacity (i.e., $\sum_{p\in P}\delta_{psk} \le \zeta_s \quad \forall s\in S, \forall k\in K_s$), and (ii) total capacity is tight, $\sum_{s\in S}\zeta_s = |P|$, as holds for the homogeneous synthetic instances ($\zeta_s = \lfloor |P|/|S| \rfloor$ with $|P|$ divisible by $|S|$). Assumption (ii) is used only to streamline the exactly-once argument below; it is not required for correctness. When capacity is slack ($\sum_{s\in S}\zeta_s > |P|$), as in the heterogeneous Company~A instance, the set-covering inequality ($\ge 1$) together with the visit-minimizing objective still yields a valid assignment in which every product is covered, because the objective never benefits from assigning a product to more than one station; the master then returns an exactly-once assignment without relying on the tight-capacity identity.
-
-\paragraph{Decision variables:}
-\begin{itemize}
-    \item $y_{sk} \in \{0,1\}$: 1 if pattern $k$ is selected for station $s$, 0 otherwise.
-\end{itemize}
-
-\paragraph{Objective function:}
-Minimize the total number of visited stations required across all orders:
+CSLAP decomposes naturally by station. Recall from the notation of \cref{sec:problem_definition} that $K_s$ denotes the family of feasible patterns for station $s$: subsets $q \subseteq P$ with $|q| \le \zeta_s$ and $\sum_{p \in q} L_p / V_s \le T_s$. Let $U$ be the set of \emph{distinct} multi-item order supports, each carrying a multiplicity weight $w_u$ equal to the number of orders that share that support; aggregating orders into weighted distinct supports keeps the raw order count out of the master. With one column per station--pattern pair and the aggregated cost $c_q = \sum_{u \in U} w_u\,\mathbf{1}[q \cap u \neq \emptyset]$ counting the weighted supports a pattern touches, the master problem reads
 \[
-\min \sum_{o \in O} \sum_{s \in S} \sum_{k \in K_s} z_{osk} \cdot y_{sk}
+\min_{x}\ \sum_{s \in S} \sum_{q \in K_s} c_q\, x_{sq}
 \]
-
-\paragraph{Constraints:}
-\begin{enumerate}
-    \item \textbf{Pattern selection constraint:} Ensure that at most one pattern is selected for each station.
-    \[
-    \sum_{k \in K_s} y_{sk} \leq 1 \quad \forall s \in S \quad \quad \quad \quad \quad (\pi_s)
-    \]
-
-    \item \textbf{Product assignment constraint:} Ensure that the universe of products is included. 
-    
-    %Coupled with the pattern selection constraint, this guarantees each product is assigned to exactly one station.
-    \[
-    \sum_{s \in S} \sum_{k \in K_s} \delta_{psk} \cdot y_{sk} \geq 1 \quad \forall p \in P\quad \quad \quad \quad (\sigma_{p})
-    \]
-
-    
-
-    \item \textbf{Variable domains:}
-    \[
-    y_{sk} \in \{0,1\} \quad \forall s \in S, \forall k \in K_s
-    \]
-\end{enumerate}
-
-The master problem supplies the pricing problem with dual coefficients: ($\pi_s$) for pattern selection and ($\sigma_p$) for product coverage. As the continuous relaxation of the RMP is solved iteratively, these duals guide the generation of new patterns. It is important to note that while the product assignment is formulated as a set-covering inequality ($\geq 1$) to stabilize the $\sigma_p$ dual variables during this continuous phase, it acts as a strict equality ($= 1$) in any valid integer solution. Based on our standing assumptions, the total warehouse capacity exactly matches the product universe ($\sum_{s \in S} \zeta_s = |P|$), and each pattern respects local station capacity. Since Constraint 1 allows at most one pattern per station, the total number of available product slots across all selected patterns cannot exceed $|P|$. Therefore, satisfying this coverage constraint forces every product to be assigned to exactly one station.
-
-
-\subsubsection{The Pricing Subproblem: Exact Formulation and Two-Phase Acceleration}
-
-The pricing problem is tasked with generating new station assignment patterns. For each station $s$, a subproblem seeks to identify a feasible product subset that yields a negative reduced cost. 
-
-\paragraph{\textbf{Exact Mathematical Formulation \\}}
-\noindent Let $x_p \in \{0,1\}$ indicate if product $p$ is included in the new pattern at station $s$, and $z_o \in [0,1]$ indicate if order $o$ requires a visit to station $s$ due to this pattern. The subproblem is defined as:
-
-\textbf{Minimize the reduced cost:}
-\[
-\min \left\{ \sum_{o \in O} z_o - \sum_{p \in P} \sigma_{p} x_p \right\} + \pi_s
-\]
-
-\textbf{Subject to:}
 \begin{align}
-    & z_o \geq x_p \quad \forall o \in O, \forall p \in P_o \quad &\text{(Order inclusion)} \\
-    & \sum_{p \in P} x_p \leq \zeta_s \quad &\text{(Physical capacity)} \\
-    & \sum_{p \in P} x_p \cdot \frac{L_p}{V_s} \leq T_s \quad &\text{(Workload limit)} 
+& \sum_{s \in S} \sum_{q \in K_s:\, p \in q} x_{sq} \ge 1 \qquad (\sigma_p \ge 0) \quad \forall p \in P, \label{cg:cover_gen}\\
+& \sum_{q \in K_s} x_{sq} \le 1 \qquad (\mu_s \le 0) \quad \forall s \in S, \label{cg:conv_gen}\\
+& 0 \le x_{sq} \le 1 \quad \forall s \in S,\ q \in K_s. \nonumber
 \end{align}
+Constraint \eqref{cg:cover_gen} covers every product, and the per-station convexity rows \eqref{cg:conv_gen} select at most one pattern per station; for any integer solution whose patterns partition the catalog the objective equals the total station visits of the multi-item orders exactly, singleton orders contributing a constant. This is the conventional Dantzig--Wolfe shape for our assignment model \cite{lubbecke2005selected, desrochers1989column}: pattern feasibility is delegated to $|S|$ pricing subproblems, one per station, each minimizing the reduced cost $c_q - \sum_{p \in q} \sigma_p - \mu_s$ over the patterns satisfying that station's two resource limits, $\sum_p a_p \le \zeta_s$ and $\sum_p L_p\, a_p \le T_s V_s$. Because the pricing constraint matrix is identical across stations up to these two right-hand sides, a single persistent pricing model can serve every station, each call swapping only two values; a full pricing pass at one dual vector then yields the per-station Farley-type bound $\mathrm{LB} = z_{\mathrm{RMP}} + \sum_{s \in S} \min(0,\ \mathrm{rc}^{\mathrm{lb}}_s)$ developed in \cref{sec:cg_bound}. This station-indexed master is exactly the formulation we run on the heterogeneous industrial instance in \cref{sec:numerical_results}.
 
-\paragraph{\textbf{Computational Bottleneck and Two-Phase Heuristic Pricing \\}}
-\label{sec:cg_enhancements}
-While the exact MILP formulation of the pricing problem mathematically guarantees the discovery of the most negative reduced-cost column, this subproblem is $\mathcal{N}\mathcal{P}$-hard. This complexity is formally established via reduction from the classic 0/1 Knapsack Problem: by assuming a one-to-one mapping between products and orders (rendering $z_o$ and $x_p$ equivalent in the objective) and relaxing the physical capacity constraint ($\zeta_s$), the formulation reduces to selecting a product subset that maximizes the dual profit $\sum_{p \in P} \sigma_{p} x_p$ subject solely to the workload limit $T_s$ \citep{garey1979computers}. Because the exact pricing problem encompasses this $\mathcal{N}\mathcal{P}$-hard knapsack structure alongside complex multi-order set-covering constraints, solving it exactly at every CG iteration consumes the vast majority of computation time. For highly constrained, industrial-scale CSLAP instances, exact pricing creates a severe computational bottleneck. The single-station pricing knapsack admits a pseudo-polynomial dynamic program over the remaining (capacity~$\zeta_s$, workload~$T_s$) state, but two properties limit its use here. The heterogeneous, large-valued $\zeta_s\times T_s$ state grid is itself sizeable, and the order-coverage term $\sum_{o} z_o$ couples products through shared orders, so the marginal contribution of a product is not separable across stages. The dual-aware greedy heuristic with exact fallback described next is designed for this non-separable structure.
+For a \emph{homogeneous} warehouse, however, the station index carries no information and becomes a computational liability. When every station shares one slot capacity $\zeta$, one speed $V$ and one workload cap $T$, the pattern families $K_s$ coincide and the master is invariant under permutations of the station labels: the relaxation is massively degenerate, and integer search revisits relabeled copies of the same partition \cite{vanderbeck2000dw}. The multiplicity of the pricing subproblems is equally redundant, since all $|S|$ calls solve the same model at the same duals up to $\mu_s$. The aggregated reformulation below removes both burdens by construction rather than managing them at run time.
 
-To bridge the gap between theoretical optimality and scalable implementation, we replace the monolithic exact solver with a \textbf{Two-Phase Pricing Architecture}:
+\subsubsection{Aggregated Reformulation for Homogeneous Warehouses}\label{sec:cg_master_agg}
 
-% \paragraph{\textbf{Computational Bottleneck and Two-Phase Heuristic Pricing \\}}
-% \label{sec:cg_enhancements}
-% While the exact MILP formulation of the pricing problem mathematically guarantees the discovery of the most negative reduced-cost column, solving this NP-hard subproblem exactly at every CG iteration consumes the vast majority of computation time. For highly constrained, industrial-scale CSLAP instances, relying solely on exact pricing creates a severe computational bottleneck.
+Consider the homogeneous case with capacity tight, $|P| = |S|\cdot\zeta$. CSLAP is then exactly a cardinality-constrained set-partitioning problem over \emph{station-agnostic} product bundles: partition the catalogue into at most $|S|$ bundles of at most $\zeta$ products, and the number of stations an order visits equals the number of selected bundles its line set touches. A column then needs no station index. Let $Q$ be the family of feasible bundles; over the current pool $Q' \subseteq Q$ the restricted master problem (RMP) reads
+\[
+\min_{x}\ \sum_{q \in Q'} c_q\, x_q, \qquad c_q = \sum_{u \in U} w_u\,\mathbf{1}[q \cap u \neq \emptyset],
+\]
+\begin{align}
+& \sum_{q \ni p} x_q \ge 1 \qquad (\sigma_p \ge 0) \quad \forall p \in P, \label{cg:cover}\\
+& \sum_{q \in Q'} x_q \le |S| \qquad (\mu \le 0), \label{cg:card}\\
+& 0 \le x_q \le 1 \quad \forall q \in Q'. \nonumber
+\end{align}
+As before, the master objective equals the total station visits of the multi-item orders exactly for any partition. Unlike the station-indexed master of \cref{sec:cg_master_general}, whose $|S|$ convexity rows \eqref{cg:conv_gen} distinguish interchangeable stations, the single cardinality row \eqref{cg:card} condenses the allocation decision into one constraint and yields the single dual $\mu$, structurally eliminating the per-station symmetry together with the per-station multiplicity of the pricing subproblems. At integrality under tight capacity the covering rows act as an exact partition into $|S|$ full bundles, so the relaxation and its integer counterpart carry the same combinatorial meaning. Where capacity is slack, the covering inequality together with the visit-minimizing objective still returns an exactly-once assignment, since the objective never benefits from placing a product in more than one bundle.
 
-% To bridge the gap between theoretical optimality and scalable implementation, we replace the monolithic exact solver with a \textbf{Two-Phase Pricing Architecture}:
+
+\subsubsection{Pricing Subproblem}
+
+A single pricing subproblem generates improving bundles. With $a_p \in \{0,1\}$ marking the products of a candidate bundle and $z_u \in [0,1]$ marking the supports it touches, the most negative reduced cost solves
+\[
+\min\ \sum_{u \in U} w_u\, z_u - \sum_{p \in P} \sigma_p\, a_p - \mu
+\]
+\begin{align}
+    & z_u \ge a_p \quad \forall u \in U,\ p \in u, \nonumber\\
+    & \sum_{p \in P} a_p \le \zeta, \qquad \sum_{p \in P} \frac{L_p}{V}\, a_p \le T, \nonumber\\
+    & a_p \in \{0,1\}, \quad z_u \in [0,1]. \nonumber
+\end{align}
+The constraint matrix does not depend on the duals, so the pricing MILP is constructed once per instance and each pricing call rewrites only the objective coefficients of the $a_p$ variables on a persistent model; the constant $-\mu$ touches no variable coefficient and is accounted for outside the solve. This is what keeps exact pricing affordable at up to roughly $66{,}000$ distinct supports on the $2{,}000$-SKU instances: the model build is a single up-front cost of about $21$ seconds, while the first exact solve at $50$ SKUs returns in about $0.2$ seconds. A single pricing family thus replaces the $|S|$ station-indexed pricing calls of \cref{sec:cg_master_general}, and encoding coverage per distinct support rather than per order keeps the subproblem's size independent of the raw order count --- the axis on which a direct per-order implementation of the conventional decomposition scales worst.
+
+\subsubsection{Price-and-Complete Matheuristic}\label{sec:cg_matheuristic}
+
+A cardinality-tight partition master does not advance on isolated columns. With covering rows over all products, one cardinality row and bundles of size at most $\zeta$, a single excellent bundle cannot enter the basis until compatible complements cover the remaining products, so column-at-a-time generation plateaus even while deeply negative reduced-cost columns exist. This is a structural property of cardinality-tight partition masters over a flat, step-function objective, not an implementation artifact, and we address it with a coordination mechanism designed for it: the method is driven as a matheuristic whose generation loop emits coordinated column sets --- full feasible partitions --- guided by exact pricing and equipped with the valid bound of \cref{sec:cg_bound}. Its components are the following.
+
 \begin{enumerate}
-    \item \textbf{Dual-Aware Greedy Heuristic:} To drastically accelerate column generation, we first deploy an $\mathcal{O}(N \log N)$ heuristic. Products are scored dynamically based on their dual-to-workload ratio: $\sigma_p / (L_p / V_s)$. The heuristic greedily packs the highest-scoring products until either the physical capacity ($\zeta_s$) or the workload limit ($T_s$) is reached. 
-    \item \textbf{Exact MILP Fallback:} The exact pricing solvers (via Gurobi or Hexaly) are strictly utilized as a fallback mechanism. They are triggered \emph{only} if the fast greedy heuristic fails to uncover a pattern with a negative reduced cost, ensuring that global optimality bounds are preserved without sacrificing speed.
+    \item \emph{Feasibility warm start.} A longest-processing-time packer sorts products by descending order-line workload and assigns each to the least-loaded station that still has a free slot and residual time capacity, producing a feasible, workload-balanced but correlation-blind partition. This is the same deterministic start seeded to the other exact methods (\cref{sec:warm_start}), so initialization bias is excluded. A swap descent polishes it, and the polished partition, together with randomly mutated feasible variants, seeds the initial column pool.
+
+    \item \emph{Penalized swap descent.} A first-improvement local search over pairs of products in different stations accepts a swap on the exact change in $\text{visits} + \rho\sum_i \max(0,\, W_i - T)$, with $\rho$ set to the total order weight, so a workload violation is never traded away for fewer visits. The change induced by a candidate swap is evaluated incrementally in $\mathcal{O}(\deg(p)+\deg(q))$ from a per-station support-count matrix $\mathrm{cnt}[i][u]$, the number of station-$i$ products contained in support $u$: removing $p$ from station $i$ frees exactly the supports whose count drops to zero, and inserting it into station $j$ costs exactly the supports whose count rises from zero. An accepted swap is applied at once and the scan restarts from the new state; above about $300$ products the partner set is sampled to bound the cost of a pass. The descent runs in three roles, namely warm-start polish, per-iteration repair of a completed partition, and a final polish on the leftover budget.
+
+    \item \emph{Dual-guided greedy pricing.} Before the exact pricer is called, an accelerator considers only products with positive dual $\sigma_p$ and tests two orderings, largest $\sigma_p$ first and largest $\sigma_p$ per unit workload first. It grows a bundle one product at a time under the slot and workload caps, tracks the exact reduced cost after every insertion, and returns the best prefix, the insertion point at which the reduced cost was lowest, rather than the filled bin. Only when this fails to produce a negative reduced-cost column does the exact CPLEX pricer decide the iteration.
+
+    \item \emph{Partition completion.} Each priced bundle is completed into a full feasible partition so that a coordinated set of columns enters the master together. Disjoint priced bundles are placed first; the remaining products then join, heaviest first, the feasible station of maximum co-occurrence affinity, where affinity is the total weight of the product's supports already touched by that station, equivalently the minimum marginal visit cost. The completed partition is refined by the swap descent, and all of its bundles enter the master together. Because each completion is itself a feasible primal layout, the method produces a monotone stream of full feasible solutions. Bundles that break the slot or workload caps never enter the master.
+
+    \item \emph{Integer master and deduplication.} After the generation loop the master is re-solved with binary $x_q$ over the accumulated pool. Because the covering rows permit a product to appear in two selected bundles, an explicit repair assigns each duplicated product to the selected station whose other products share the largest total order weight with it and removes it from the rest; a removal can only lower the visit count. The final layout is re-evaluated on the raw orders, and the better of the integer-master layout and the best incumbent partition is polished by the swap descent for whatever budget remains. Every reported visit count is recomputed on the real order stream and is never read from the model objective.
 \end{enumerate}
 
-\paragraph{ \textbf{Solution Pooling and Perturbation \\}}
-In traditional CG, extracting only the single most negative reduced-cost column throttles the flow of information to the master problem. To counteract this and flood the RMP with high-quality columns, we exploit solution pooling. During the exact pricing phase in Gurobi, the solver systematically stores up to 10 profitable feasible solutions per iteration. For Hexaly, we simulate this by applying local neighborhood perturbations (random product swaps and additions) to the generated patterns. Injecting a pool of valid, profitable columns at each iteration significantly enriches the continuous basis and accelerates convergence.
+A single wall-clock budget per instance is split across these stages, with about $8\%$ for the warm-start polish, up to $70\%$ for the generation loop, up to $85\%$ for the integer master, and the remainder for the final polish. The method is implemented on IBM CPLEX through its Python interface, with a deterministic seed and one identical configuration for every instance and every size.
 
-\subsubsection{Algorithm Initialization and Final Integer Resolution}
+\subsubsection{Lower Bound, Convergence and Scope}\label{sec:cg_bound}
 
-To ensure rapid convergence and practical applicability, the lifecycle of our CG framework is bounded by specialized initialization and termination procedures.
+At every iteration the method maintains a Farley-type convexity bound \cite{farley1990note}. In the aggregated master the cardinality row admits $|S|$ selected bundles, so
+\[
+\mathrm{LB} = z_{\mathrm{RMP}} + |S|\cdot \min\!\big(0,\ \mathrm{rc}_{\mathrm{lb}}\big),
+\]
+where $\mathrm{rc}_{\mathrm{lb}}$ is the dual (best) bound reported by the pricing MILP, a valid lower bound on the minimum reduced cost; the cardinality dual enters it exactly once, through the constant $-\mu$ that the pricing objective already carries. In the station-indexed master of \cref{sec:cg_master_general} the same argument applies row by row and gives $\mathrm{LB} = z_{\mathrm{RMP}} + \sum_{s \in S} \min(0,\ \mathrm{rc}^{\mathrm{lb}}_s)$ with $\mathrm{rc}^{\mathrm{lb}}_s$ the dual bound of station $s$'s pricing problem, whose objective carries that station's convexity dual $-\mu_s$. The pricing dual bound stays valid even when a pricing call is truncated by its time slice, so $\mathrm{LB}$ is a valid lower bound on the optimum throughout the run; degeneracy of the covering master affects how tight this certificate is, never whether it holds. Convergence, meaning the linear master is priced out, is declared only from an exact pricing solve at the true duals with proven optimality.
 
-\paragraph{\textbf{Initialization via Basis Enrichment (Neighborhood Mutation) \\}} 
-Initializing the RMP with a single pattern per station based on one warm-start feasible solution creates an artificially rigid continuous basis, often leading to early dual variable stagnation. Before the CG loop begins, we execute a basis enrichment step. The algorithm generates multiple feasible neighborhood mutations by randomly displacing 5--10\% of the products from the initial warm-start and greedily reassigning them. Injecting this diverse pool of mutated patterns alongside the original warm-start immediately stabilizes the initial dual variables ($\pi_s, \sigma_p$) and provides the RMP with the combinatorial flexibility needed to converge rapidly.
+Within the budgets reported in \cref{sec:reliability_multiseed} this certificate is informative only at $50$ SKUs, where the mean bound of $3{,}272$ sits below the mean of $7{,}592$ visits, and it is vacuous at $500$ SKUs and above. We therefore present the method as a matheuristic with a valid but currently loose certificate rather than as an exact solver. Dual stabilization is the lever that would tighten the bound, which we return to in \cref{sec:future}.
 
-
-\paragraph{\textbf{Final Optimization Step (Integer Master Problem) \\}}\label{par:final_optimization_step}
-Upon convergence of the CG loop, the solution space is populated with high-quality columns, but the relaxed RMP yields fractional assignments. To achieve operational feasibility, we resolve the master problem one final time, strictly enforcing binary decisions ($y_{sk} \in \{0,1\}$) over the generated columns. This ensures a precise, implementable assignment that meets product uniqueness, balanced workloads, and minimized station visits. 
-
-Although accurate, this Integer Master Problem (IMP) step can remain computationally intensive for massive datasets. Future research could explore alternative post-processing techniques on the generated columns, such as randomized rounding heuristics or restricted meta-heuristic searches, to balance the final discrete resolution time with operational quality.
+\paragraph{\textbf{Scope.}} The aggregated reformulation of \cref{sec:cg_master_agg} treats identical stations, which holds by construction for the synthetic family, and this flat-warehouse case remains the reference presentation of the method. On a heterogeneous layout such as Company~A the framework reverts to the station-indexed master of \cref{sec:cg_master_general}, retaining the single persistent pricing model (only the two right-hand sides $\zeta_s$ and $T_s V_s$ vary per call), the price-and-complete drive of \cref{sec:cg_matheuristic}, and the per-station form of the bound above. This configuration is evaluated on Company~A in \cref{sec:numerical_results}.
 
 
 
@@ -514,7 +495,7 @@ To evaluate our models under controlled conditions, we generated four synthetic 
 
 To ensure these instances accurately mirror operational realities, we benchmarked their structural properties against the empirical Company A dataset. First, the synthetic order size distribution ($U[5, 15]$) successfully captures the true industrial median of 10.0 items. Second, to replicate empirical network sparsity, where only 2.47\% of product combinations ever co-occur, we restricted common itemsets to a narrow subset fraction ($U[0.1, 0.5]$). Finally, we validated the $\theta = 0.7$ correlation factor by evaluating the conditional probabilities of the top 1\% most frequently co-occurring pairs. The resulting synthetic affinity (8.89\%) acts as a rigorously conservative baseline against the industrial reality (14.24\%). This confirms that our synthetic data injects the necessary structural correlation without artificially inflating heuristic performance, ensuring our algorithmic evaluations translate reliably to real-world applications.
 
-\subsection{Deterministic Feasibility Warm Start for Exact Solvers}
+\subsection{Deterministic Feasibility Warm Start for Exact Solvers}\label{sec:warm_start}
 
 While our clustering heuristic (\cref{sec:heuristic_clustering}) effectively minimizes station visits, it prioritizes topological item affinities over strict workload boundaries ($T_s$). Seeding exact solvers with such unconstrained outputs causes commercial engines to reject the initial states as mathematically infeasible. To circumvent this, we introduce a deterministic \textit{Feasibility Warm Start}. Temporarily disregarding item correlation, we deploy a Longest Processing Time (LPT) strategy: items are sorted by independent order-line frequency and greedily distributed into the station with the lowest aggregate workload. This mathematically guarantees a starting assignment that strictly satisfies both the physical ($\zeta_s$) and temporal ($T_s$) constraints. Injecting this valid bound accelerates the initial branching process for the MILP and CG frameworks. Seeding all exact models with this identical baseline ensures an equitable computational evaluation, strictly isolating each solver's algorithmic capacity to navigate the solution space and improve upon the exact same initial conditions.
 
@@ -540,185 +521,78 @@ Finally, to ensure a strictly equitable computational comparison, we standardize
 
 Building upon the rigorously defined experimental setup, this section presents the comprehensive computational evaluation of our proposed methodologies and distills the resulting managerial insights. The analysis is structured to progressively scale from the generated synthetic datasets, to the real-world industrial dataset. 
 
-We first present the synthetic benchmarking results to establish the computational scalability limits of traditional solvers and to demonstrate the mathematical superiority of our set-variable MILP against literature baselines. We then transition to the 22,000-SKU (stock-keeping units) industrial case study to validate the performance of our approaches to this real world scenario. Finally, we validate the operational robustness of our best solution approach via temporal hold-out testing and demonstrate a restricted-reassignment model. By the end of this section, the reader will understand the precise computational trade-offs of each algorithm and how warehouse managers can deploy these exact tools to achieve continuous, non-disruptive throughput improvements.
+We first present the synthetic benchmarking results to establish the computational scalability limits of traditional solvers and to demonstrate the mathematical superiority of our set-variable MILP against literature baselines. We then transition to the 21,874-SKU (stock-keeping units) industrial case study to validate the performance of our approaches in this real-world scenario. Finally, we validate the operational robustness of our best solution approach via temporal hold-out testing and demonstrate a restricted-reassignment model. By the end of this section, the reader will understand the precise computational trade-offs of each algorithm and how warehouse managers can deploy these exact tools to achieve continuous, non-disruptive throughput improvements.
 
-\subsection{Benchmarking on Synthetic Data}
+\subsection{Benchmarking on Synthetic Data}\label{sec:reliability_multiseed}
+The set-variable MILP (Hexaly), GA, SA-C and the greedy heuristic all rely on randomised search, so a single run cannot establish whether a ranking reflects method quality or one favourable draw. We evaluate every method over multiple, independently generated instances per size, drawn from the same Zhang common-itemset generator with distinct seeds, and report the mean station-visit count with a $95\%$ confidence interval (CI) together with paired significance tests. The four scales carry $50$, $500$, $1{,}000$ and $2{,}000$ SKUs; the station counts and the mean order volumes are listed in the gray band above each block of \cref{tab:exp02a_reliability}. The set-variable MILP serves as the per-instance reference: each method's gap is measured against the strongest solution obtained on the same instance rather than against the best of the heuristic pool.
 
-We first evaluate the algorithms across the four synthetic datasets. To provide a clear view of how the methodologies scale as combinatorial complexity increases, all computational results are consolidated in two parts: \cref{tab:synthetic_small} covers the small and medium scales (50 and 500 SKUs), while \cref{tab:synthetic_large} covers the large level scales (1,000 and 2,000 SKUs). Before presenting the numerical results, it is necessary to define the parameters bounding each instance and the metrics used to evaluate the solutions.
-
-\paragraph{\textbf{Dataset Parameters:}}
-Each synthetic problem scale is characterized by specific operational constraints:
-\begin{itemize}
-    \item \textbf{Number of Orders \& Stations:} The sheer volume of demand and physical zones.
-    \item \textbf{Time Limit:} The maximum wall-clock execution time allocated to the solver or heuristic, ensuring the evaluations reflect practical decision-making constraints.
-    \item \textbf{Gurobi Lower Bound (Gurobi LB):} The best lower bound on the number of station visits proved by the exact branch-and-bound solver (Gurobi) within the time limit. The bound is informative only at small scale: for the $500$, $1{,}000$ and $2{,}000$-SKU instances it collapses to the trivial combinatorial bound ``each order visits at least one station'', equal to the number of orders. Because no non-trivial certified bound is available at these sizes, the Relative Deviation column below is measured against the \emph{best solution found across all methods}, not against a certified optimum.
-    \item \textbf{Average Workload Target (Target WL):} The mathematically ideal workload distribution, calculated as the total daily system pick-lines divided evenly across the number of available stations.
-    \item \textbf{Max Workload Capacity (Max Cap):} The hard upper limit of processing capacity assigned to any single station, derived by applying a safety slack (+ 10\%) to the theoretical minimum required capacity.
-\end{itemize}
-
-\paragraph{\textbf{Performance Metrics:}}
-For each method the tables report the total station \emph{Visits} (the objective) and its \emph{Relative Deviation} from the best feasible solution found at that scale, the wall-clock \emph{Time}, the heaviest single-station load (\emph{Max WL}) and the workload \emph{standard deviation} across stations, and a \emph{Violations} flag. Since the synthetic stations are identical, a lower workload standard deviation indicates a more even distribution of labor and less risk of localized queueing; a method is feasible only when it satisfies the workload limit at every station, in which case the \emph{Violations} entry reads ``None''.
-
-\paragraph{\textbf{Standardized Visual Notation:}}
-To facilitate cross-table comparison, a uniform visual legend is applied to all computational results in this section:
-\begin{itemize} 
-    \item \textcolor{green!60!black}{\textbf{Green text:}} The absolute best strictly feasible solution found.
-   \item \textcolor{orange!90!black}{\textbf{Orange text:}} The second-best feasible solution (strikethrough \textcolor{orange!90!black}
-   {\textbf{\sout{value}}} denotes a second-best score, but that violates workload boundaries).
-    \item \colorbox{blue!10}{\textbf{Blue highlight:}} The fastest execution time (excluding warm starts).
-    \item \textcolor{red}{\textbf{Red text:}} Violations of hard mathematical boundaries.
-    \item \color{gray}\sout{Grey}\color{black}: Approaches that failed to improve upon the initial baseline
-\end{itemize}
-
-
-
-% ==========================================
-% TABLE 1: SMALL & MEDIUM SCALES
-% ==========================================
-
-% 
-\begin{table}[H]
-  \centering
-  \small\setlength{\tabcolsep}{3pt}
-  \begin{threeparttable}
-  \begin{tabularx}{\linewidth}{@{}l*6{>{\centering\arraybackslash}X}@{}}
-    \toprule
-    \textbf{Method} & \textbf{Visits} & \textbf{Rel. Dev (\%)} & \textbf{Time (s)} & \textbf{Max WL} & \textbf{Std Dev WL} & \textbf{Violations} \\ 
-    \midrule
-    \multicolumn{7}{c}{\cellcolor{gray!15}\textbf{Scale: 50 SKUs} $|$ Stations: 5 $|$ Orders: 2,336 $|$ Time Limit: 120s} \\
-    \multicolumn{7}{c}{\cellcolor{gray!15} Target WL: 4,724.6 $|$ Max Cap: 5,291 $|$ Gurobi LB: 2,640} \\
-    \midrule
-    Feasible Start  & 9,993 & 12.07 & 0.16 & 4,810 & \textcolor{green!60!black}{\textbf{28.84}} & None \\
-    Heuristic       & 9,178 & 2.93  & \cellcolor{blue!10}\textbf{3.66} & \textcolor{red}{\textbf{6,891}} & 1312.50 & \textcolor{red}{\textbf{WL}} \\
-    MILP Gurobi     & 9,809 & 10.00 & 120  & 5,105 & 361.66 & None \\
-    MILP Hexaly     & \textcolor{green!60!black}{\textbf{8,917}} & 0.00 & 120 & 5,095 & 247.14 & None \\
-    CG Gurobi       & 9,989 & 12.02 & 120  & 4,808 & \textcolor{orange!90!black}{\textbf{51.76}} & None \\
-    CG Hexaly       & 9,922 & 11.27 & 120  & 5,277 & 347.22 & None \\
-    SA-C (Baseline) & \textcolor{orange!90!black}{\textbf{9,149}} & 2.60  & 120  & 4,928 & 132.53 & None \\
-    GA (Baseline)   & 9,213 & 3.32  & 120  & 5,061 & 279.20 & None \\
-    \midrule
-    \multicolumn{7}{c}{\cellcolor{gray!15}\textbf{Scale: 500 SKUs} $|$ Stations: 5 $|$ Orders: 16,675 $|$ Time Limit: 1,200s} \\
-    \multicolumn{7}{c}{\cellcolor{gray!15} Target WL: 33,329.2 $|$ Max Cap: 36,663 $|$ Gurobi LB: 16,675} \\
-    \midrule
-    Feasible Start  & 72,114 & 20.12 & 0.16 & 33,342 & \textcolor{green!60!black}{\textbf{12.78}} & None \\
-    Heuristic       & 62,462 & 4.05  & \cellcolor{blue!10}\textbf{17.02} & \textcolor{red}{\textbf{46,671}} & 7787.02 & \textcolor{red}{\textbf{WL}} \\
-    MILP Gurobi     & 72,099 & 20.10 & 1200 & 33,350 & \textcolor{orange!90!black}{\textbf{14.74}} & None \\
-    MILP Hexaly     & \textcolor{green!60!black}{\textbf{60,033}} & 0.00 & 1200 & 36,663 & 5256.84 & None \\
-    CG Gurobi       & 71,829 & 19.65 & 1200 & 34,122 & 416.62 & None \\
-    CG Hexaly       & 71,798 & 19.60 & 1200 & 34,066 & 604.12 & None \\
-    SA-C (Baseline) & 70,837 & 18.00 & 1200 & 35,705 & 1597.48 & None \\
-    GA (Baseline)   & \textcolor{orange!90!black}{\textbf{66,263}} & 10.38 & 1200 & 36,627 & 2476.38 & None \\
-    \bottomrule
-  \end{tabularx}
-  \end{threeparttable}
-  \caption{Computational results for Small and Medium synthetic datasets (50 and 500 SKUs).}
-  \label{tab:synthetic_small}
-\end{table}
-
-\begin{table}[H]
-  \centering
-  \small\setlength{\tabcolsep}{3pt}
-  \begin{threeparttable}
-  \begin{tabularx}{\linewidth}{@{}l*6{>{\centering\arraybackslash}X}@{}}
-    \toprule
-    \textbf{Method} & \textbf{Visits} & \textbf{Rel. Dev (\%)} & \textbf{Time (s)} & \textbf{Max WL} & \textbf{Std Dev WL} & \textbf{Violations} \\ 
-    \midrule
-    \multicolumn{7}{c}{\cellcolor{gray!15}\textbf{Scale: 1000 SKUs} $|$ Stations: 10 $|$ Orders: 46,088 $|$ Time Limit: 3,600s} \\
-    \multicolumn{7}{c}{\cellcolor{gray!15} Target WL: 46,146.3 $|$ Max Cap: 50,761 $|$ Gurobi LB: 46,088} \\
-    \midrule
-    Feasible Start  & 290,549 & 25.92 & 0.37 & 46,169 & \textcolor{green!60!black}{\textbf{32.73}} & None \\
-    Heuristic       & \textcolor{orange!90!black}{\textbf{\sout{235,551}}} & 2.09  & \cellcolor{blue!10}\textbf{44.28} & \textcolor{red}{\textbf{58,938}} & 6927.87 & \textcolor{red}{\textbf{WL}} \\
-    \textcolor{gray}{\sout{MILP Gurobi}} & \textcolor{gray}{290,549} & \textcolor{gray}{25.92} & \textcolor{gray}{3600} & \textcolor{gray}{46,169} & \textcolor{gray}{32.73}  & \textcolor{gray}{None} \\
-    MILP Hexaly     & \textcolor{green!60!black}{\textbf{230,739}} & 0.00 & 3600 & 50,730 & 5957.95 & None \\
-    CG Gurobi       & 290,285 & 25.81 & 3600 & 47,332 & \textcolor{orange!90!black}{\textbf{652.14}} & None \\
-    CG Hexaly       & 290,159 & 25.75 & 3600 & 47,294 & 681.19 & None \\
-    SA-C (Baseline) & 287,167 & 24.46 & 3600 & 49,706 & 2594.84 & None \\
-    GA (Baseline)   & \textcolor{orange!90!black}{\textbf{276,861}} & 19.99 & 3600 & 49,166 & 2434.40 & None \\
-    \midrule
-    \multicolumn{7}{c}{\cellcolor{gray!15}\textbf{Scale: 2000 SKUs} $|$ Stations: 20 $|$ Orders: 62,460 $|$ Time Limit: 7,200s} \\
-    \multicolumn{7}{c}{\cellcolor{gray!15} Target WL: 31,238.7 $|$ Max Cap: 34,363 $|$ Gurobi LB: 62,460} \\
-    \midrule
-    Feasible Start  & 492,260 & 30.81 & 0.80 & 31,262 & \textcolor{green!60!black}{\textbf{16.45}} & None \\
-    Heuristic       & \textcolor{orange!90!black}{\textbf{\sout{385,596}}} & 2.47  & \cellcolor{blue!10}\textbf{79.14} & \textcolor{red}{\textbf{42,249}} & 5370.26 &  \textcolor{red}{\textbf{WL}} \\
-    \textcolor{gray}{\sout{MILP Gurobi}} & \textcolor{gray}{492,260} & \textcolor{gray}{30.81} & \textcolor{gray}{7200} & \textcolor{gray}{31,262} & \textcolor{gray}{16.45} & \textcolor{gray}{None} \\
-    MILP Hexaly     & \textcolor{green!60!black}{\textbf{376,330}} & 0.00 & 7200 & 34,307 & 2781.03 & None \\
-    CG Gurobi       & 491,850 & 30.70 & 7200 & 32,351 & 711.27 & None \\
-    CG Hexaly       & 490,973 & 30.46 & 7200 & 32,656 & \textcolor{orange!90!black}{\textbf{511.58}} & None \\
-    SA-C (Baseline) & 487,590 & 29.56 & 7200 & 33,663 & 1321.44 & None \\
-    GA (Baseline)   & \textcolor{orange!90!black}{\textbf{477,075}} & 26.77 & 7200 & 33,931 & 1365.63 & None \\
-    \bottomrule
-  \end{tabularx}
-  \end{threeparttable}
-  \caption{Computational results for Large synthetic datasets (1,000 and 2,000 SKUs).}
-  \label{tab:synthetic_large}
-\end{table}
-
-\noindent An analysis of the consolidated benchmarks across the 50 to 2,000-SKU scales reveals five critical trends regarding algorithmic scalability, solution quality, and operational feasibility:
-
-\begin{itemize} 
-\item \textbf{The Combinatorial Wall (MILP Gurobi vs. MILP Hexaly):} 
-	Traditional branch-and-bound solvers (MILP Gurobi), which rely on the standard binary formulation ($x_{ps}$) presented in \cref{sec:LP_Approach}, hit a hard computational ceiling. They fail to improve upon the naive Feasible Start at scales $\ge 1,000$ SKUs because the discrete step-function objective (station visits) provides weak continuous relaxation gradients. Conversely, the set-variable modeling paradigm of \textbf{MILP Hexaly} fundamentally streamlines the spatial search. By evaluating high-level subsets rather than millions of individual binary flags, Hexaly consistently secures the best-found integer bound ($0.00\%$ Relative Deviation) across all dimensions.
-
-    \item \textbf{Limitations of Probabilistic Search (GA \& SA-C):}
-    While the classic meta-heuristics maintain strict physical feasibility, their search mechanics struggle with the extremely flat objective space topology of the discrete station-visit metric. Swapping items rarely triggers an immediate drop in discrete visits, causing probabilistic operators to stall in local optima. Consequently, GA and SA-C deviate by $26.77\%$ and $29.56\%$ respectively at the 2,000-SKU scale, leaving substantial operational savings unrealized compared to the set-variable hybrid.
-
-    \item \textbf{The Risk of Unconstrained Heuristics:} 
-    The Greedy Clustering Heuristic is computationally unmatched, executing the 2,000-SKU instance in just $79.14$ seconds with ostensibly competitive visit counts. However, it systematically violates workload boundaries, aggressively over-clustering items such that the \textbf{Max WL} greatly exceeds the facility's \textbf{Max Cap}. This confirms that rapid correlation clustering without strict linear bounding inevitably induces severe localized congestion, rendering the raw output operationally invalid.
-
-    \item \textbf{The Column Generation Bottleneck:}
-    Although designed to isolate pattern formation from station allocation, the CG framework struggles to scale beyond 500 SKUs. The Pricing Subproblem, tasked with generating negative reduced-cost patterns under strict capacity limits, suffers from a combinatorial explosion, failing to supply the Restricted Master Problem with high-quality columns within practical time limits.
-
-    \item \textbf{Workload Spreadness vs. Objective Minimization:} 
-    An inherent trade-off exists between workload variance (Std Dev WL) and station visits. The deterministic Feasible Start perfectly balances the workload (yielding the lowest standard deviation) but destroys item correlation, resulting in the maximum visit penalty. \textbf{MILP Hexaly} achieves the best-found operational compromise: it aggressively clusters items to reduce visits while keeping every station's workload within the rigid capacity thresholds. We note that this means ``feasible with respect to the hard cap'' rather than ``low variance'': on these homogeneous synthetic instances MILP Hexaly in fact records the highest workload standard deviation among the feasible methods, sitting just below \textbf{Max Cap} (see \cref{tab:synthetic_small,tab:synthetic_large}).
-\end{itemize}
-
-\subsection{Reliability Across Random Instances}\label{sec:reliability_multiseed}
-The set-variable MILP (Hexaly), GA, SA-C and the greedy heuristic all rely on randomised search, so a single run cannot establish whether a ranking reflects method quality or one favourable draw. We therefore evaluate every method over multiple, independently generated instances per size, drawn from the same Zhang common-itemset generator with distinct seeds, and report the mean station-visit count with a $95\%$ confidence interval (CI) together with paired significance tests. The set-variable MILP serves as the per-instance reference: each method's gap is measured against the strongest solution obtained on the same instance rather than against the best of the heuristic pool. All four methods run to a common fixed wall-clock budget (120/300/600/900\,s for the four sizes; the heuristic, having no time parameter, runs to completion), so the rankings are conditional on that budget and on the hardware.
+All optimizing methods run under a common per-size wall-clock budget, reported in the Time column of \cref{tab:exp02a_reliability}: $120/300/600/1{,}200$\,s across the four sizes. The set-variable MILP and the aggregated set-partitioning column generation of \cref{sec:cg} each consume the full budget at every size, so their visit comparison is made at equal computational effort. GA and SA-C run under the same budget and may stop earlier when their own schedules complete, as at $50$ and $2{,}000$ SKUs; a run may finish inside the budget but never exceeds it. The greedy heuristic has no time parameter and runs to completion well within the budget, and the Feasible Start (LPT) seed is immediate. Every ranking below is therefore read at this shared budget rather than at method-specific times.
 
 \begin{table}[H]
   \centering
   \footnotesize\setlength{\tabcolsep}{3pt}
   \begin{threeparttable}
-  \begin{tabularx}{\linewidth}{@{}ll*4{>{\centering\arraybackslash}X}@{}}
+  \begin{tabularx}{\linewidth}{@{}l*5{>{\centering\arraybackslash}X}@{}}
     \toprule
-    \textbf{Scale ($K$)} & \textbf{Method} & \textbf{Mean Visits} & \textbf{95\% CI} & \textbf{Gap to Hexaly} & \textbf{WL-viol.\ inst.} \\
+    \textbf{Method} & \textbf{Mean Visits} & \textbf{95\% CI} & \textbf{Gap to MILP} & \textbf{Time (s)} & \textbf{WL-viol.\ inst.} \\
     \midrule
-    \multirow{4}{*}{50 ($K{=}12$)}   & \textbf{Hexaly}\tnote{b} & \textbf{7,557} & [6,828, 8,286] & (ref) & 0\% \\
-                                     & Heuristic & 7,700  & [6,964, 8,437]   & $+2.0\%$  & 100\% \\
-                                     & SA-C      & 7,657  & [6,914, 8,399]   & $+1.3\%$  & 0\% \\
-                                     & GA        & 7,767  & [7,022, 8,513]   & $+2.8\%$  & 0\% \\
+    \multicolumn{6}{l}{\cellcolor{gray!15}\textbf{Scale: 50 SKUs} $\mid$ Stations: 5 $\mid$ Mean orders: 2,036 $\mid$ $K{=}12$ $\mid$ Budgets: 120\,s} \\
     \midrule
-    \multirow{4}{*}{500 ($K{=}10$)}  & \textbf{Hexaly}\tnote{b} & \textbf{76,041} & [68,118, 83,964] & (ref) & 0\% \\
-                                     & Heuristic & 78,655 & [70,515, 86,795] & $+3.5\%$  & 80\% \\
-                                     & GA        & 84,417 & [75,359, 93,475] & $+11.0\%$ & 0\% \\
-                                     & SA-C      & 88,372 & [78,937, 97,808] & $+16.2\%$ & 0\% \\
+    \textbf{MILP (set-var.)}\tnote{b} & \textbf{7,557} & [6,828, 8,286] & (ref) & 120 & 0\% \\
+    CG (set-part.)    & 7,592 & [6,860, 8,323] & $+0.5\%$ & 120 & 0\% \\
+    SA-C                     & 7,657 & [6,914, 8,399] & $+1.3\%$ & 39 & 0\% \\
+    Heuristic                & 7,700 & [6,964, 8,437] & $+2.0\%$ & 1 & 100\% \\
+    GA                       & 7,767 & [7,022, 8,513] & $+2.8\%$ & 34 & 0\% \\
+    Feasible Start (LPT)\tnote{c} & 8,857 & [8,054, 9,661] & $+17.4\%$ & $<0.1$ & 0\% \\
     \midrule
-    \multirow{4}{*}{1,000 ($K{=}4$)} & \textbf{Hexaly}\tnote{b} & \textbf{192,330} & [150,290, 234,370] & (ref) & 0\% \\
-                                     & Heuristic & 196,155 & [151,570, 240,740] & $+1.9\%$  & 100\% \\
-                                     & GA        & 232,543 & [182,649, 282,437] & $+21.0\%$ & 0\% \\
-                                     & SA-C      & 241,451 & [195,307, 287,594] & $+25.8\%$ & 25\% \\
+    \multicolumn{6}{l}{\cellcolor{gray!15}\textbf{Scale: 500 SKUs} $\mid$ Stations: 5 $\mid$ Mean orders: 20,832 $\mid$ $K{=}10$ $\mid$ Budgets: 300\,s} \\
     \midrule
-    \multirow{4}{*}{2,000 ($K{=}3$)\tnote{a}} & \textbf{Hexaly}\tnote{b} & \textbf{486,972} & [410,917, 568,247] & (ref) & 0\% \\
-                                     & Heuristic & 483,131 & [411,517, 565,068] & $-0.8\%$  & 100\% \\
-                                     & GA        & 608,269 & [520,733, 731,940] & $+24.8\%$ & 0\% \\
-                                     & SA-C      & 614,094 & [528,037, 737,715] & $+26.0\%$ & 0\% \\
+    \textbf{MILP (set-var.)}\tnote{b} & \textbf{76,041} & [68,118, 83,964] & (ref) & 300 & 0\% \\
+    CG (set-part.)    & 76,624 & [68,568, 84,680] & $+0.8\%$ & 300 & 0\% \\
+    Heuristic                & 78,655 & [70,515, 86,795] & $+3.5\%$ & 9 & 80\% \\
+    GA                       & 84,417 & [75,359, 93,475] & $+11.0\%$ & 300 & 0\% \\
+    SA-C                     & 88,372 & [78,937, 97,808] & $+16.2\%$ & 300 & 0\% \\
+    Feasible Start (LPT)\tnote{c} & 90,177 & [80,419, 99,936] & $+18.5\%$ & $<0.1$ & 0\% \\
+    \midrule
+    \multicolumn{6}{l}{\cellcolor{gray!15}\textbf{Scale: 1,000 SKUs} $\mid$ Stations: 10 $\mid$ Mean orders: 38,743 $\mid$ $K{=}4$ $\mid$ Budgets: 600\,s} \\
+    \midrule
+    CG (set-part.)    & 192,288 & [149,062, 235,513] & $-0.1\%$ & 600 & 0\% \\
+    \textbf{MILP (set-var.)}\tnote{b} & \textbf{192,330} & [150,290, 234,370] & (ref) & 600 & 0\% \\
+    Heuristic                & 196,155 & [151,570, 240,740] & $+1.9\%$ & 19 & 100\% \\
+    GA                       & 232,543 & [182,649, 282,437] & $+21.0\%$ & 600 & 0\% \\
+    SA-C                     & 241,451 & [195,307, 287,594] & $+25.8\%$ & 600 & 25\% \\
+    Feasible Start (LPT)\tnote{c} & 245,228 & [195,489, 294,967] & $+27.7\%$ & $<0.1$ & 0\% \\
+    \midrule
+    \multicolumn{6}{l}{\cellcolor{gray!15}\textbf{Scale: 2,000 SKUs}\tnote{a} $\mid$ Stations: 20 $\mid$ Mean orders: 78,698 $\mid$ $K{=}3$ $\mid$ Budgets: 1,200\,s} \\
+    \midrule
+    CG (set-part.)    & 475,035 & [405,554, 558,724] & $-2.4\%$ & 1,200 & 0\% \\
+    Heuristic                & 483,131 & [411,517, 565,068] & $-0.8\%$ & 38 & 100\% \\
+    \textbf{MILP (set-var.)}\tnote{b} & \textbf{486,972} & [410,917, 568,247] & (ref) & 1,200 & 0\% \\
+    GA                       & 608,269 & [520,733, 731,940] & $+24.8\%$ & 909 & 0\% \\
+    SA-C                     & 614,094 & [528,037, 737,715] & $+26.0\%$ & 1,096 & 0\% \\
+    Feasible Start (LPT)\tnote{c} & 621,096 & [533,942, 748,257] & $+27.4\%$ & $<0.1$ & 0\% \\
     \bottomrule
   \end{tabularx}
   \begin{tablenotes}\footnotesize
     \item[a] At $K{=}3$ the $t$-interval is uninformative; the bracket reports the observed [min, max] range, not a CI.
-    \item[b] Set-variable MILP (Hexaly), used as the per-instance reference; ``Gap to Hexaly'' is the mean per-instance excess visits over this reference. ``WL-viol.\ inst.'' is the fraction of instances breaching the workload cap; a method is operationally feasible only at $0\%$.
+    \item[b] Set-variable MILP of \cref{sec:set_reformulation} (solved with Hexaly), used as the per-instance reference; ``Gap to MILP'' is the mean per-instance excess visits over this reference. ``WL-viol.\ inst.'' is the fraction of instances breaching the workload cap; a method is operationally feasible only at $0\%$. CG (set-part.) is the aggregated set-partitioning column generation of \cref{sec:cg} (solved with CPLEX).
+    \item[c] Feasible Start (LPT): the shared deterministic LPT seed handed to every method, shown as a correlation-blind anchor and excluded from the method-ranking claims. ``Time (s)'' is the wall-clock time under the common per-size budget, equal to that budget for methods that consume it fully; ``Mean orders'' is the mean order count across the $K$ instances of the block.
   \end{tablenotes}
   \end{threeparttable}
-  \caption{Multi-instance reliability across the instance distribution, with the set-variable MILP (Hexaly) as the per-instance reference. Mean station visits with $95\%$ CI, mean gap to the reference, and the fraction of instances breaching the workload cap.}
+  \caption{Multi-instance benchmark across the synthetic instance distribution, with the set-variable MILP as the per-instance reference. Rows within each scale block are sorted by ascending mean visits, with the Feasible Start (LPT) anchor placed last. Mean station visits with $95\%$ CI, mean gap to the reference, solve time under the common per-size budget, and the fraction of instances breaching the workload cap.}
   \label{tab:exp02a_reliability}
 \end{table}
 
-Three conclusions hold across the random draws. First, the \textbf{set-variable MILP is the best feasible method at every scale}, and its margin over the literature baselines widens with problem size: GA and SA-C trail it by $2.8\%$ and $1.3\%$ at $50$ SKUs, but by $24.8\%$ and $26.0\%$ at $2{,}000$ SKUs. These gaps are statistically robust. A paired Wilcoxon signed-rank test separates the MILP from both GA and SA-C at $50$ and $500$ SKUs ($p=4.9\times10^{-4}$ and $p=1.95\times10^{-3}$ respectively), and at $1{,}000$ and $2{,}000$ SKUs the paired $t$-test confirms the same ordering (the Wilcoxon test is underpowered at $K=3$ to $4$ and is reported descriptively there). Second, the only method that rivals the MILP on raw visits is the greedy heuristic (the difference is not significant at $50$ SKUs, $p=0.18$, nor at $2{,}000$ SKUs, $p=0.5$), but the heuristic breaches the workload cap in $80$ to $100\%$ of instances and is therefore not operationally usable. Among the methods that respect the cap, the MILP dominates at every scale, with GA the better of the two literature baselines from $500$ SKUs upward (the two are within noise at $50$ SKUs). Third, dispersion across random instances dominates dispersion across solver seeds: re-running GA under additional solver seeds yields a within-instance standard deviation of about $1\%$, an order of magnitude below the variation between instances.
+Three conclusions hold across the random draws; a fourth, on the column generation, follows below. First, among the greedy heuristic and the literature meta-heuristics, the \textbf{set-variable MILP is the best feasible method at every scale}, and its margin over the literature baselines widens with problem size: GA and SA-C trail it by $2.8\%$ and $1.3\%$ at $50$ SKUs, but by $24.8\%$ and $26.0\%$ at $2{,}000$ SKUs. These gaps are statistically robust. A paired Wilcoxon signed-rank test separates the MILP from both GA and SA-C at $50$ and $500$ SKUs ($p=4.9\times10^{-4}$ and $p=1.95\times10^{-3}$ respectively), and at $1{,}000$ and $2{,}000$ SKUs the paired $t$-test confirms the same ordering (the Wilcoxon test is underpowered at $K=3$ to $4$ and is reported descriptively there). Second, the only method in this pool that rivals the MILP on raw visits is the greedy heuristic (the difference is not significant at $50$ SKUs, $p=0.18$, nor at $2{,}000$ SKUs, $p=0.5$), but the heuristic breaches the workload cap in $80$ to $100\%$ of instances and is therefore not operationally usable. Among the methods that respect the cap, the MILP dominates at every scale, with GA the better of the two literature baselines from $500$ SKUs upward (the two are within noise at $50$ SKUs). Third, dispersion across random instances dominates dispersion across solver seeds: re-running GA under additional solver seeds yields a within-instance standard deviation of about $1\%$, an order of magnitude below the variation between instances.
 
-Two caveats bound this study. The rankings are conditional on the fixed wall-clock budget above, not asymptotic; and the CIs at $1{,}000$ and $2{,}000$ SKUs ($K=4$ and $K=3$) are wide and, at $2{,}000$, statistically uninformative, so they are reported as ranges. At industrial scale the $21{,}877$-SKU MILP layout of \cref{sec:numerical_results} is evaluated on the single available instance, since its size precludes a multi-seed sweep.
+Four mechanisms behind these rankings carry over from the single-instance runs and now rest on the multi-instance evidence of \cref{tab:exp02a_reliability}. The standard binary formulation ($x_{ps}$) of \cref{sec:LP_Approach} under branch-and-bound cannot exploit the discrete step-function objective, because its continuous relaxation is flat; at $1{,}000$ SKUs and above it fails to improve on the Feasible Start seed and its certified bound collapses to the trivial order count, so it carries no row in the table and solution quality is read as the gap to the set-variable reference. The literature meta-heuristics stay physically feasible but stall on the same flat landscape, where item swaps rarely move the discrete visit count, and their gaps widen to between $21$ and $26\%$ from $1{,}000$ SKUs upward. The greedy heuristic is the fastest method by more than an order of magnitude, yet it over-clusters correlated items and breaches the workload cap on $80$ to $100\%$ of instances, so its low visit counts are not operationally usable. The Feasible Start (LPT) anchor sits at the opposite corner of that trade-off: it spreads workload most evenly and records the lowest station imbalance, but it ignores correlation and pays the largest visit penalty at every scale, which is why it is shown as an anchor rather than a ranked method. Across all $29$ instances no method ever violated the per-station slot capacity (products per station), so the WL-viol.\ column, which tracks the workload and time cap, is the only binding feasibility signal in the table.
 
-\subsection{Industrial Case Study: Scaling to 22k SKUs}
-To validate these findings under operational realities, we transition to the heterogeneous dataset from Company A ($|P|=21,877$ products, 26 active stations). We applied the frequency-based pruning scheme detailed in \cref{sec:methodology} to reduce the active decision pool while keeping low-frequency SKUs strictly accounted for in the capacity bounds.
+The aggregated set-partitioning column generation of \cref{sec:cg} adds a fourth reading, and its comparisons rest on exact paired Wilcoxon signed-rank tests. It is the only method besides the reference with zero workload violations at every size. It trails the reference by $+0.5\%$ ($p=0.0015$) at $50$ SKUs and by $+0.8\%$ ($p=0.0039$) at $500$ SKUs, matches it at $1{,}000$ SKUs while winning $3$ of the $4$ instances, and leads at $2{,}000$ SKUs by $-2.4\%$ while winning all $3$ instances. Pooled over the $29$ instances the two methods are statistically indistinguishable ($p=0.11$; the mean per-instance gap is $+0.2\%$ against the reference, while on pooled visit totals the column generation finishes $1.0\%$ ahead, a difference carried by the largest scales), so the reformulated method reaches the quality of a commercial hybrid local-search solver while remaining always feasible. Pooled, it dominates every feasible baseline, beating GA on all $29$ instances ($p=2.6\times10^{-6}$), SA-C on $28$ of $29$ ($p=2.9\times10^{-6}$), and the workload-violating heuristic on $26$ of $29$ ($p=2.4\times10^{-5}$). It runs under the same per-size budget as the reference at every size. Its margin over the reference improves monotonically with instance size, the reverse of what a direct, conventional drive of the station-indexed master of \cref{sec:cg_master_general} exhibits: pricing one pattern MILP per station with an order-coverage variable for every order makes the cost scale with the order count times the station count, and in our experiments such an implementation stalled beyond $500$ SKUs, whereas the aggregated master and support-level pricing of \cref{sec:cg_master_agg} drop both factors. The reported column-generation figures are not budget-starved: on the seed-$1001$ instances, extending the method well beyond the tabled budget barely moved it, to $86{,}365$ visits at $1{,}200$\,s for $500$ SKUs, $226{,}566$ at $3{,}600$\,s for $1{,}000$ SKUs, and $404{,}882$ at $7{,}200$\,s for $2{,}000$ SKUs, each within one per cent of a shorter run and terminating early on descent convergence.
+
+Two caveats bound this study. The rankings are conditional on the common per-size budget reported in the Time column of \cref{tab:exp02a_reliability}, not asymptotic; and the CIs at $1{,}000$ and $2{,}000$ SKUs ($K=4$ and $K=3$) are wide and, at $2{,}000$, statistically uninformative, so they are reported as ranges. The column generation bound is loose at these budgets, so its result stands as a matheuristic reading rather than a certified one, and its rankings, like those of the other methods, are budget-conditional. At industrial scale the $21{,}874$-SKU MILP layout of \cref{sec:numerical_results} is evaluated on the single available instance, since its size precludes a multi-seed sweep.
+
+\subsection{Industrial Case Study: Scaling to 21,874 SKUs}
+To validate these findings under operational realities, we transition to the heterogeneous dataset from Company A ($|P|=21,874$ products; 26 active stations, 24 of which carry movable SKUs after the pruning step and enter the solver and the evaluation). We applied the frequency-based pruning scheme detailed in \cref{sec:methodology} to reduce the active decision pool while keeping low-frequency SKUs strictly accounted for in the capacity bounds.
 
 Because Company A's stations possess highly variable geometries and calibrated processing speeds ($V_s$), absolute workload variance is no longer a valid metric. We instead measure the \textbf{Standard Deviation of the Relative Change Utilization Factor (\%)}. A standard deviation approaching zero indicates the algorithm successfully preserved the engineered workload equilibrium of the facility.
 
@@ -729,18 +603,21 @@ Because Company A's stations possess highly variable geometries and calibrated p
   \begin{tabularx}{\linewidth}{@{}l*6{>{\centering\arraybackslash}X}@{}}
     \toprule
     \textbf{Method} & \textbf{Visits} & \textbf{Rel. Dev (\%)} & \textbf{Time (s)} & \textbf{Max WL} & \textbf{Std Dev Util.} & \textbf{Violations} \\ \midrule
-    \cellcolor{yellow!50!black} \textcolor{white}{Original (A)}   & \cellcolor{yellow!50!black} \textcolor{white}{1,062,507} & \cellcolor{yellow!50!black} \textcolor{white}{15.81} & \cellcolor{yellow!50!black} \textcolor{white}{0} & \cellcolor{red!90}\textcolor{white}{10,915} & \cellcolor{green!80!black}\textcolor{white}{0.00} & \cellcolor{yellow!50!black}\textcolor{white}{None} \\
-    Heuristic       & \textcolor{orange!90!black}{\textbf{\sout{1,016,003}}} & 10.74 & \cellcolor{blue!10}\textbf{94.36} & \textcolor{red}{\textbf{11,919}} & 37.09 &  \textcolor{red}{\textbf{WL}} \\
-    \textcolor{gray}{\sout{MILP Gurobi}} & \textcolor{gray}{1,062,507} & \textcolor{gray}{15.81} & \textcolor{gray}{36,000} & \textcolor{gray}{9,923} & \textcolor{gray}{0.00} & \textcolor{gray}{None} \\
-    MILP Hexaly     & \textcolor{green!60!black}{\textbf{917,465}} & 0.00 & 36,000 & 10,467 & \textcolor{green!60!black}{\textbf{4.48}} & None \\
-    \textcolor{gray}{\sout{CG Hexaly}} & \textcolor{gray}{1,062,507} & \textcolor{gray}{15.81} & \textcolor{gray}{36,000} & \textcolor{gray}{9,923} & \textcolor{gray}{0.00} & \textcolor{gray}{None} \\
-    \textcolor{gray}{\sout{CG Gurobi}} & \textcolor{gray}{1,062,507} & \textcolor{gray}{15.81} & \textcolor{gray}{36,000} & \textcolor{gray}{9,923} & \textcolor{gray}{0.00} & \textcolor{gray}{None} \\
-    GA (Baseline)   & \textcolor{orange!90!black}{\textbf{\sout{1,046,071}}} & 14.02 & 19,515 & \textcolor{red}{\textbf{10,971}} & 18.5 &  \textcolor{red}{\textbf{WL}} \\
-   SA-C (Baseline) & \textcolor{orange!90!black}{\textbf{1,058,563}} & 15.38 & 36,000 & 10,810 & \textcolor{orange!90!black}{\textbf{12.14}} & None \\
+    \cellcolor{yellow!50!black} \textcolor{white}{Original (A)}   & \cellcolor{yellow!50!black} \textcolor{white}{1,062,507} & \cellcolor{yellow!50!black} \textcolor{white}{15.81} & \cellcolor{yellow!50!black} \textcolor{white}{0} & \cellcolor{yellow!50!black}\textcolor{white}{9,923} & \cellcolor{green!80!black}\textcolor{white}{0.00} & \cellcolor{yellow!50!black}\textcolor{white}{None} \\
+    Heuristic       & 1,016,003 & 10.74 & \cellcolor{blue!10}\textbf{94.36} & \textcolor{red}{\textbf{11,919}} & 37.09 &  \textcolor{red}{\textbf{WL}} \\
+    MILP (set-var.)     & \textcolor{green!60!black}{\textbf{917,465}} & 0.00 & 36,000 & 10,467 & \textcolor{orange!90!black}{\textbf{4.48}} & None \\
+    CG (set-part.) & \textcolor{orange!90!black}{\textbf{1,000,844}} & 9.09 & 36,000 & 10,074 & \textcolor{green!60!black}{\textbf{2.41}} & None \\
+    GA (Baseline)   & 1,046,071 & 14.02 & 19,358 & \textcolor{red}{\textbf{10,972}} & 18.52 &  \textcolor{red}{\textbf{WL}} \\
+   SA-C (Baseline) & 1,058,563 & 15.38 & 36,000 & 10,811 & 12.14 & \textcolor{red}{\textbf{WL}}\tnote{a} \\
     \bottomrule
   \end{tabularx}
+  \begin{tablenotes}\footnotesize
+    \item MILP (set-var.): set-variable MILP of \cref{sec:set_reformulation}, solved with Hexaly. CG (set-part.): station-indexed set-partitioning column generation of \cref{sec:cg_master_general}, solved with CPLEX.
+    \item All columns of a row come from that method's single run, scored under the identical full evaluation and a single workload basis: Max WL is the realized busiest-station daily load. The site's operational tolerance admits up to $+10\%$ over each station's legacy load; the busiest station carries $9{,}923$ lines in the legacy layout, so its tolerance bound is $10{,}915$ lines. ``Violations'' flags \textcolor{red}{\textbf{WL}} when at least one station's realized load exceeds its own $+10\%$ bound; the check is per station, so a breach can occur away from the busiest station, and a Max WL below $10{,}915$ does not by itself certify feasibility. Time reports wall-clock seconds; $36{,}000$ marks runs consuming the full ten-hour budget.
+    \item[a] SA-C's run exceeds the legacy load on four of the $24$ stations; its per-station loads were not retained, so compliance with the $+10\%$ bounds cannot be certified and the flag is set conservatively.
+  \end{tablenotes}
   \end{threeparttable}
-  \caption{Computational results for the Industrial Case Study (21,877 SKUs) evaluated under a uniform 10-hour practical time limit.}
+  \caption{Computational results for the Industrial Case Study (21,874 SKUs) evaluated under a uniform 10-hour practical time limit.}
   \label{tab:industrial_21877sku}
 \end{table}
 
@@ -769,9 +646,11 @@ The greedy clustering heuristic demonstrates exceptional computational scalabili
 \hyperref[fig:comparison_lines_heuristic]{Figure 3} illustrates the volatility of the heuristic assignment. While it successfully aggressively groups correlated items to reduce discrete stops, it mathematically disregards the strict workload boundaries. The right-hand graph displays massive relative percentage shifts in temporal workload, pushing several stations far beyond their engineered capacity limits (resulting in the WL violations noted in Table \ref{tab:industrial_21877sku}). Consequently, while the heuristic is a powerful tool for rapid, unconstrained clustering, its raw output may induce severe localized congestion if deployed without secondary balancing mechanisms.
 
 \paragraph{\textbf{Exact Methods and the MILP Advantage}}
-When scaling to the massive industrial instance of 21,877 SKUs, the exact methods exhibited highly divergent behaviors depending on the underlying formulation and solver technology. The Column Generation (CG) framework, while highly efficient on smaller synthetic datasets, struggled with the combinatorial explosion of the pricing subproblems at this scale. Neither the Gurobi nor Hexaly CG implementations were able to identify an integer solution superior to the Original (A) warm start within the time limit. Because the final layout remained identical to the baseline, no graphical representation is provided for the CG outputs.
+When scaling to the massive industrial instance of $21{,}874$ SKUs, the exact methods behave differently by formulation. To compare the set-partitioning column generation against the set-variable MILP on identical terms, we ran it on Company~A in its station-indexed form of \cref{sec:cg_master_general} under the MILP's exact inputs: the same per-station workload caps, the same solver-frequency workload basis, no lower bound on workload, and the identical full-evaluation used to score the MILP. The two methods therefore solve byte-for-byte the same constrained problem. As formalized in \cref{sec:cg_master_general}, each active station keeps its own convexity row in the master, and the single persistent pricing model serves all of them by swapping only the two station-dependent right-hand sides per call. Each station's workload cap is the MILP's own per-station cap, the engineered equilibrium of the site, so the run grants no capacity relief. Priced bundles are installed into the incumbent layout by an ejection-style recompletion that evicts the bundle's products, rebuilds the target station, and reinserts the displaced products by co-occurrence affinity, and the swap descent accepts moves lexicographically, feasibility strictly before visits. Over $106$ CG iterations the run generated $2{,}670$ columns with exact pricing at every iteration and used $35{,}940$ of the $36{,}000$ available seconds, improving the pruned-instance objective from the $680{,}270$-visit warm start to $627{,}523$. On the full evaluation the resulting layout scores $1{,}000{,}844$ visits, $9.09\%$ above the best feasible layout (set-variable MILP, $917{,}465$), and it improves the live legacy layout by $5.8\%$ ($61{,}663$ fewer visits). Under this fair setup the set-variable MILP retains the visit advantage at industrial scale, with column generation trailing it by $9.09\%$. Three strengths of the decomposition nevertheless stand. It is strictly feasible with the same violation profile as the MILP: neither method violates a solver-side cap, both exceed the raw current workload on ten stations under the full evaluation, and both remain within the site's $\pm 10\%$ operational tolerance, which is applied uniformly to every method at evaluation time; the column-generation layout's per-station deviations span $-3.8\%$ to $+5.8\%$, against $-5.9\%$ to $+9.6\%$ for the set-variable MILP. It disturbs the engineered utilization equilibrium the least among the optimizing methods, at $2.41$ standard deviation against $4.48$ for the set-variable MILP and $12.14$ for SA-C. And it completes and improves at this scale, where a conventional drive of the same per-station decomposition --- one pricing model per station, with an order-coverage variable for every order --- returns its warm start unchanged under the same ten-hour budget. The Farley pass ran to completion but stays uninformative at this scale, consistent with \cref{sec:cg_bound}. The remaining exact route to the deepest visit reduction is the set-variable MILP.
 
-Conversely, the MILP formulation powered by Hexaly's set-variable architecture successfully broke through the computational ceiling. 
+The MILP formulation powered by Hexaly's set-variable architecture successfully broke through the computational ceiling.
+
+The structural trade-off between station-visit minimization and baseline workload preservation is illustrated by comparing the workload distributions of the set-variable MILP (\cref{fig:comparison_lines}) and Column Generation (\cref{fig:comparison_lines_cg}).
 
 \begin{figure}[H]
     \centering
@@ -784,23 +663,42 @@ Conversely, the MILP formulation powered by Hexaly's set-variable architecture s
         \centering
         \includegraphics[width=\linewidth, height=4cm]{Images_CSLAP/Hexaly_pt_relative_change_number_of_lines_per_station.png}
     \end{minipage}
-    \caption{Number of Lines per Station (left) and Relative Change Utilization Factor (right) resulting from the MILP Hexaly assignment, compared against the Original Assignment.}
+    \caption{Number of lines per station (left) and relative utilization change (right) for the set-variable MILP solution compared to the legacy assignment.}
     \label{fig:comparison_lines}
 \end{figure}
 
-As shown in \hyperref[fig:comparison_lines]{Figure 4}, the MILP Hexaly solution achieves the optimal balance between aggressive clustering and strict operational synchronization. The right-hand graph demonstrates that the relative percentage change on each station is tightly constrained, yielding a remarkably low standard deviation ($4.48$) and a maximum deviation of $9.6\%$, which safely respects the $\pm 10\%$ operational slack permitted for station workload. The solver successfully rearranged the warehouse to achieve the best-found objective value ($917,465$ visits) without heavily overloading or starving any individual picking zone. It is worth noting that MILP Gurobi, utilizing standard binary variables, stalled at an assignment equivalent to the heuristic output. Hexaly's ability to break through this combinatorial wall stems not merely from the compact set-variable reformulation, but primarily from its advanced hybrid solving architecture. By combining powerful metaheuristic local search techniques with exact mathematical methods, Hexaly is uniquely equipped to efficiently navigate the massive, flat search space that paralyzes traditional branch-and-bound solvers, proving essential for industrial-scale tractability \cite{blaisemodeling}.
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth, height=4cm]{Images_CSLAP/cg_lines_per_station.png}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth, height=4cm]{Images_CSLAP/cg_pct_change.png}
+    \end{minipage}
+    \caption{Number of lines per station (left) and relative utilization change (right) for the station-indexed Column Generation solution compared to the legacy assignment.}
+    \label{fig:comparison_lines_cg}
+\end{figure}
+
+As shown in \cref{fig:comparison_lines}, the set-variable MILP solution achieves the deepest objective reduction ($917,465$ visits, a $13.7\%$ improvement over legacy) while maintaining strict operational feasibility. Its relative station workload shifts are bounded within $[-5.9\%, +9.6\%]$, yielding a standard deviation of $4.48\%$ across station utilization changes—well within the site's $\pm 10\%$ operational tolerance. The solver successfully rearranges the layout to eliminate stops without creating localized picking bottlenecks. This ability to break through the combinatorial wall stems from pairing the set-variable reformulation with Hexaly's hybrid local-search architecture, which effectively navigates the flat fitness landscape that stalls standard branch-and-bound \cite{blaisemodeling}.
+
+Conversely, \cref{fig:comparison_lines_cg} confirms that the station-indexed Column Generation framework prioritizes workload stability above aggressive re-slotting. While achieving a $5.8\%$ visit reduction over legacy ($1,000,844$ visits), CG restricts relative workload deviations to a tight $[-3.8\%, +5.8\%]$ window, yielding the lowest utilization standard deviation among all optimizing methods ($2.41\%$). Graphically, the CG station loads track the engineered legacy baseline almost identically. This offers warehouse managers two distinct deployment profiles: the set-variable MILP when maximizing throughput velocity is paramount, and Column Generation when facility operations demand minimal perturbation to an established workload equilibrium.
 
 \paragraph{\textbf{Real-World Labor Impacts: }}
-The theoretical reduction in the objective function translates into massive logistical savings. Over the 66-day working quarter captured in our dataset, the original legacy layout required $1,062,507$ total station visits, averaging approximately $16,099$ daily stops. The optimized MILP Hexaly layout reduces this total to $917,465$ visits. This yields a direct elimination of $145,042$ unnecessary mechanical stops and barcode scans per quarter. On a daily basis, this equates to roughly \textbf{2,198 fewer station visits per day}, representing a \textbf{13.7\%} structural drop in system congestion. This directly frees up roughly \textbf{nine full operating days} of picker and conveyor dwell time per quarter, allowing the facility to process identical order volumes with a significantly higher throughput velocity simply through intelligent re-slotting. We emphasise that these labor-day figures are linear extrapolations obtained by multiplying the eliminated visits by a fixed mechanical time-per-visit; they do not yet account for queueing or discrete-event dynamics, whose exact quantification we defer to the simulation study outlined in \cref{sec:conclusion}.
+
+\paragraph{\textbf{Real-World Labor Impacts: }}
+The theoretical reduction in the objective function translates into massive logistical savings. Over the 66-day working quarter captured in our dataset, the original legacy layout required $1,062,507$ total station visits, averaging approximately $16,099$ daily stops. The optimized set-variable MILP layout reduces this total to $917,465$ visits. This yields a direct elimination of $145,042$ unnecessary mechanical stops and barcode scans per quarter. On a daily basis, this equates to roughly \textbf{2,198 fewer station visits per day}, representing a \textbf{13.7\%} structural drop in system congestion. This directly frees up roughly \textbf{nine full operating days} of picker and conveyor dwell time per quarter, allowing the facility to process identical order volumes with a significantly higher throughput velocity simply through intelligent re-slotting. We emphasise that these labor-day figures are linear extrapolations obtained by multiplying the eliminated visits by a fixed mechanical time-per-visit; they do not yet account for queueing or discrete-event dynamics, whose exact quantification we defer to the simulation study outlined in \cref{sec:conclusion}.
 
 \paragraph{\textbf{Summary of Methodological Strengths: }}
-The comparative analysis across the industrial dataset yields clear operational guidelines. The \textbf{Heuristic} approach is unmatched in computational speed and scalability, making it ideal for rapid, dynamic environments where strict workload balancing is less critical. The \textbf{MILP (Hexaly)} formulation stands as the superior framework for rigorous, scheduled re-slotting, providing the deepest reduction in station visits while guaranteeing strict adherence to physical and temporal capacity limits. Finally, while \textbf{Column Generation} provides excellent theoretical bounds and performance on localized zones, its current architecture requires further stabilization enhancements before it can be efficiently deployed across facility-wide industrial instances.
+The comparative analysis across the industrial dataset yields clear operational guidelines. The \textbf{Heuristic} approach is unmatched in computational speed and scalability, making it ideal for rapid, dynamic environments where strict workload balancing is less critical. The \textbf{set-variable MILP} stands as the superior framework for rigorous, scheduled re-slotting, providing the deepest reduction in station visits while guaranteeing strict adherence to physical and temporal capacity limits. Finally, \textbf{Column Generation} in its aggregated set-partitioning form matches the set-variable MILP on the homogeneous synthetic benchmark of \cref{sec:reliability_multiseed} while always respecting the workload cap, and in its station-indexed form (\cref{sec:cg_master_general}) it runs on Company~A as well. There it improves the live layout by $5.8\%$ and disturbs the utilization equilibrium the least among the optimizing methods at $2.41$ standard deviation while staying strictly feasible, though it trails the set-variable MILP on visits by $9.09\%$.
 
 \subsection{Robustness validation via temporal hold-out}\label{sec:temporal_validation}
 
 Having established the set-variable MILP formulation (solved via Hexaly) as the strongest framework for solution quality while strictly respecting workload boundaries, we now evaluate its operational resilience. To assess the robustness of the best-found assignments derived from limited historical data, we evaluate these layouts \emph{out of sample} by making optimized decisions on early weeks and testing them on later, unseen weeks.
 
-This temporal hold-out mirrors realistic deployment (optimize once, then operate as demand evolves) and is consistent with robustness practices in storage assignment and warehouse optimization, where perfect information benchmarks (``oracle'' layouts) are contrasted with implementable policies \citep{lee2020cie,wang2020}. We performed two hold-out validation experiments on our 13-week dataset (3-month horizon) exclusively utilizing the Hexaly MILP framework:
+This temporal hold-out mirrors realistic deployment (optimize once, then operate as demand evolves) and is consistent with robustness practices in storage assignment and warehouse optimization, where perfect information benchmarks (``oracle'' layouts) are contrasted with implementable policies \cite{lee2020cie,wang2020}. We performed two hold-out validation experiments on our 13-week dataset (3-month horizon) exclusively utilizing the set-variable MILP framework:
 
 \begin{itemize}
   \item \textbf{Experiment 1:} The MILP makes decisions knowing only the first\,10 weeks of data, and the resulting layout is evaluated on the remaining 3 weeks.  
@@ -841,7 +739,7 @@ Thus, for this \textit{specific warehouse}, the recent past provides guidance th
 \subsection{Practical Extension: Limited Product Reassignment}
 \label{sec:limited_reassignment}
 
-While the set-variable MILP (solved via Hexaly) yields the lowest station-visit count we obtain, fully redesigning an active 22,000-SKU warehouse layout is often operationally disruptive. Moving every product to its newly assigned position requires extended downtime and significant labor, risking delays in fulfillment.
+While the set-variable MILP (solved via Hexaly) yields the lowest station-visit count we obtain, fully redesigning an active 21,874-SKU warehouse layout is often operationally disruptive. Moving every product to its newly assigned position requires extended downtime and significant labor, risking delays in fulfillment.
 
 To provide a cost-effective, continuous-improvement strategy, we introduce a practical extension to our base LP model that restricts the total number of products allowed to be relocated. By capping the reassignment at a maximum boundary $k$, managers can match the re-slotting effort to their available workforce while capturing the most critical throughput benefits.
 
@@ -856,7 +754,7 @@ Recall that our binary decision variable $x_{ps} \in \{0,1\}$ equals 1 if produc
 Constraint~\eqref{constraint:reassignment} enforces that the total number of products staying in their original locations must be at least $|P| - k$. Equivalently, this ensures the total number of relocated products across the entire warehouse is strictly bounded to at most $k$.
 
 \subsubsection{Quantitative Analysis: the Effort--Benefit Trade-off}
-Rather than fixing a single relocation budget, we characterise how the achievable benefit scales with $k$. We re-solved the industrial instance under a sweep of caps, $k \in \{250, 500, 1{,}000, 2{,}000, 5{,}000\}$, each under a uniform one-hour optimization budget, and contrast the result against both the legacy layout ($k=0$) and the full re-optimization anchor (the $917{,}465$-visit solution of \cref{tab:industrial_21877sku}, which required a ten-hour budget). \Cref{tab:restricted_MILP} and \cref{fig:ksweep} report the trade-off.
+Rather than fixing a single relocation budget, we characterise how the achievable benefit scales with $k$. We re-solved the industrial instance under a sweep of caps, $k \in \{250, 500, 1{,}000, 2{,}000, 5{,}000\}$, each under a uniform one-hour solver budget, and contrast the result against both the legacy layout ($k=0$) and the full re-optimization anchor (the $917{,}465$-visit solution of \cref{tab:industrial_21877sku}, which required a ten-hour budget). \Cref{tab:restricted_MILP} and \cref{fig:ksweep} report the trade-off.
 
 \begin{table}[H]
   \centering
@@ -867,17 +765,17 @@ Rather than fixing a single relocation budget, we characterise how the achievabl
     \textbf{Relocation cap} & \textbf{\% catalog} & \textbf{Total visits} & \textbf{Reduction} & \textbf{\% of full benefit} & \textbf{WL-viol.\ stations} \\
     \midrule
     Legacy ($k=0$)        & 0\%     & 1,062,507 & --       & --      & 0 \\
-    $k=250$               & 1.1\%   & 1,061,304 & 1,203    & 0.8\%   & 11 \\
-    $k=500$               & 2.3\%   & 1,059,839 & 2,668    & 1.8\%   & 10 \\
-    $k=1{,}000$           & 4.6\%   & 1,057,746 & 4,761    & 3.3\%   & 13 \\
-    $k=2{,}000$           & 9.1\%   & 1,052,948 & 9,559    & 6.6\%   & 10 \\
-    $k=5{,}000$           & 22.9\%  & 1,037,869 & 24,638   & 17.0\%  & 11 \\
+    $k=250$               & 1.1\%   & 1,061,302 & 1,205    & 0.8\%   & 0 \\
+    $k=500$               & 2.3\%   & 1,060,120 & 2,387    & 1.6\%   & 0 \\
+    $k=1{,}000$           & 4.6\%   & 1,056,412 & 6,095    & 4.2\%   & 0 \\
+    $k=2{,}000$           & 9.1\%   & 1,049,730 & 12,777   & 8.8\%   & 0 \\
+    $k=5{,}000$           & 22.9\%  & 1,034,735 & 27,772   & 19.2\%  & 0 \\
     \midrule
     Full re-opt.\tnote{a} & --      & 917,465   & 145,042  & 100\%   & 0 \\
     \bottomrule
   \end{tabularx}
   \begin{tablenotes}\footnotesize
-    \item[a] Unrestricted MILP--Hexaly from \cref{tab:industrial_21877sku} (ten-hour budget); shown as the asymptotic reference.
+    \item[a] Unrestricted set-variable MILP from \cref{tab:industrial_21877sku} (ten-hour budget); shown as the asymptotic reference.
   \end{tablenotes}
   \end{threeparttable}
     \caption{Limited-reassignment trade-off on the industrial dataset: visit reduction as a function of the relocation cap $k$. ``\% of full benefit'' is the reduction relative to the $145{,}042$-visit full re-optimization. ``WL-viol.\ stations'' counts stations whose realised workload exceeds the cap.}
@@ -891,9 +789,9 @@ Rather than fixing a single relocation budget, we characterise how the achievabl
     \label{fig:ksweep}
 \end{figure}
 
-Two findings emerge. First, the benefit of restricted re-slotting accrues gradually: relocating $2.3\%$ of the catalog captures $1.8\%$ of the full reduction, and relocating $22.9\%$ captures $17\%$. The returns are mildly increasing in $k$, so a small targeted relocation does not capture the majority of the available throughput benefit; most of the gain in the full solution comes from a large-scale rearrangement that a tightly bounded budget cannot reproduce. The curve therefore quantifies what a manager forgoes by limiting disruption, and lets the relocation budget $k$ be chosen to match available labor against a known marginal benefit.
+Two findings emerge. First, the benefit of restricted re-slotting accrues roughly in step with the relocation effort: relocating $2.3\%$ of the catalog captures $1.6\%$ of the full reduction, and relocating $22.9\%$ captures $19.2\%$. No small subset of moves captures a disproportionate share of the gain, so most of the improvement in the full solution still comes from a large-scale rearrangement that a tightly bounded budget cannot reproduce. The curve therefore quantifies what a manager forgoes by limiting disruption, and lets the relocation budget $k$ be chosen to match available labor against a known marginal benefit.
 
-Second, under the one-hour budget the restricted solutions, like the unconstrained heuristic of \cref{sec:numerical_results}, can incur minor workload breaches as the search trades balance for visits ($10$ to $13$ of the $26$ stations marginally exceed their cap). The legacy layout ($k=0$) and the full optimization ($k$ unrestricted) are both strictly feasible; a deployment of the restricted model accordingly retains the workload cap as a hard filter or extends the solve budget, which restores feasibility at the cost of a longer overnight cycle.
+Second, every restricted layout is operationally feasible. At each cap the solver keeps every station within both its storage capacity and its workload budget, and it barely disturbs the engineered balance of the site: the busiest station load and the spread of utilisation across stations stay essentially at their legacy values. The whole trade-off curve is therefore deployable as it stands, and a manager can adopt any point on it without a separate workload-repair pass or a longer overnight solve. This is a direct consequence of reserving each station's residual time budget for the frozen low-frequency products before the restricted search begins, which prevents the relocated items from crowding a zone.
 
 
 
@@ -901,7 +799,7 @@ Second, under the one-hour budget the restricted solutions, like the unconstrain
 \section{Conclusion}
 \label{sec:conclusion}
 
-In this study, we proposed a fundamental paradigm shift for the Correlated Storage Location Assignment Problem (CSLAP) in automated, conveyor-driven warehouses. Moving away from traditional travel-distance metrics, we formulated a rigorously constrained mathematical framework explicitly designed to minimize discrete station visits per order while enforcing strict workload synchronization across heterogeneous picking zones. Through comprehensive benchmarking on synthetic datasets and a massive 22,000-SKU industrial instance, we established a critical theoretical insight: framing CSLAP to minimize discrete station stops creates an exceptionally flat fitness landscape. Consequently, probabilistic searches (GA, SA-C) and classical binary branch-and-bound stall in this environment. We found empirically that high solution quality together with operational feasibility at an industrial scale is best achieved by pairing a subset-based set-variable reformulation with a hybrid local-search engine and rigorous workload capacity constraints. By extending this model with a limited-reassignment boundary, we showed how managers can trade re-slotting effort against throughput gain through a single relocation budget, rendering targeted mathematical re-slotting practically viable for active, large-scale facilities.
+In this study, we proposed a fundamental paradigm shift for the Correlated Storage Location Assignment Problem (CSLAP) in automated, conveyor-driven warehouses. Moving away from traditional travel-distance metrics, we formulated a rigorously constrained mathematical framework explicitly designed to minimize discrete station visits per order while enforcing strict workload synchronization across heterogeneous picking zones. Through comprehensive benchmarking on synthetic datasets and a massive 21,874-SKU industrial instance, we established a critical computational insight: framing CSLAP to minimize discrete station stops creates an exceptionally flat fitness landscape. Consequently, probabilistic searches (GA, SA-C) and classical binary branch-and-bound stall in this environment. We found empirically that high solution quality together with operational feasibility at an industrial scale is best achieved by pairing a subset-based set-variable reformulation with a hybrid local-search engine and rigorous workload capacity constraints. By extending this model with a limited-reassignment boundary, we showed how managers can trade re-slotting effort against throughput gain through a single relocation budget, rendering targeted mathematical re-slotting practically viable for active, large-scale facilities.
 
 \subsection*{Managerial Implications and Practical Applicability}
 
@@ -917,10 +815,10 @@ Beyond the theoretical advancements, this research provides an actionable, highl
 
 
 
-\section {Future Research Directions}
+\section {Future Research Directions}\label{sec:future}
 While this research establishes a robust foundation for station-visit minimization, several avenues remain for future exploration. 
 
-First, from an algorithmic perspective, resolving the combinatorial explosion of the Column Generation pricing subproblems at massive industrial scales ($>20,000$ SKUs) is a critical next step. Future work should investigate advanced stabilization techniques, machine-learning-guided dual pricing, and hybrid meta-heuristic post-processing for fractional columns to extend CG's theoretical efficiency to facility-wide applications.
+First, several algorithmic extensions would strengthen the set-partitioning column generation. Dual stabilization, for instance the du~Merle box or a Wentges center, would tighten the Farley certificate that is currently loose at scale and turn the matheuristic reading into certified gaps. A branch-and-price layer on top of the price-and-complete dive would then let the certified bound and the primal search close the remaining gap. On the industrial side the station-indexed run of \cref{sec:numerical_results} already improves the live layout feasibly, but it trails the set-variable MILP on visits by $9.09\%$; closing that gap, either through a longer optimization horizon or by hybridizing the swap descent with the set-variable engine, is the remaining industrial lever.
 
 Second, operational realism can be further enhanced by incorporating heterogeneous product geometries and 3D bin-packing constraints within the station capacities, moving beyond simple SKU counting. 
 
@@ -1006,10 +904,13 @@ Chuang, Y. et al. 2016. A robust heuristic method on the clustering-assignment p
 
 
 \bibitem[(Desrochers and Soumis, 1989)]{desrochers1989column}
-Desrochers, M., Soumis, F., 1989. A column generation approach to the urban transit crew scheduling problem. Transportation Science 23(1), 1-13.
+Desrochers, M., Soumis, F., 1989. A column generation approach to the urban transit crew scheduling problem. \textit{Transportation Science} 23(1), 1-13.
 
 % \bibitem[(Egas and Masel, 2010)]{Egas2010-zb}
 % Egas, C., Masel, D., 2010. Determining warehouse storage location assignments using clustering analysis. In: Proceedings of the 11th IMHRC, Milwaukee, WI.
+
+\bibitem[(Farley, 1990)]{farley1990note}
+Farley, A.A., 1990. A note on bounding a class of linear programming problems, including cutting stock problems. \textit{Operations Research} 38(5), 922-923.
 
 \bibitem[(Garey and Johnson, 1979)]{garey1979computers}
 Garey, M.R., Johnson, D.S., 1979. \textit{Computers and Intractability: A Guide to the Theory of NP-Completeness}. W. H. Freeman.
@@ -1055,6 +956,9 @@ Pan, J.C.H., Shih, P.H., Wu, M.H., 2015. Order batching in a pick-and-pass wareh
 Tarczyński, G., 2023. Linear programming models for optimal workload
 and batching in pick-and-pass warehousing systems. \textit{Operations Research and Decisions}, DOI:10.37190/ord230309
 Authors:
+
+\bibitem[(Vanderbeck, 2000)]{vanderbeck2000dw}
+Vanderbeck, F., 2000. On Dantzig-Wolfe decomposition in integer programming and ways to perform branching in a branch-and-price algorithm. \textit{Operations Research} 48(1), 111-128.
 
 \bibitem[(Teun van Gils et al., 2018)]{vanGils2018}
 van Gils, T., Ramaekers, K., Caris, A., de Koster, R., 2018. Designing efficient order picking systems by combining planning problems: State-of-the-art classification and review. \textit{European Journal of Operational Research}, 267(1), 1-15.

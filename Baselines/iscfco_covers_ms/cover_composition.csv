@@ -1,0 +1,6 @@
+tag,objective,K,num_patterns,n_size1,n_size2,n_size3,n_size4,n_size5,n_size6,n_size7,n_size8,n_size9,n_size10,total_hits,pi,c_bar,int_optimal
+iscfco_r0f0,minsum,10,1028,853,72,24,23,9,11,6,5,4,21,15162,71,3.4291,True
+iscfco_r0f1,minsum,10,1055,868,83,31,19,13,12,7,3,3,16,17875,72,3.3486,True
+iscfco_r0f2,minsum,10,1087,909,84,24,18,12,14,5,2,6,13,20702,74,3.167,True
+iscfco_r0f3,minsum,10,1042,871,72,22,23,10,9,3,7,4,21,23202,75,3.4591,True
+iscfco_r0f4,minsum,10,1098,936,66,25,25,8,8,5,6,4,15,25685,75,3.3208,True

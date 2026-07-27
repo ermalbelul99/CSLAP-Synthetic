@@ -1,0 +1,33 @@
+{
+  "prefix": "aff",
+  "data_dir": "iscf_affinity_smoke",
+  "n_products": 800,
+  "comm_size": 10,
+  "n_comm": 80,
+  "folds": [
+    {
+      "repeat": 0,
+      "fold": 0,
+      "tag": "aff_combine_a0.0_r0",
+      "train_prefix": "aff_combine_a0.0_r0_train",
+      "test_prefix": "aff_combine_a0.0_r0_test",
+      "n_train_orders": 4548,
+      "n_test_orders": 4534,
+      "time_capacity": 2049,
+      "mode": "combine",
+      "alpha": 0.0
+    },
+    {
+      "repeat": 0,
+      "fold": 1,
+      "tag": "aff_combine_a1.0_r0",
+      "train_prefix": "aff_combine_a1.0_r0_train",
+      "test_prefix": "aff_combine_a1.0_r0_test",
+      "n_train_orders": 4548,
+      "n_test_orders": 4976,
+      "time_capacity": 2049,
+      "mode": "combine",
+      "alpha": 1.0
+    }
+  ]
+}

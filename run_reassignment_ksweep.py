@@ -114,10 +114,32 @@ def main():
     st_full = data["st_full"]
     pl_full = data["pl_full"]
 
+    # ---- FIX: Use full frequencies & reserve capacity for static products ----
+    # 1. Full frequencies for solver products (matches post-hoc evaluation)
+    pl_solver_full = {p: pl_full.get(p, pl_solver.get(p, 0)) for p in pr_solver}
+
+    # 2. Compute static product workload per station (these are fixed, never move)
+    speeds_map = {s["STATION_ID"]: s["SPEED"] for s in st_full}
+    static_wl = defaultdict(float)
+    for p, sid in static_assignment.items():
+        qty = pl_full.get(p, 0)
+        if speeds_map.get(sid, 0) > 0:
+            static_wl[sid] += qty / speeds_map[sid]
+
+    # 3. Adjust solver TIME_CAPACITY = full_cap - static_workload
+    full_time_caps_map = {s["STATION_ID"]: s["TIME_CAPACITY"] for s in st_full}
+    st_solver_adjusted = []
+    for s in st_solver:
+        sid = s["STATION_ID"]
+        adjusted_tc = full_time_caps_map.get(sid, s["TIME_CAPACITY"]) - static_wl.get(sid, 0.0)
+        st_solver_adjusted.append({**s, "TIME_CAPACITY": max(adjusted_tc, 0.0)})
+
     n_solver = len(pr_solver)
     n_orders_full = len(op_full)
     print(f"Solver-active products: {n_solver} | full orders: {n_orders_full} | "
           f"active stations: {len(st_solver)}")
+    print(f"Adjusted solver capacities: reserved {sum(static_wl.values()):.2f} "
+          f"units of workload capacity for {len(static_assignment)} static products")
 
     # Baseline (legacy layout, k = 0): evaluate the original assignment directly.
     base_visits, base_maxwl, base_util, base_capb, base_wlb = evaluate_full_metrics(
@@ -164,7 +186,7 @@ def main():
         print(f"\n--- Solving restricted MILP: k={k} ({label}), budget={args.time_limit}s ---")
         t0 = time.time()
         res = run_milp_hexaly(
-            op_solver, st_solver, pr_solver, pl_solver,
+            op_solver, st_solver_adjusted, pr_solver, pl_solver_full,
             time_limit=args.time_limit,
             warm_start_assignment=warm,
             max_reassignments=k,

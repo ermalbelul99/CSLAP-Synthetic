@@ -142,7 +142,8 @@ def run_milp_hexaly(
                     assignment[p] = s
                     station_counts[s] += 1
                     qty = prod_lines.get(p, 0)
-                    station_actions[s] += qty
+                    station_actions[s] += qty / speeds.get(s, 1.0) if speeds.get(s, 1.0) > 0 else 0
+            
             
             cap_broken = sum(1 for sid in station_ids if station_counts[sid] > capacities[sid])
             wl_broken = sum(1 for sid in station_ids if station_actions[sid] > time_caps[sid])

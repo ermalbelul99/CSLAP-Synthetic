@@ -1,0 +1,6 @@
+tag,objective,K,num_patterns,n_size1,n_size2,n_size3,n_size4,n_size5,n_size6,n_size7,n_size8,n_size9,n_size10,total_hits,pi,c_bar,int_optimal
+bern,minsum,2,1503,1006,497,0,0,0,0,0,0,0,0,575915,130,1.4875,True
+bern,minsum,3,1372,963,190,219,0,0,0,0,0,0,0,549982,125,1.8187,True
+bern,minsum,4,1312,942,172,78,120,0,0,0,0,0,0,535431,119,2.0717,True
+bern,minsum,6,1250,919,155,60,42,21,53,0,0,0,0,518998,118,2.4298,True
+bern,minsum,10,1198,899,143,52,35,17,14,4,4,10,20,502135,111,3.0218,True

@@ -1,0 +1,2 @@
+Method,visits,solver_visits,best_bound,time,time_limit,max_workload,utilization_std_dev,cap_broken,wl_broken,num_orders,num_skus,num_stations
+CG Set-Part. (CPLEX),1004223,627892,-46468674.46987898,35940.4,36000,9922.9,0.004,0,0,284862,21874,24

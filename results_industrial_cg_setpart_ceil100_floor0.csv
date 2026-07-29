@@ -1,0 +1,2 @@
+Method,visits,solver_visits,best_bound,time,time_limit,floor_frac,ceiling_frac,max_workload,utilization_std_dev,cap_broken,wl_broken,dev_min_pct,dev_max_pct,dev_std_pct,stations_in_band,num_orders,num_skus,num_stations
+"CG Set-Part. (CPLEX) env[0.00,1.00]",1005857,629422,-57192466.12553665,35940.4,36000,0.0,1.0,9922.9,0.004,0,0,-0.0,0.0,0.0,24,284862,21874,24

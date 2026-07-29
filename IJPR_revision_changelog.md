@@ -226,6 +226,82 @@ reproduce (13.7 %, 5.8 %, 9.09 %, all k-sweep reductions).
 | Word count | ~8,070 excl. references | see final check in Part E |
 | Citations ↔ bibliography | 29 ↔ 29 | 33 ↔ 33, no dangling key either way |
 
+---
+
+## Part B2 — Integrity audit (found during this revision, not raised by the reviewer)
+
+A full trace of every number in the paper against the stored result files turned up problems the
+external review did not mention. They matter more than most of the review's own points, because the
+synthetic instances ship with the paper and a referee can recompute them.
+
+### Two blocking items, both now marked `TODO(before submission)` in the tex
+
+**1. Table 5's Time column was the budget, not the time actually spent — and the budgets were not
+common.** Measured against `exp02a_per_instance_v3.csv` and `exp02a_cg_setpart.csv`:
+
+| Size | Table said | Set-variable actually used | CG budget | CG actually used |
+|---|---|---|---|---|
+| 50 | 120 | 123 | 120 | 86 |
+| 500 | **300** | **1,148** (one instance 4,684) | **600** | **476** |
+| 1,000 | 600 | 645 | 600 | 599 |
+| 2,000 | 1,200 | 1,049 | 1,200 | 1,199 |
+
+So the claim that the two methods "each consume the full budget at every size, so their visit
+comparison is made at equal computational effort" was false in both directions: at 500 SKUs, where
+the reference wins by 0.8 %, it had 2.4 times the column generation's wall clock; at 2,000 SKUs,
+where the column generation wins by 2.4 %, it had 14 % more than the reference. SA-C also exceeded
+its stated budget at 1,000 SKUs (977 s mean, one run 1,747 s).
+
+*Action taken:* the CG runner's 500-SKU budget is corrected to 300 s, the protocol paragraph is
+rewritten to describe measured times under a common cap, and the whole benchmark is being re-run
+under the published caps on the machine that has CPLEX — see `RERUN_IJPR_BENCHMARK.md`. Table 5, the
+paired tests and every gap figure in Section 5 are regenerated from that re-run.
+
+**2. Table 9 (out-of-sample weeks) has no backing artifact, and the delivered data cannot produce
+it.** The six visit totals appear only in earlier manuscript files, never in a result file. The
+industrial order file is `PRODUCT;ORDER;QTY;STATION;BOX_ID` — no date column — so "13 weeks", the
+10/3 and 8/5 splits and the "66-day quarter" cannot be rebuilt from it.
+`Baselines/build_berner_instance.py` reproduces a 10/3 and 8/5 split by ranking on order id as a
+time proxy, which is a *different* experiment and would have to be described as one.
+
+*Decision needed:* supply the dated extract plus the per-split run output, or delete the subsection,
+Table 9 and the rolling-window managerial insight. Nothing else in the paper depends on them.
+
+### Corrected in place
+
+| Item | Was | Now |
+|---|---|---|
+| Pooled Wilcoxon p-values | 2.6e-6 / 2.9e-6 / 2.4e-5, labelled "exact" | 3.7e-9 / 7.5e-9 / 2.0e-6 (recomputed exact) |
+| Pooled visit lead | 1.0 % | 0.97 % |
+| Industrial multi-item orders | 83,183 | 83,179 |
+| Table 8 footnote a | "SA-C's per-station loads were not retained, so its violation flag is set conservatively" | "SA-C exceeds the tolerance on four stations" (the artifact records `wl_broken=4`) |
+| Utilisation std dev | "standard deviation of the relative change in each station's utilisation factor" | defined as computed: dispersion of utilisation levels across stations |
+| Table 8 caption | "26 stations" | 26 physical, 24 evaluated |
+| Table 10 caption | k as % of 21,874 only | adds that only 15,975 products are movable, so k=5,000 is 31.3 % of the decision pool |
+| k-sweep budget | "one-hour budget each" | one-hour limit, four runs respect it, k=1,000 overran to 3.1 h |
+| Abstract and conclusion | set-variable "strongest"/"best" across 50–2,000 SKUs | scoped to ≤1,000; the column generation leads at 2,000 |
+| GA seed variance | "about 1 %", stated generally | scoped to GA, 50 SKUs, three instances, 0.2–2.2 % |
+| Managerial claim | "never breached a workload cap in any experiment" | names which cap on which dataset |
+| Table 8 baselines | GA/SA-C rows unexplained | discloses that these are the capacity-respecting runs, and that earlier runs reached fewer visits while overloading stations |
+
+### Removed for lack of a retained artifact
+
+The extended-budget probe figures (86,365 / 226,566 / 404,882), the industrial CG drive counts
+(106 iterations, 2,670 columns, 680,270-visit warm start) and the pricing build timings (21 s, 0.2 s)
+appear in no stored log. The surrounding sentences now state only what is traceable, with a `TODO`
+marker where the re-run should restore the detail.
+
+### Checked and correct — no change made
+
+Every mean, confidence interval, gap, violation share and per-size p-value in Table 5; every visit,
+time, workload and utilisation figure in Tables 8 and 10; all derived industrial percentages
+(13.7 %, 5.8 %, 9.09 %, 145,042, 61,663, 16,099, 2,198); the |U| figures added this revision; and the
+lower-bound comparison, whose premise (no order in any of the 29 instances has a single item, so the
+bound and the reported visits are on the same scale) was verified independently across all 623,823
+orders.
+
+---
+
 ## Part D — Deliberately not done
 
 - **No new CG runs.** The set-partitioning solver needs CPLEX, which is not installed on this

@@ -34,19 +34,34 @@ def read_data(prefix, data_dir):
     return order_prods, stations, products, prod_lines, orders_df
 
 
-def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df):
+def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df, *,
+                    min_freq_preproc=None, min_freq=None, ratio_to_keep=None,
+                    mnoppc=None, diag=None):
     """
     Greedy product clustering and station assignment.
     Auto-scales parameters to dataset size.
+
+    Keyword-only overrides (all default None = keep the auto-scaled formula, so
+    the historical behaviour is bit-for-bit unchanged when they are omitted):
+        min_freq_preproc : product frequency floor for P* (default max(2, N//100))
+        min_freq         : pair co-occurrence floor      (default max(2, N//50))
+        ratio_to_keep    : pair support ratio floor      (default 0.1)
+        mnoppc           : max number of products per community
+                           (default max(5, min(15, N//20)))
+        diag             : optional dict; when given it is FILLED with structural
+                           diagnostics (see the block before `return`). The return
+                           value is NOT changed.
     """
     start_time = time.time()
     N = len(products)
 
-    # --- Auto-scale parameters ---
-    MIN_FREQ_PREPROC = max(2, N // 100)
-    MIN_FREQ = max(2, N // 50)
-    RATIO_TO_KEEP = 0.1
-    MNOPPC = max(5, min(15, N // 20))  # community size limit
+    # --- Auto-scale parameters (overridable; None => historical formula) ---
+    MIN_FREQ_PREPROC = (max(2, N // 100) if min_freq_preproc is None
+                        else int(min_freq_preproc))
+    MIN_FREQ = max(2, N // 50) if min_freq is None else int(min_freq)
+    RATIO_TO_KEEP = 0.1 if ratio_to_keep is None else float(ratio_to_keep)
+    # community size limit
+    MNOPPC = (max(5, min(15, N // 20)) if mnoppc is None else int(mnoppc))
 
     # --- Step 1: Preprocessing & Pair Generation ---
     # Filter products by minimum frequency
@@ -118,6 +133,10 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df):
             assigned.add(best_candidate)
 
         communities.append(community)
+
+    # Communities born from the correlation step, BEFORE the filler groups of
+    # Step 3 are appended (diagnostic only; not used by the algorithm).
+    n_corr_communities = len(communities)
 
     # --- Step 3: Post-processing (unassigned products) ---
     unassigned = [p for p in products if p not in assigned]
@@ -206,6 +225,27 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df):
 
     print(f"  Heuristic Done: Visits={total_visits}, "
           f"Time={elapsed:.2f}s, WL_Std={workload_std_dev:.4f}, Max_WL={max_workload:.4f}")
+
+    # --- Optional structural diagnostics (threshold-sensitivity instrumentation) ---
+    # Read-only: fills the caller's dict, never touches the returned tuple.
+    if diag is not None:
+        diag.update({
+            # products surviving the MIN_FREQ_PREPROC frequency floor
+            "n_pstar": len(P_star),
+            # pairs surviving MIN_FREQ *and* RATIO_TO_KEEP
+            "n_pairs_kept": len(filtered_pairs),
+            # communities formed by the greedy expansion (excl. Step-3 fillers)
+            "n_corr_communities": n_corr_communities,
+            # products actually placed on a station (from the FINAL assignment)
+            "n_assigned": len(assignment),
+            # largest community handed to the station-assignment step
+            "community_size_max": max((len(c) for c in communities), default=0),
+            # effective thresholds actually used (audit of the caller's overrides)
+            "min_freq_preproc": MIN_FREQ_PREPROC,
+            "min_freq": MIN_FREQ,
+            "ratio_to_keep": RATIO_TO_KEEP,
+            "mnoppc": MNOPPC,
+        })
 
     return assignment, total_visits, elapsed, max_workload, workload_std_dev, cap_broken, wl_broken
 

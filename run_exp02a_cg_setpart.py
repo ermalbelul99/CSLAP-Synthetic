@@ -6,14 +6,19 @@ Runs ``Baselines/cg_setpart_cplex.py`` on every instance directory under
 class (identical solver flags and seed; only the wall-clock budget is keyed by
 size, and it never exceeds the Hexaly reference mean of exp02a v3):
 
-=======  =========  ==================================
-size N   budget s   Hexaly v3 mean time (reference)
-=======  =========  ==================================
-50       120        123 s
-500      600        1148 s
-1000     600        645 s
-2000     1200       1049 s
-=======  =========  ==================================
+=======  =========
+size N   budget s
+=======  =========
+50       120
+500      300
+1000     600
+2000     1200
+=======  =========
+
+These are the budgets printed in the manuscript's Table 5 and they are binding:
+every method compared in that table must run under the same per-size cap. The
+500-SKU entry was 600 s in the first campaign, which did not match the table;
+it is 300 s here so the published protocol and the runs agree.
 
 Appends one row per instance to ``exp02a_results/exp02a_cg_setpart.csv``.
 Usage (CPLEX venv):
@@ -39,7 +44,7 @@ import cg_setpart_cplex as CG  # noqa: E402
 
 INSTANCE_DIR = os.path.join(_HERE, "exp02a_instances")
 RESULT_CSV = os.path.join(_HERE, "exp02a_results", "exp02a_cg_setpart.csv")
-BUDGET = {50: 120, 500: 600, 1000: 600, 2000: 1200}
+BUDGET = {50: 120, 500: 300, 1000: 600, 2000: 1200}
 FIELDS = [
     "size_n", "instance_seed", "method", "status", "visits", "time_s",
     "best_bound", "max_workload", "workload_std_dev", "cap_broken",

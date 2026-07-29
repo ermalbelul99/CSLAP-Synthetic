@@ -1,0 +1,5 @@
+config_id,size_n,K,k_paired,mean_visits,mean_pct_delta_visits_vs_base,pct_delta_ci95_lo,pct_delta_ci95_hi,ci_informative,frac_instances_wl_broken,mean_n_pairs_kept,n_rows,n_ok,n_partial_assign,n_degenerate,n_timeout,n_error
+base,50,12,12,7687.75,0.0,0.0,0.0,True,1.0,1022.0833333333334,12,12,0,0,0,0
+base,500,10,10,78650.6,0.0,0.0,0.0,True,0.7,719.5,10,10,0,0,0,0
+base,1000,4,4,196358.75,0.0,,,False,1.0,1053.25,4,4,0,0,0,0
+base,2000,3,3,483343.6666666667,0.0,,,False,1.0,2422.0,3,3,0,0,0,0

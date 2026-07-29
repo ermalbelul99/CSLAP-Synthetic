@@ -44,3 +44,4 @@ synthetic_datasets/
 # ---- Local backups ----
 exp02a_results_rev2_backup/
 *_backup/
+overleaf_bundle/

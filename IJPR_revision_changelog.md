@@ -394,3 +394,54 @@ CG's workload and capacity violation counts stay at zero on all 29 instances, so
   but could not be recomputed here, the dated file being on the other machine. Worth confirming
   against that extract's distinct delivery dates (the window holds 91 calendar days and 65
   weekdays).
+
+### Part G — Integrity audit of the re-run integration (2026-07-30)
+
+An independent audit recomputed every figure in Table 5, the appendix sensitivity table and the
+statistics from the raw per-instance sources, and audited `Baselines/rebuild_table5.py`. Table 5
+and `tab:sensitivity` passed in full: all 24 means, all 24 bracket endpoints under both conventions,
+all 24 gaps, all time entries, all violation rates, all twelve exact Wilcoxon p-values (cross-checked
+by brute-force enumeration of sign assignments), and both noise floors reproduce exactly. Seven
+blocking defects were found elsewhere, all in prose or provenance, and all are now fixed.
+
+| Fix | Was | Now |
+|---|---|---|
+| §3.2.5 lower bound | mean bound 3,272 vs 7,592 visits, from the retired 600 s-at-500 campaign | **3,312 vs 7,590**, from `exp02a_cg_setpart.csv`; no longer contradicts Table 5 |
+| §7 k-sweep budget | "four of the five runs respect [the one-hour limit] and one overruns to 3.1 hours" | every run exceeds it, four by 4.5–20.6 % and $k=1{,}000$ threefold; attributed to the same build-time-outside-limit mechanism as Table 5's footnote |
+| §5.3, §7 old CG | "returned its warm start unchanged after the full ten hours" | terminated after **1.0 h and 3.0 h** of the ten-hour allowance (3,542 s Hexaly, 10,654 s Gurobi) |
+| §5.3 uniqueness | "the only method that respects both constraints on all 29 instances" | every method except the heuristic does; CG is the one whose standing improves with size |
+| §5.3 dominance | "dominates every method that respects the cap" (contradicted the tie with the reference in the same sentence) | dominance stated against the two literature baselines only |
+| §4.1 sensitivity | "three of the four thresholds are inert" | **two** are inert; the kept-edge ratio is small but above the 0.09 % noise floor |
+| §7 industrial deviations | CG range [−3.8 %, +5.8 %] had no producing artifact (the CSV's `dev_*` columns measure deviation against the cap, not the legacy load) | recomputed by the new `Baselines/report_industrial_deviation.py`: **[−3.78 %, +5.82 %]**, std 2.41 %, 10 stations above legacy, 24/24 inside the +10 % tolerance — matching every printed value |
+
+Reporting fixes in the same pass: the GA/SA-C early-stop claim now restricted to 50 SKUs; "converges"
+replaced by "returns before the cap", since the two early finishes are stage exhaustion rather than
+the pricing-out criterion; Table 5's bracket column relabelled "95 % CI / [min, max]"; the |U|
+industrial figures identified as the pruned solver instance; the non-monotone workload-violation
+sequence stated as endpoints only; the GA probe seeds documented as a probe, with the effect of
+including them quantified (7,767 → 7,770); the appendix scope restricted to 50 and 500 SKUs, with the
+50-SKU clamp no-op disclosed; Table 8's separate GA/SA-C harness disclosed; Table 9's caption now
+points to the external notebook as well as the dated extract; and a new paragraph in §5.2 states the
+hardware, CPLEX and Hexaly versions, thread count, all seeds, and the `PYTHONHASHSEED=0` control the
+heuristic requires.
+
+The per-visit dwell constant behind the "nine working days" figure was never recorded, so the
+arithmetic is now parametric: **40.3 hours freed per second of per-visit cycle time**, with 1.7 s
+given as the illustrative value that reproduces the original figure.
+
+The industrial `MILP Gurobi` row of `results_industrial_benchmark_36.csv` is byte-identical to the
+`Heuristic` row across visits, time, max workload and utilisation spread, so it is a logging
+artifact rather than a result. The manuscript no longer asserts an industrial outcome for the binary
+formulation; it states only that the row is absent and points to the synthetic evidence, which is
+sourced.
+
+### Still open after Part G
+
+- Four ORCIDs and the CIFRE grant number.
+- The set-variable industrial deviation range [−5.9 %, +9.6 %]. Its standard deviation (4.48) and its
+  ten-stations-above-legacy count are both confirmed from `results_industrial_benchmark_36.csv`, and
+  the profile is plotted in Figure 5, but the layout file itself is not in either repository, so the
+  two endpoints rest on the original run's recorded output. Locate that assignment on the CPLEX
+  machine and re-run `Baselines/report_industrial_deviation.py --layout <file>` to close this.
+- The 66-operating-day divisor behind the per-day stop figures.
+- `Compare_W.ipynb` and the dated extract behind Table 9 should be versioned into the repository.

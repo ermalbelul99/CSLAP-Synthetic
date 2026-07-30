@@ -477,3 +477,27 @@ CPLEX's dual bound on the pricing MIP minus the cardinality dual, valid on timeo
 expression is monotone across iterations; exact pricing runs every iteration and is the sole
 convergence test. The validity claims in the paper are accurate. What was missing was the statement
 of their limits.
+
+### Part I — Table 5 layout (2026-07-30)
+
+The table overflowed the text block. Rebuilt to fit, with no change to any value.
+
+- `tabular*` at `\textwidth` with `\extracolsep{\fill}`, so the table now spans exactly the text
+  width instead of overrunning it. Font stays at `\small`.
+- Row and column labels shortened, which is what created the room: "Set-variable MILP" to
+  "Set-variable", "CG (set-part.)" to "CG", "Feasible start (LPT)" to "LPT start", and the headers to
+  Method / Mean visits / Interval / Gap / Budget (s) / WL viol.
+- Caption cut from six sentences to two, keeping only the reference, the shading rule and the reason
+  the heuristic is excluded from it.
+- Footnotes a and b deleted. Footnote a duplicated the caveat already in Section 5.3, so nothing was
+  lost. Footnote b's two substantive disclosures — SA-C's stopping-rule overshoot and the set-variable
+  engine's build time falling outside its search limit — moved into the Section 5.2 protocol prose,
+  where the k-sweep discussion now points as well. The surviving unlabelled note keeps the load-bearing
+  definitions: solver identification, the interval convention including the [min, max] substitution at
+  2,000 SKUs, the gap definition with the pooled figure, the time convention, and the LPT anchor.
+- The four block-header rows are now black with white text, which separates the size blocks without
+  needing the inter-block rules.
+
+Verified after the rewrite: 24 data rows all carrying six columns, four black headers and four green
+best-feasible rows, environments balanced, and every mean, interval endpoint and gap still matching
+`table5_rebuilt.csv`.

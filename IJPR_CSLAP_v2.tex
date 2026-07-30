@@ -347,55 +347,56 @@ The set-variable approach, the GA, SA-C, and the heuristic all use randomised se
 
 All optimising methods run under a common per-size wall-clock cap: 120, 300, 600, and 1,200 seconds for the four scales. The Time budget column of Table~\ref{tab:reliability} prints that cap where a method reached it, and the measured mean time where a method converged before it. The set-variable approach reaches the cap at every size. The column generation reaches it at 1,000 and 2,000 SKUs but returns before it at the two smaller sizes, at 86 seconds against a 120-second cap and 256 seconds against a 300-second cap, so at those sizes it produces its layout on less effort than the reference consumed. At 50 SKUs the GA and SA-C also finish early, when their generation and cooling schedules complete; from 500 SKUs upward both reach the cap. The heuristic has no time parameter and finishes well inside the cap at every size, and the LPT start is immediate.
 
+Two methods exceed the cap in measured wall clock for reasons that are structural rather than incidental, and the table prints the cap for both. SA-C tests the elapsed clock once per temperature level and then commits to a full inner loop, so it can overshoot by one loop; the measured overshoot is 14\% at 500 SKUs, 24\% at 1,000 and 20\% at 2,000. The set-variable engine's limit bounds its search only, so model construction falls outside it, a cost that grows from under a second at 50 SKUs to 153 seconds at 2,000. Its search respected the cap at every size.
+
 All rankings are conditional on this shared cap and on the hardware and software used. The runs reported here were made on a 16-core Windows Server 2019 machine with 128\,GB of memory, under Python 3.10, with CPLEX 22.1.1 for the column generation and Hexaly for the set-variable model, CPLEX limited to four threads and seeded at 42, and the GA and SA-C seeded at 20240612. Each table cell is one run per instance. The clustering heuristic needs one further control: it groups products through hash sets, so its tie-breaks follow set iteration order, which the interpreter randomises per process. All heuristic runs therefore fix \texttt{PYTHONHASHSEED} to 0; without that control its visit count moves by about 0.09\% between otherwise identical runs, as Appendix~\ref{app:sensitivity} quantifies.
 
 \begin{table}[H]
 \centering
-\tbl{Multi-instance synthetic benchmark with the set-variable approach as the per-instance reference. Mean visits with 95\% confidence interval, mean per-instance gap to the reference, the time budget under which the run was made, and the share of instances breaching the workload cap. Rows are sorted by mean visits within each block, with the LPT anchor last. The lowest-visit \emph{feasible} method in each block, that is the lowest-visit method with no workload violation, is shaded green. The heuristic's visit counts are not comparable with the rest: it breaches the workload cap on 80 to 100\% of instances at every size, so it is excluded from the shading and from every ranking claim.}
-{\small\setlength{\tabcolsep}{4pt}\begin{tabular}{@{}lrcrrr@{}}
+\tbl{Synthetic benchmark over 29 instances, with the set-variable approach as the per-instance reference. The lowest-visit \emph{feasible} method in each block is shaded green; the heuristic is excluded from that shading and from every ranking claim, since it breaches the workload cap on 80 to 100\% of instances.}
+{\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrcrrr@{}}
 \toprule
-Method & Mean visits & 95\% CI / [min, max]\textsuperscript{a} & Gap to ref.\ & Time budget (s)\textsuperscript{b} & WL-viol.\ inst. \\
+Method & Mean visits & Interval & Gap & Budget (s) & WL viol. \\
 \midrule
-\multicolumn{6}{@{}l}{\emph{50 SKUs, 5 stations, 2{,}036 mean orders, $K=12$}}\\
+\rowcolor{black}
+\multicolumn{6}{@{}l}{\color{white}\emph{50 SKUs, 5 stations, 2{,}036 mean orders, $K=12$}}\\
 \rowcolor{green!20}
-Set-variable MILP & \textbf{7{,}556} & [6{,}826,\ 8{,}285] & (ref) & 120 & 0\% \\
-CG (set-part.) & 7{,}590 & [6{,}857,\ 8{,}322] & $+0.5$\% & 86 & 0\% \\
-SA-C & 7{,}632 & [6{,}889,\ 8{,}376] & $+1.0$\% & 54 & 0\% \\
-Heuristic & 7{,}698 & [6{,}961,\ 8{,}436] & $+2.0$\% & 2 & 100\% \\
-GA & 7{,}767 & [7{,}022,\ 8{,}513] & $+2.8$\% & 48 & 0\% \\
-Feasible start (LPT) & 8{,}857 & [8{,}054,\ 9{,}661] & $+17.4$\% & $<0.1$ & 0\% \\
-\midrule
-\multicolumn{6}{@{}l}{\emph{500 SKUs, 5 stations, 20{,}832 mean orders, $K=10$}}\\
+Set-variable & \textbf{7{,}556} & [6{,}826, 8{,}285] & (ref) & 120 & 0\% \\
+CG & 7{,}590 & [6{,}857, 8{,}322] & $+0.5$\% & 86 & 0\% \\
+SA-C & 7{,}632 & [6{,}889, 8{,}376] & $+1.0$\% & 54 & 0\% \\
+Heuristic & 7{,}698 & [6{,}961, 8{,}436] & $+2.0$\% & 2 & 100\% \\
+GA & 7{,}767 & [7{,}022, 8{,}513] & $+2.8$\% & 48 & 0\% \\
+LPT start & 8{,}857 & [8{,}054, 9{,}661] & $+17.4$\% & $<0.1$ & 0\% \\
+\rowcolor{black}
+\multicolumn{6}{@{}l}{\color{white}\emph{500 SKUs, 5 stations, 20{,}832 mean orders, $K=10$}}\\
 \rowcolor{green!20}
-Set-variable MILP & \textbf{76{,}407} & [68{,}370,\ 84{,}443] & (ref) & 300 & 0\% \\
-CG (set-part.) & 76{,}681 & [68{,}659,\ 84{,}704] & $+0.4$\% & 256 & 0\% \\
-Heuristic & 78{,}647 & [70{,}517,\ 86{,}777] & $+3.0$\% & 19 & 80\% \\
-GA & 85{,}363 & [76{,}202,\ 94{,}523] & $+11.7$\% & 300 & 0\% \\
-SA-C & 88{,}689 & [79{,}245,\ 98{,}132] & $+16.1$\% & 300 & 0\% \\
-Feasible start (LPT) & 90{,}177 & [80{,}419,\ 99{,}936] & $+18.0$\% & $<0.1$ & 0\% \\
-\midrule
-\multicolumn{6}{@{}l}{\emph{1{,}000 SKUs, 10 stations, 38{,}743 mean orders, $K=4$}}\\
+Set-variable & \textbf{76{,}407} & [68{,}370, 84{,}443] & (ref) & 300 & 0\% \\
+CG & 76{,}681 & [68{,}659, 84{,}704] & $+0.4$\% & 256 & 0\% \\
+Heuristic & 78{,}647 & [70{,}517, 86{,}777] & $+3.0$\% & 19 & 80\% \\
+GA & 85{,}363 & [76{,}202, 94{,}523] & $+11.7$\% & 300 & 0\% \\
+SA-C & 88{,}689 & [79{,}245, 98{,}132] & $+16.1$\% & 300 & 0\% \\
+LPT start & 90{,}177 & [80{,}419, 99{,}936] & $+18.0$\% & $<0.1$ & 0\% \\
+\rowcolor{black}
+\multicolumn{6}{@{}l}{\color{white}\emph{1{,}000 SKUs, 10 stations, 38{,}743 mean orders, $K=4$}}\\
 \rowcolor{green!20}
-CG (set-part.) & \textbf{192{,}452} & [149{,}959,\ 234{,}945] & $-2.0$\% & 600 & 0\% \\
-Heuristic & 196{,}341 & [151{,}982,\ 240{,}701] & $-0.1$\% & 35 & 100\% \\
-Set-variable MILP & 196{,}515 & [151{,}550,\ 241{,}479] & (ref) & 600 & 0\% \\
-GA & 235{,}208 & [186{,}297,\ 284{,}118] & $+19.9$\% & 600 & 0\% \\
-SA-C & 240{,}693 & [191{,}894,\ 289{,}492] & $+22.8$\% & 600 & 0\% \\
-Feasible start (LPT) & 245{,}228 & [195{,}489,\ 294{,}967] & $+25.1$\% & $<0.1$ & 0\% \\
-\midrule
-\multicolumn{6}{@{}l}{\emph{2{,}000 SKUs, 20 stations, 78{,}698 mean orders, $K=3$}\textsuperscript{a}}\\
+CG & \textbf{192{,}452} & [149{,}959, 234{,}945] & $-2.0$\% & 600 & 0\% \\
+Heuristic & 196{,}341 & [151{,}982, 240{,}701] & $-0.1$\% & 35 & 100\% \\
+Set-variable & 196{,}515 & [151{,}550, 241{,}479] & (ref) & 600 & 0\% \\
+GA & 235{,}208 & [186{,}297, 284{,}118] & $+19.9$\% & 600 & 0\% \\
+SA-C & 240{,}693 & [191{,}894, 289{,}492] & $+22.8$\% & 600 & 0\% \\
+LPT start & 245{,}228 & [195{,}489, 294{,}967] & $+25.1$\% & $<0.1$ & 0\% \\
+\rowcolor{black}
+\multicolumn{6}{@{}l}{\color{white}\emph{2{,}000 SKUs, 20 stations, 78{,}698 mean orders, $K=3$}}\\
 \rowcolor{green!20}
-CG (set-part.) & \textbf{476{,}692} & [406{,}962,\ 560{,}599] & $-5.9$\% & 1{,}200 & 0\% \\
-Heuristic & 483{,}326 & [411{,}888,\ 565{,}148] & $-4.5$\% & 72 & 100\% \\
-Set-variable MILP & 506{,}763 & [429{,}382,\ 600{,}525] & (ref) & 1{,}200 & 0\% \\
-GA & 608{,}867 & [522{,}402,\ 732{,}053] & $+20.1$\% & 1{,}200 & 0\% \\
-SA-C & 615{,}490 & [528{,}303,\ 741{,}011] & $+21.4$\% & 1{,}200 & 0\% \\
-Feasible start (LPT) & 621{,}096 & [533{,}942,\ 748{,}257] & $+22.5$\% & $<0.1$ & 0\% \\
+CG & \textbf{476{,}692} & [406{,}962, 560{,}599] & $-5.9$\% & 1{,}200 & 0\% \\
+Heuristic & 483{,}326 & [411{,}888, 565{,}148] & $-4.5$\% & 72 & 100\% \\
+Set-variable & 506{,}763 & [429{,}382, 600{,}525] & (ref) & 1{,}200 & 0\% \\
+GA & 608{,}867 & [522{,}402, 732{,}053] & $+20.1$\% & 1{,}200 & 0\% \\
+SA-C & 615{,}490 & [528{,}303, 741{,}011] & $+21.4$\% & 1{,}200 & 0\% \\
+LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+22.5$\% & $<0.1$ & 0\% \\
 \bottomrule
-\end{tabular}}
-\tabnote{\textsuperscript{a}At $K=3$ the $t$-interval is uninformative; the bracket reports the observed [min, max] range instead. At $K=4$ the interval is wide and is read as a range as well.}
-\tabnote{\textsuperscript{b}The column prints the imposed cap where the method reached it and the measured mean time where the method converged earlier. Two caveats attach to the printed caps. SA-C tests the elapsed clock once per temperature level and then commits to a full inner loop, so it can overshoot by up to one loop; the measured overshoot is 14\% at 500 SKUs, 24\% at 1,000, and 20\% at 2,000. The times reported for the set-variable MILP exclude model construction, since Hexaly's time limit bounds the search only; the implied build cost rises with size, from 0.4 seconds at 50 SKUs to 153 seconds at 2,000.}
-\tabnote{The set-variable MILP is solved with Hexaly and CG (set-part.) is the aggregated set-partitioning column generation of Section~\ref{sec:cgagg}, solved with CPLEX. ``Gap to ref.''\ is the mean per-instance excess over the reference, so it can differ in sign from the difference of the column means; on pooled visit totals the column generation finishes 3.3\% below the reference. The feasible start (LPT) is the shared deterministic seed handed to every method, shown as a correlation-blind anchor and excluded from the ranking claims. No method breached the slot capacity on any instance.}
+\end{tabular*}}
+\tabnote{Set-variable: Hexaly. CG: the aggregated set-partitioning column generation of Section~\ref{sec:cgagg}, CPLEX. Intervals are 95\% $t$ intervals, except at 2,000 SKUs where three instances leave the interval uninformative and the observed [min, max] range is given instead. Gap is the mean per-instance excess over the reference, which can differ in sign from the difference of the column means; on pooled visit totals the column generation finishes 3.3\% below the reference. Budget prints the imposed cap where the method reached it and the measured mean time where it returned earlier. LPT start is the shared deterministic seed given to every method, shown as a correlation-blind anchor and excluded from the ranking claims. No method breached the slot capacity on any instance.}
 \label{tab:reliability}
 \end{table}
 
@@ -498,7 +499,7 @@ An established facility cannot absorb a disruptive re-slotting wave \citep{chabo
 \sum_{p \in P} x_{p,\,s'(p)} \ \ge\ |P| - k
 \label{eq:reassign}
 \end{equation}
-limits the number of relocated products to at most $k$. Nothing else changes: the objective \eqref{eq:obj}, the capacity rows \eqref{eq:cap} and the workload rows \eqref{eq:wl} are those of Section~\ref{sec:model}, and the legacy layout stays feasible for every $k$, so the model has a solution whatever budget the site sets. We solve it with the set-variable engine for $k \in \{250, 500, 1000, 2000, 5000\}$ under a one-hour search limit each. Every run exceeds that limit in wall clock, four of them by 4.5 to 20.6\% and $k=1{,}000$ by a factor of three, for the reason given in Table~\ref{tab:reliability}: the limit bounds the engine's search and excludes the time spent building the model, which is substantial at this scale. We contrast the result with the legacy layout ($k=0$) and with the full re-optimisation that reached 917,465 visits under a 10-hour budget (Table~\ref{tab:reassign}, Figure~\ref{fig:ksweep}). The same limit fits the column-generation framework without changing its structure: counting, for each bundle, how many of its products would leave their legacy station turns \eqref{eq:reassign} into one knapsack-style row over the bundle variables, whose dual then enters pricing as a per-product penalty for moving a product away from where it sits today. We have not run that variant, and report the bounded results from the set-variable engine alone.
+limits the number of relocated products to at most $k$. Nothing else changes: the objective \eqref{eq:obj}, the capacity rows \eqref{eq:cap} and the workload rows \eqref{eq:wl} are those of Section~\ref{sec:model}, and the legacy layout stays feasible for every $k$, so the model has a solution whatever budget the site sets. We solve it with the set-variable engine for $k \in \{250, 500, 1000, 2000, 5000\}$ under a one-hour search limit each. Every run exceeds that limit in wall clock, four of them by 4.5 to 20.6\% and $k=1{,}000$ by a factor of three, for the reason given in Section~\ref{sec:experiments}: the limit bounds the engine's search and excludes the time spent building the model, which is substantial at this scale. We contrast the result with the legacy layout ($k=0$) and with the full re-optimisation that reached 917,465 visits under a 10-hour budget (Table~\ref{tab:reassign}, Figure~\ref{fig:ksweep}). The same limit fits the column-generation framework without changing its structure: counting, for each bundle, how many of its products would leave their legacy station turns \eqref{eq:reassign} into one knapsack-style row over the bundle variables, whose dual then enters pricing as a per-product penalty for moving a product away from where it sits today. We have not run that variant, and report the bounded results from the set-variable engine alone.
 
 \begin{table}[H]
 \centering

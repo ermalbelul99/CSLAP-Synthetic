@@ -501,3 +501,38 @@ The table overflowed the text block. Rebuilt to fit, with no change to any value
 Verified after the rewrite: 24 data rows all carrying six columns, four black headers and four green
 best-feasible rows, environments balanced, and every mean, interval endpoint and gap still matching
 `table5_rebuilt.csv`.
+
+### Part J — AI-pattern sweep of the full narrative (2026-07-30)
+
+Ran the humanizer checklist over the whole manuscript. The register is a formal OR paper, so the
+guide's "personality and soul" section does not apply: neutral academic prose is the correct human
+voice here, and no opinions or first-person colour were added.
+
+Clean on inspection, no action taken: no em or en dashes anywhere in the prose (the `---` matches are
+the comment-block separators, and every `--` is either a TikZ path segment or a numeric range such as
+"Steps 1--2"); no curly quotes; no negative parallelisms; no participle padding; no filler or hedging
+formulas; no significance inflation. "Landscape" and "robustness" were checked and kept, since both
+are standard optimisation vocabulary here rather than AI filler. The naming variation across
+"set-variable approach", "set-variable reformulation", "Hexaly" and "the reference" is principled,
+each denoting a different aspect, so it is not synonym cycling. Sentence length varies from 7 to 48
+words in the results narrative.
+
+Fixed:
+
+| Pattern | Was | Now |
+|---|---|---|
+| Signposting plus filler | "It is worth stating plainly what the bound does not do, because the two sides of this method carry very different guarantees." | "The bound and the layout carry very different guarantees." |
+| Copula avoidance | "its result stands as a matheuristic reading" | "its result is a matheuristic reading" |
+| Forced rule of three | "it spreads workload most evenly, ignores correlation, and pays the largest visit penalty" | recast causally: ignoring correlation is why it spreads evenly and pays the penalty |
+| Padding | "which is what one expects of a local-search engine whose move space grows faster than the budget it is granted" | "because the move space of a local-search engine grows with the catalogue while its budget does not" |
+| Rhetorical verb | "deserves a separate reading" | "needs a separate reading" |
+
+The larger problem was density rather than vocabulary, and it was of my own making: the re-run
+integration had grown four paragraphs to between 9 and 18 sentences, which is the same wall-of-text
+fault the supervisor flagged in the price-and-complete subsection. The 18-sentence paragraph in
+Section 5.3 is now three, the 11-sentence findings paragraph is two, and the sensitivity paragraph in
+Section 4.1 is two. One 9-sentence paragraph in Section 3.2.5 was left intact: it carries a single
+argument with explicit "first" and "second" signposting, and splitting it would break the reasoning.
+
+The abstract was re-read and left as it stands. Its two triples are factual, three real methods and
+three real properties of the column generation, not decorative padding.

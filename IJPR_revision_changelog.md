@@ -318,3 +318,79 @@ orders.
    `apacite` come from the template.
 3. Confirm on Overleaf: no undefined references or citations, every float placed `[H]`, and the
    final word count within 12,000 including abstract, tables, captions and references.
+
+---
+
+## Part F — Re-run integration (2026-07-30)
+
+The synthetic benchmark was re-executed on the CPLEX/Hexaly machine under the budgets the paper
+prints (`RERUN_IJPR_RESULTS.md`). Instance hashes matched 87/87 before and after; 122/122
+metaheuristic-MILP rows and 29/29 CG rows completed with status OK. Table 5, the statistics and
+every downstream claim were rebuilt from the new per-instance data by
+`Baselines/rebuild_table5.py`, which recomputes means, 95 % t-intervals, mean per-instance gaps,
+the time column and the paired tests from
+`exp02a_results_rerun/exp02a_per_instance.csv` + `exp02a_results/exp02a_cg_setpart.csv`.
+
+### What the re-run changed in the results
+
+The correction to Hexaly's budget at 500, 1,000 and 2,000 SKUs, where the stored campaign had
+overrun, lowered its solution quality at the two largest sizes and reversed the headline ordering.
+
+| | Before | After |
+|---|---|---|
+| Best feasible method, 1,000 SKUs | set-variable (192,330) | **CG-SetPart (192,452 vs 196,515)**, $-2.0$ % |
+| Best feasible method, 2,000 SKUs | CG by 2.4 % | **CG by 5.9 %** (476,692 vs 506,763) |
+| CG vs reference, pooled | $-0.2$ % mean gap, $p=0.11$ | $-0.57$ % mean gap, $p=0.73$ |
+| Hexaly measured time @500 | 1,148 s mean (range 455–4,684) | 309.6 s (range 306.9–311.3) |
+
+CG's workload and capacity violation counts stay at zero on all 29 instances, so it is now the best
+*feasible* method at both large sizes.
+
+### Edits made
+
+- **Table 5** repopulated; rows re-sorted by mean visits; green shading redefined as the
+  lowest-visit *feasible* method and moved to CG at 1,000 and 2,000 SKUs. Time column renamed
+  "Time budget (s)" and now prints the imposed cap where the method reached it and the measured
+  convergence time where it finished early, with footnotes for SA-C's stopping-rule overshoot and
+  for Hexaly's times excluding model construction. The 2,000-SKU bracket reports observed
+  [min, max]; the 1,000-SKU interval is flagged as a range.
+- **Deleted the false equal-effort claim.** The previous text said all optimising methods
+  "consume the full budget at every size, so their visit comparison is made at equal computational
+  effort". CG converges at 86 s of 120 and 256 s of 300 at the two smaller sizes, so the claim was
+  untrue there; the protocol paragraph now states where each method stands relative to its cap.
+- **Section 5.3** rewritten: four findings replacing three; the reference is no longer described as
+  best at every scale; p-values updated ($0.003$ and $0.006$ for CG vs reference at 50 and 500;
+  pooled $0.73$); win counts updated (CG now takes 4/4 at 1,000, previously 3/4).
+- **Underpowered tests stated as such.** At $n=4$ and $n=3$ no exact signed-rank test can reach
+  significance, because the smallest attainable two-sided $p$ values are $0.125$ and $0.25$. The
+  text says this and falls back to reporting how instances split.
+- **Heuristic never reported as a winner.** It posts the lowest visit counts at 1,000 and 2,000
+  SKUs but breaches the workload cap on 100 % of instances there, so the table caption, Section 5.3
+  and the shading rule all exclude it from ranking claims and pair its counts with its violation
+  rate.
+- **Abstract, conclusion and the "match the tool" managerial insight** updated for the reversed
+  ordering. The managerial paragraph now separates the two cases: for a heterogeneous site such as
+  Company~A the set-variable approach still gives the deepest reduction, while on interchangeable
+  stations CG takes over from 1,000 products upward.
+- **Table 9** kept, its artifact having been located (`Compare_W.ipynb`, cells 8–9; all twelve
+  values match). The caption now records that the splits are cut on the dated extract's delivery
+  dates, that the released file carries no dates, and that a reader working from the released file
+  can reproduce the design but not the exact figures.
+- **Section 4.1 and new Appendix table `tab:sensitivity`** report the 667-run threshold sweep. The
+  unbacked claim that the output "is robust under moderate variation" is replaced by the measured
+  result: two frequency floors are bit-identically inert, the kept-edge ratio moves visits by at
+  most 1.2 %, and the community size bound is the only threshold that matters, trading visits
+  against workload feasibility. Tie-break noise floor 0.09 % measured over five hash seeds.
+- **Removed** the stale `exp02a_results/exp02a_cg_setpart_aggregated.csv`, which derived from the
+  superseded CG campaign.
+- **Resolved two `TODO` markers.** The industrial iteration and column counts were already absent
+  from the prose, so the marker went; the per-day figures are now stated on an explicit basis
+  ("the 66 operating days recorded in the extract") rather than as bare derived constants.
+
+### Still open
+
+- Four ORCIDs and the CIFRE grant number.
+- The 66-operating-day divisor behind the per-day stop figures is attributed to the dated extract
+  but could not be recomputed here, the dated file being on the other machine. Worth confirming
+  against that extract's distinct delivery dates (the window holds 91 calendar days and 65
+  weekdays).

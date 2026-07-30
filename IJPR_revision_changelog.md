@@ -445,3 +445,35 @@ sourced.
   machine and re-run `Baselines/report_industrial_deviation.py --layout <file>` to close this.
 - The 66-operating-day divisor behind the per-day stop figures.
 - `Compare_W.ipynb` and the dated extract behind Table 9 should be versioned into the repository.
+
+### Part H — Separating the bound from the layout (2026-07-30)
+
+A co-author asked how the column generation can return before its budget at 50 and 500 SKUs and
+still lose to the set-variable approach, and whether the paper was implicitly selling the method as
+exact. Both concerns were justified and the manuscript now addresses them directly.
+
+**Two distinct claims were being blurred.** Pricing out proves the *linear* master is solved; it says
+nothing about the layout. The gap is large here: at 50 SKUs the bound settles near 3,312 while the
+best layouts need about 7,556 visits. On top of that integrality gap, the layout is produced by the
+dual-guided greedy step, the greedy completion, the swap descent and a final integer master
+restricted to the bundles a run happened to generate, with no branching anywhere. Column generation
+supplies the columns the linear programme needs, not those an optimal integer solution would need. A
+run can therefore price out and still be beaten by a metaheuristic. `sec:cgbound` gains a paragraph
+saying exactly this, and `sec:reliability` explains the 50- and 500-SKU case in those terms.
+
+**Neither early return was a price-out.** 85.9 s of 120 and 256.1 s of 300 are 71.6% and 85.4% of
+budget, just past the 70% generation and 85% integer-master boundaries of the stage split, which is
+the signature of a run that used its whole generation window and then found its final descent at a
+local optimum. The text states this rather than claiming convergence, which no artifact records.
+
+**Four misuses of "exact" removed.** The word had been used to mean "model-based" in places where it
+reads as "provably optimal": the warm start given to "every exact method", "all exact models are
+seeded", "the two exact approaches", and Hexaly described as pairing local search "with exact
+methods". Neither the Hexaly engine nor the column generation is exact, and the reference sentence
+now says so. The Hexaly description now notes the engine is heuristic and reports no bound.
+
+The bound machinery itself was re-verified against `Baselines/cg_setpart_cplex.py`: `rc_lb` is
+CPLEX's dual bound on the pricing MIP minus the cardinality dual, valid on timeout; the Farley
+expression is monotone across iterations; exact pricing runs every iteration and is the sole
+convergence test. The validity claims in the paper are accurate. What was missing was the statement
+of their limits.

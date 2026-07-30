@@ -1,0 +1,13 @@
+# EXP-02a hash manifest (auto-evidence: reused sources unmodified)
+utc_timestamp = 2026-07-29T16:39:02.272251+00:00
+python = 3.10.11
+numpy = 2.2.1
+pandas = 2.2.3
+scipy = 1.15.3
+
+# sha256(file)
+0549132ba58a0199b431b7badb7244b7648c8f238993d3ba4f2ab583bd809bda  ga_baseline.py
+c677bc815b3fa9552b6ed51661f274858cd86596fd18645bebbef64348252a40  sa_correlated.py
+3cacb60a4969f307df2005b380d89a40be96c0f0c655fce999202321f9c58ed0  heuristic_synthetic.py
+dc2420229a594a774a3a15627a8301fed2423334ce1150d29c007adb445b90aa  milp_synthetic.py
+fdf1e70e446798bd8fd15ebaa03141c2f411ee9d9d3ace1cdb218d58226c9f21  synthetic_data_zhang.py

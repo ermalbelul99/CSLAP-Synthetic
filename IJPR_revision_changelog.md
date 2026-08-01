@@ -602,3 +602,42 @@ provenance of the GA and SA-C rows with the visit counts of the earlier, better-
 were rejected as infeasible (GA 1,027,131; SA-C 1,077,070, busiest station 22,179 and 10,287 lines).
 That last item is the honest disclosure that the table reports the feasible runs rather than the
 lowest-visit ones, so it stays.
+
+### Part M — Justifying the binary-formulation claim (2026-08-02)
+
+The manuscript asserted in five places that the binary formulation stalls under branch-and-bound,
+but neither Table 5 nor Table 8 carried a row for it. The claim rested on one legacy run
+(`results_gurobi_alone_syn_1000sku.csv`: Gurobi returns its warm start unchanged, 290,549 visits at
+3,669 s) on a single instance that is **not** part of the 29-instance benchmark and ran under a
+3,600 s limit rather than the published 600 s. The industrial `MILP Gurobi` row is unusable, being
+byte-identical to the Heuristic row across four fields.
+
+**Attempting the runs locally failed on licensing, twice.** The installed Gurobi is a restricted
+non-production licence and rejects the model at every benchmark size, including 50 SKUs
+("Model too large for size-limited license"). HiGHS through `scipy.optimize.milp` accepts no MIP
+start, so it cannot test a claim that presupposes the LPT seed; given 120 s on the smallest instance
+it returned no feasible solution at all.
+
+**The load-bearing half of the claim turned out to be provable, which is stronger than any run.**
+New Appendix D proves that the linear relaxation of the binary programme has value at least $|O|$
+always, and exactly $|O|$ whenever the uniform fractional assignment is feasible, which holds
+throughout the synthetic family. The root bound is therefore the trivial statement that every order
+visits at least one station, independent of the correlation structure that makes one instance harder
+than another. `Baselines/verify_lp_bound.py` confirms it numerically: the relaxation returns 2,482
+and 1,697 on the first two 50-SKU instances, exactly their order counts.
+
+The three prose claims now cite Proposition 1 rather than asserting the behaviour, and the protocol
+paragraph's "no non-trivial bound at 500 SKUs and beyond" is corrected to the stronger and now
+proved "at any size".
+
+**Still open.** The empirical half, that branch-and-bound fails to improve on the LPT seed under the
+published budgets, remains supported only by the single legacy instance. Producing the Table 5 row
+needs a solver this machine cannot provide. `Baselines/run_exp02a_binary_milp.py` is written and
+ready: it warm-starts from the same LPT seed, enforces the per-size budgets, recounts visits on the
+raw orders, and records the dual bound and whether the layout moved off the seed at all. It calls
+Gurobi, so running it on the CPLEX machine requires either a full Gurobi licence there or a docplex
+port of `milp_gurobi_synthetic.run_milp_gurobi`.
+
+**Word budget.** Appendix D sits in an appendix deliberately: IJPR counts "Abstract, Main Text,
+Tables, References and Figure/Table Captions", and appendices are not in that list. The main text
+carries a five-line summary and a pointer. Counted total ~11,996 of 12,000.

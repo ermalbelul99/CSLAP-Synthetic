@@ -584,3 +584,21 @@ biographies; roughly 100 words would then have to come out elsewhere.
 
 Estimated total ~11,965 of 12,000; abstract 198/200; floats 13/15; citations and bibliography in
 exact 1:1 correspondence.
+
+### Part L — Table 8 note pruned (2026-08-01)
+
+The note under the industrial table ran to 182 words and repeated the main text. Cut to 107 with
+nothing unique lost.
+
+Removed: the sentence reporting that ten stations rise above their raw legacy load under the
+set-variable and column-generation layouts and twelve do so under the legacy layout itself, which
+the Section 7 discussion already states two paragraphs below; and "Time 36,000 s is the full
+ten-hour budget", which duplicates both the caption and the Time column.
+
+Kept, because each appears nowhere else: the definition of Max WL; the feasibility rule, including
+the 10,915-line bound on the busiest station and the warning that a Max WL under that figure does
+not certify feasibility, since the test is per station; the solver behind each row; and the
+provenance of the GA and SA-C rows with the visit counts of the earlier, better-scoring runs that
+were rejected as infeasible (GA 1,027,131; SA-C 1,077,070, busiest station 22,179 and 10,287 lines).
+That last item is the honest disclosure that the table reports the feasible runs rather than the
+lowest-visit ones, so it stays.

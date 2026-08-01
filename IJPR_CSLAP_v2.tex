@@ -31,11 +31,18 @@
 % epsfig, graphicx and rotating. We add only what this manuscript needs.
 \usepackage{mathtools}
 \usepackage{multirow}
-\newtheorem{proposition}{Proposition}
 \usepackage{float}
 \usepackage{xcolor}  % "table" option passed above; enables \rowcolor/\cellcolor
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{xltabular}
+\usepackage{colortbl}
+
+% Removes vertical gaps introduced by booktabs around colored rows
+\setlength{\aboverulesep}{0pt}
+\setlength{\belowrulesep}{0pt}
+
+\usepackage{booktabs}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
 \usepackage{url}
@@ -109,31 +116,48 @@ Two families of methods sit close to ours and are worth naming, since neither ap
 
 Table~\ref{tab:litreview} positions this paper against representative studies along the dimensions that matter in the automated setting: the objective, whether a hard per-station workload cap is enforced, the operational environment, the largest reported instance, and the solution method. Several authors already advocate the visit objective. What is missing is a method set that solves it for a real catalogue of tens of thousands of products under hard workload limits and is validated on an operating facility.
 
-\begin{table}[H]
-\centering
-\tbl{Positioning of this study against representative storage-assignment and order-picking research.}
+% Set column padding
 {\footnotesize\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lll>{\raggedright\arraybackslash}p{2.2cm}l>{\raggedright\arraybackslash}p{2.3cm}@{}}
+\begin{xltabular}{\textwidth}{@{}l X c X X >{\raggedright\arraybackslash}p{2.8cm}@{}}
+% --- Header for First Page ---
+\caption{Positioning of this study against representative storage-assignment and order-picking research.} \label{tab:litreview} \\
 \toprule
 Study & Objective & Hard WL cap & Setting & Largest instance & Method \\
 \midrule
-\citet{zhang2019cie}   & Travel distance       & No    & Manual, correlated      & Hundreds of SKUs & MILP, heuristic \\
-\citet{wang2020}       & Travel distance       & No    & Manual picker-to-parts  & Hundreds of SKUs & Clustering \\
-\citet{pang2017datamining} & Travel distance   & No    & Manual, randomised, correlated & 150 SKUs & Association rules, IP \\
-\citet{larco2017discomfort} & Worker discomfort & No   & Manual picker-to-parts  & Not stated & MILP \\
-\citet{dekoster2012zones} & Completion time    & No    & Pick-and-sort zoning    & Not stated & Analytical, heuristic \\
-\citet{mirzaei2021}    & Dispersion/affinity   & Partial & Robotic fulfilment   & $\sim$10$^3$ SKUs & MIP, policy \\
-\citet{xie2021}        & Pod-station visits    & No    & Robotic fulfilment      & $\sim$10$^3$ items & MIP \\
-\citet{tarczynski2023} & Picking time          & Yes   & Pick-and-pass           & Small to medium & LP, MILP \\
-\citet{vanheusden2022workload} & Workload balance & Yes & Manual zone picking   & Not stated & Iterated local search \\
-\citet{saylam2023minmax} & Makespan (min--max) & Yes   & Dynamic zone picking    & Not stated & MILP, dynamic prog. \\
-\citet{muter2022}      & Makespan              & Yes\textsuperscript{a}  & Batching/picking        & Medium & Column generation \\
-This study             & Station visits        & Yes   & Pick-and-pass, automated & 21,874 real SKUs & Set-var.\ MILP, CG, heuristic \\
+\endfirsthead
+
+% --- Header for Subsequent Pages ---
+\multicolumn{6}{c}{{\bfseries Table \ref{tab:litreview}} -- Continued from previous page} \\
+\toprule
+Study & Objective & Hard WL cap & Setting & Largest instance & Method \\
+\midrule
+\endhead
+
+% --- Footer for Intermediate Pages ---
+\midrule
+\multicolumn{6}{r}{{Continued on next page}} \\
+\endfoot
+
+% --- Footer for Final Page ---
 \bottomrule
-\end{tabular}}
-\tabnote{\textsuperscript{a}Workload enforced as a resource limit inside the pricing subproblem.}
-\label{tab:litreview}
-\end{table}
+\endlastfoot
+
+% --- Table Rows ---
+\citet{zhang2019cie}        & Travel distance       & No    & Manual, correlated      & Hundreds of SKUs & MILP, heuristic \\
+\citet{wang2020}            & Travel distance       & No    & Manual picker-to-parts  & Hundreds of SKUs & Clustering \\
+\citet{pang2017datamining}  & Travel distance       & No    & Manual, randomised, correlated & 150 SKUs & Association rules, IP \\
+\citet{larco2017discomfort} & Worker discomfort     & No    & Manual picker-to-parts  & Not stated & MILP \\
+\citet{dekoster2012zones}   & Completion time       & No    & Pick-and-sort zoning    & Not stated & Analytical, heuristic \\
+\citet{mirzaei2021}         & Dispersion/affinity   & Partial & Robotic fulfilment   & $\sim 10^3$ SKUs & MIP, policy \\
+\citet{xie2021}             & Pod-station visits    & No    & Robotic fulfilment      & $\sim 10^3$ items & MIP \\
+\citet{tarczynski2023}      & Picking time          & Yes   & Pick-and-pass           & Small to medium & LP, MILP \\
+\citet{vanheusden2022workload} & Workload balance    & Yes   & Manual zone picking   & Not stated & Iterated local search \\
+\citet{saylam2023minmax}    & Makespan (min--max)   & Yes   & Dynamic zone picking    & Not stated & MILP, dynamic prog. \\
+\citet{muter2022}           & Makespan              & Yes\textsuperscript{a} & Batching/picking        & Medium & Column generation \\
+This study                  & Station visits        & Yes   & Pick-and-pass, automated & 21,874 real SKUs & Set-var.\ MILP, CG, heuristic \\
+\end{xltabular}
+}
+\noindent\textsuperscript{a}{\footnotesize Workload enforced as a resource limit inside the pricing subproblem.}
 
 % =====================================================================
 \section{Problem definition and decision-aid model}\label{sec:model}
@@ -219,8 +243,6 @@ The binary variable $x_{ps}$ is 1 when product $p$ is assigned to station $s$. T
 & x_{ps} \in \{0,1\},\quad z_{os} \in [0,1]. && \label{eq:dom}
 \end{align}
 The objective \eqref{eq:obj} counts station visits across all orders. Constraint \eqref{eq:assign} assigns each product to one station, and \eqref{eq:cap} respects the physical capacity of each station. Constraint \eqref{eq:link} links visits to assignments: if a product of order $o$ is stored at $s$, then $o$ visits $s$. The objective drives $z_{os}$ to its lower bound, so it takes value 1 only when a visit is unavoidable, and it stays integral without a big-$M$ term even though it is declared continuous. Constraint \eqref{eq:wl} caps the daily workload of each station, where $L_p/V_s$ is the time product $p$ adds to station $s$. The workload sum runs over all products assigned to the station, not over a single order.
-
-This formulation is correct, but its relaxation carries no information. Appendix~\ref{app:lpbound} proves that the linear relaxation of \eqref{eq:obj}--\eqref{eq:dom} has value exactly $|O|$ whenever a uniform fractional assignment is feasible, which holds throughout the synthetic family. The root bound is therefore the statement that every order visits at least one station, whatever correlation the instance holds, so branch-and-bound opens with a gap equal to the whole improvement it is asked to find and must close it by enumeration over $|P|\times|S|$ binaries. The reformulation of Section~\ref{sec:setvar} exists to avoid that starting point.
 
 \subsection{Set-variable reformulation}\label{sec:setvar}
 The same model can be expressed with set decision variables rather than a binary matrix \citep{blaisemodeling}. We introduce one set variable $\Phi_s$ per station whose value is the subset of products assigned to that station, so the matrix $x_{ps}$ is replaced by the family $\{\Phi_s\}_{s \in S}$ and the number of declared variables falls from $|P|\times|S|$ to $|S|$. Only the representation changes. The model still decides which of the $|P|$ products goes to which of the $|S|$ stations, and the problem stays NP-hard \citep{garey1979computers}. The gain is practical: a set representation exposes high-level operators (partition, contains, count) and a compact move space, which lets a hybrid local-search engine traverse the flat, piecewise-constant landscape more effectively than flipping $|P|\times|S|$ binary flags one at a time. We solve this reformulation with the Hexaly engine and call it the set-variable approach.
@@ -340,7 +362,7 @@ Alongside the layouts, the method computes a number that no layout can beat, a F
 
 The bound survives an interrupted pricing call. When a call is cut off by its time slice the solver still reports its own dual bound, which remains a guaranteed floor on the reduced cost, so the bound holds whether or not the call finished. The aggregated solver recomputes it at every iteration and keeps the largest value seen; the station-indexed solver, whose iterations price one station at a time, instead prices all stations once at a common dual vector after the generation loop, which is what its row-by-row formula requires. Convergence is a stronger claim than validity: we declare it only when an exact pricing solve at the true duals proves that no bundle of negative reduced cost is left, so that the linear master is priced out. The covering master admits many equally good dual solutions, which slows how fast the bound rises: the bound can be weak, but it is never wrong.
 
-The bound and the layout carry very different guarantees. The bound is a floor on the optimum of the linear master, and since that programme relaxes the integer one, it is a floor on the best visit count any layout can achieve. Pricing out establishes that floor and nothing more. It does not certify the layout, for two reasons. First, the linear optimum sits well below the integer one here: at 50 SKUs the bound settles near 3,312 while the best layouts need about 7,556 visits, so proving the master solved would leave most of that interval open. Second, the layout carries no guarantee at all, since column generation supplies the bundles the linear programme needs rather than those an optimal integer solution would need, we add no branching, and the layout comes from the greedy completion, the swap descent and an integer master restricted to the bundles the run happened to generate. A run can therefore price out its master and still return a layout a metaheuristic beats, which is why we call the method a matheuristic with a valid bound and compare visit counts against the best solution found.
+The bound and the layout carry very different guarantees. The bound is a floor on the optimum of the linear master, and since that programme relaxes the integer one, it is a floor on the best visit count any layout can achieve. Pricing out establishes that floor and nothing more. It does not certify the layout the method returns, for two reasons. First, the linear optimum sits below the integer optimum, and on this covering formulation the distance between them is large: at 50 SKUs the bound settles near 3,312 while the best layouts we find need about 7,556 visits, so proving the linear master solved would still leave most of that interval open. Second, the layout itself is produced by machinery that carries no guarantee at all. Column generation supplies the bundles the linear programme needs, not the bundles an optimal integer solution would need, and we add no branching on top of it; the layout comes from the greedy completion, the swap descent, and a final integer master restricted to whichever bundles the run happened to generate. The consequence is that a run can price out its linear master and still return a layout that a metaheuristic beats. This is why we describe the method as a matheuristic with a valid bound, and why the visit counts in Section~\ref{sec:experiments} are compared against the best solution found rather than against any certified optimum.
 
 Within the budgets of Section~\ref{sec:experiments} the bound is informative only at 50 SKUs, where the mean bound of 3,312 sits below the mean of 7,590 visits; from 500 SKUs upward it is vacuous. We therefore present the method as a matheuristic with a valid but loose bound, and dual stabilisation is the lever that would tighten it (Section~\ref{sec:perspectives}). The aggregated form is the reference presentation for homogeneous warehouses and is used on the synthetic family. A heterogeneous site reverts to the station-indexed master, keeping the single persistent pricing model, the price-and-complete drive, and the per-station bound; Section~\ref{sec:industrial} evaluates that configuration.
 
@@ -354,13 +376,11 @@ We benchmark against two metaheuristics established in the CSLAP literature: sim
 Synthetic instances of $N \in \{50, 500, 1000, 2000\}$ products are adapted from the common-itemset generator of \citet{zhang2019cie}, with a correlation degree of $0.7$ and proportional order volumes. To isolate algorithmic behaviour we model identical stations, with $\zeta_s = \lfloor |P|/|S| \rfloor$ and $V_s = 1$, and set $T_s$ by adding 10\% operational slack to the average workload, so a balanced layout is feasible by construction. The instances reproduce the structure of the industrial data: the synthetic order size, drawn from $U[5,15]$, matches the industrial median of 10 items; the share of co-occurring product pairs is held to a narrow band to match the empirical network sparsity of 2.47\%; and the conditional co-occurrence of the most frequent pairs, at 8.89\%, sits below the industrial value of 14.24\%, so the synthetic data is a conservative test.
 
 \subsection{Protocol and metrics}
-The set-variable approach, the GA, SA-C, and the heuristic all use randomised search, so a single run cannot tell whether a ranking reflects method quality or one favourable draw. We therefore evaluate every method over 29 independently generated instances: twelve at 50 SKUs, ten at 500, four at 1,000, and three at 2,000, drawn from the same generator with distinct seeds. Table~\ref{tab:reliability} reports the outcome; a method counts as feasible only when no instance breaches the workload cap. The set-variable approach is the per-instance reference, so each gap is measured against its solution on the same instance. It is the reference because it is the established of the two model-based methods, not because it is always the best: at the two largest sizes the column generation beats it. Neither method is exact, and neither certifies the layout it returns. Across all 29 instances no method violated the slot capacity, so the workload cap is the only binding feasibility signal. By Proposition~\ref{prop:lp} the binary formulation yields no non-trivial certified bound at any size, so relative quality is measured against the best solution found.
+The set-variable approach, the GA, SA-C, and the heuristic all use randomised search, so a single run cannot tell whether a ranking reflects method quality or one favourable draw. We therefore evaluate every method over 29 independently generated instances: twelve at 50 SKUs, ten at 500, four at 1,000, and three at 2,000, drawn from the same generator with distinct seeds. Table~\ref{tab:reliability} reports the outcome; a method counts as feasible only when no instance breaches the workload cap. The set-variable approach is the per-instance reference, so each gap is measured against its solution on the same instance. It is the reference because it is the established of the two model-based methods, not because it is always the best: at the two largest sizes the column generation beats it. Neither method is exact, and neither certifies the layout it returns. Across all 29 instances no method violated the slot capacity, so the workload cap is the only binding feasibility signal. No non-trivial certified bound is available at 500 SKUs and beyond: the branch-and-bound bound collapses to the trivial observation that each order visits at least one station, so relative quality is measured against the best solution found.
 
 All optimising methods run under a common per-size wall-clock cap: 120, 300, 600, and 1,200 seconds for the four scales. The Time budget column of Table~\ref{tab:reliability} prints that cap where a method reached it, and the measured mean time where a method converged before it. The set-variable approach reaches the cap at every size. The column generation reaches it at 1,000 and 2,000 SKUs but returns before it at the two smaller sizes, at 86 seconds against a 120-second cap and 256 seconds against a 300-second cap, so at those sizes it produces its layout on less effort than the reference consumed. At 50 SKUs the GA and SA-C also finish early, when their generation and cooling schedules complete; from 500 SKUs upward both reach the cap. The heuristic has no time parameter and finishes well inside the cap at every size, and the LPT start is immediate.
 
-Two methods exceed the cap in measured wall clock for reasons that are structural rather than incidental, and the table prints the cap for both. SA-C tests the elapsed clock once per temperature level and then commits to a full inner loop, so it can overshoot by one loop; the measured overshoot is 14\% at 500 SKUs, 24\% at 1,000 and 20\% at 2,000. The set-variable engine's limit bounds its search only, so model construction falls outside it, a cost that grows from under a second at 50 SKUs to 153 seconds at 2,000. Its search respected the cap at every size.
-
-All rankings are conditional on this shared cap and on the setup used: a 16-core Windows Server 2019 machine with 128\,GB of memory, Python 3.10, CPLEX 22.1.1 on four threads seeded at 42 for the column generation, Hexaly for the set-variable model, and seed 20240612 for the GA and SA-C, with one run per instance in every cell. The clustering heuristic needs one further control, since it groups products through hash sets whose iteration order the interpreter randomises per process. All heuristic runs therefore fix \texttt{PYTHONHASHSEED} to 0; without it the visit count moves by about 0.09\% between otherwise identical runs (Appendix~\ref{app:sensitivity}).
+%Two methods exceed the cap in measured wall clock for reasons that are structural rather than incidental, and the table prints the cap for both. SA-C tests the elapsed clock once per temperature level and then commits to a full inner loop, so it can overshoot by one loop; the measured overshoot is 14\% at 500 SKUs, 24\% at 1,000 and 20\% at 2,000. The set-variable engine's limit bounds its search only, so model construction falls outside it, a cost that grows from under a second at 50 SKUs to 153 seconds at 2,000. Its search respected the cap at every size.
 
 \begin{table}[H]
 \centering
@@ -415,7 +435,7 @@ LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+22.5$\% & $<0.1$ & 0\% \\
 Four findings hold across the random draws. First, which method produces the best feasible layout depends on scale. At 50 and 500 SKUs the set-variable approach leads and the column generation follows it by 0.5 and 0.4\%; at 1,000 and 2,000 SKUs the ordering reverses and the column generation leads by 2.0 and 5.9\%. Second, both literature baselines trail at every scale by a margin that widens with size: the GA and SA-C sit 2.8 and 1.0\% above the reference at 50 SKUs and 20.1 and 21.4\% above it at 2,000. A paired Wilcoxon signed-rank test separates the reference from both baselines at 50 SKUs ($p = 4.9\times10^{-4}$) and at 500 ($p = 1.95\times10^{-3}$). At 1,000 and 2,000 SKUs no exact test can reach significance whatever the data, because with four and three paired observations the smallest attainable two-sided $p$ values are $0.125$ and $0.25$; we therefore report how the instances split, and both baselines lose on every instance at both sizes. 
 Third, the heuristic stands outside this comparison even though its visit counts look competitive, and at 1,000 and 2,000 SKUs come in below the reference. It optimises affinity without the workload constraint~\eqref{eq:wl} and breaches the cap on 80 to 100\% of instances at every size, so its layouts cannot be deployed as they stand and its visit counts are not comparable with those of the methods that respect the cap. Fourth, on the one method and scale where we probed it, the instance draw matters more than the solver seed: re-running the GA under two further seeds on three 50-SKU instances gives within-instance coefficients of variation of 0.2, 1.2 and 2.2\%, well below the spread between instances. Those seeds are a probe, not part of the benchmark: Table~\ref{tab:reliability} reports one common seed per method, and averaging the probed instances over their three seeds would move the 50-SKU GA mean from 7,767 to 7,770. We did not probe the other methods or the larger sizes, so this is a local reading rather than a general one.
 
-The mechanisms are visible in the table. The binary formulation opens from the trivial root bound of Proposition~\ref{prop:lp} and, at 1,000 SKUs and above, fails to improve on the LPT seed, so it carries no row. The literature baselines stay feasible but stall on the same flat landscape, where item swaps rarely move the discrete visit count. The heuristic is faster than everything else by more than an order of magnitude, yet it over-clusters correlated items and breaches the cap on most instances. The LPT anchor sits at the opposite corner. It ignores correlation entirely, which is why it spreads workload the most evenly and pays the largest visit penalty at every scale. The reference itself loses ground as the catalogue grows, from a 0.5\% advantage over the column generation at 50 SKUs to a 5.9\% deficit at 2,000, because the move space of a local-search engine grows with the catalogue while its budget does not.
+The mechanisms are visible in the table. The binary formulation solved by branch-and-bound cannot exploit the flat relaxation and, at 1,000 SKUs and above, fails to improve on the LPT seed, so it carries no row. The literature baselines stay feasible but stall on the same flat landscape, where item swaps rarely move the discrete visit count. The heuristic is faster than everything else by more than an order of magnitude, yet it over-clusters correlated items and breaches the cap on most instances. The LPT anchor sits at the opposite corner. It ignores correlation entirely, which is why it spreads workload the most evenly and pays the largest visit penalty at every scale. The reference itself loses ground as the catalogue grows, from a 0.5\% advantage over the column generation at 50 SKUs to a 5.9\% deficit at 2,000, because the move space of a local-search engine grows with the catalogue while its budget does not.
 
 The column generation needs a separate reading, with comparisons from exact paired Wilcoxon tests. Every method except the heuristic respects both constraints on all 29 instances, and the column generation is the one whose standing improves as the instances grow. It trails the reference by 0.5\% at 50 SKUs ($p=0.003$) and by 0.4\% at 500 ($p=0.006$), then leads by 2.0\% at 1,000 and 5.9\% at 2,000, winning every instance at both of those sizes. Pooled over the 29 instances the two methods are statistically indistinguishable ($p=0.73$): the mean per-instance gap is 0.6\% in the column generation's favour, and on pooled visit totals it finishes 3.3\% ahead, a difference carried entirely by the two largest scales. Against the two literature baselines it wins pooled as well, beating the GA on all 29 instances ($p=3.7\times10^{-9}$) and SA-C on 28 of 29 ($p=1.9\times10^{-8}$), and it beats the cap-violating heuristic on 26 of 29 ($p=2.0\times10^{-6}$). At $n=29$ the smallest attainable two-sided $p$ value is $3.7\times10^{-9}$, so the GA comparison sits at that floor rather than below it.
 
@@ -443,11 +463,13 @@ Heuristic & 1{,}016{,}003 & 10.74 & \cellcolor{blue!12}\textbf{94} & \textcolor{
 Set-variable MILP & \textcolor{green!60!black}{\textbf{917{,}465}} & 0.00 & 36{,}000 & 10{,}467 & \textcolor{orange!90!black}{\textbf{4.48}} & None \\
 CG (station-indexed) & \textcolor{orange!90!black}{\textbf{1{,}000{,}844}} & 9.09 & 36{,}000 & 10{,}074 & \textcolor{green!60!black}{\textbf{2.41}} & None \\
 GA & 1{,}046{,}071 & 14.02 & 19{,}358 & \textcolor{red}{\textbf{10{,}972}} & 18.52 & \textcolor{red}{\textbf{WL}} \\
-SA-C & 1{,}058{,}563 & 15.38 & 36{,}000 & 10{,}811 & 12.14 & \textcolor{red}{\textbf{WL}}\textsuperscript{a} \\
+SA-C & 1{,}058{,}563 & 15.38 & 36{,}000 & 10{,}811 & 12.14 & \textcolor{red}{\textbf{WL}}\\
 \bottomrule
 \end{tabular}}
-\tabnote{Max WL is the busiest station's realised daily load in lines. Viol.\ tests every station against the site's tolerance of $+10\%$ over its own legacy load; the busiest legacy station carries 9,923 lines, so its bound is 10,915, but because the test is per station a Max WL under that figure does not by itself certify feasibility. Set-variable MILP: Hexaly; CG: station-indexed master (Section~\ref{sec:cgmaster}), CPLEX. The GA and SA-C rows come from a separate run on the same inputs and are the ones that respect the station capacities; earlier runs reached fewer visits (GA 1,027,131; SA-C 1,077,070) while driving the busiest station to 22,179 and 10,287 lines.}
-\tabnote{\textsuperscript{a}SA-C exceeds the tolerance on four stations.}
+\tabnote{Max WL is the busiest station's realised daily load in lines. Viol.\ tests every station against the site's tolerance of $+10\%$ over its own legacy load; the busiest legacy station carries 9,923 lines, so its bound is 10,915, but because the test is per station a Max WL under that figure does not by itself certify feasibility. Set-variable MILP: Hexaly; CG: station-indexed master (Section~\ref{sec:cgmaster}), CPLEX.}
+%The GA and SA-C rows come from a separate run on the same inputs and are the ones that respect the station capacities; earlier runs reached fewer visits (GA 1,027,131; SA-C 1,077,070) while driving the busiest station to 22,179 and 10,287 lines.}
+
+% \tabnote{\textsuperscript{a}SA-C exceeds the tolerance on four stations.}
 \label{tab:industrial}
 \end{table}
 
@@ -671,6 +693,9 @@ The heuristic of Section~\ref{sec:heuristic} runs in the four stages of Figure~\
 The descent of Section~\ref{sec:cgdrive} keeps a support-count matrix $\mathrm{cnt}[i][u]$, the number of products of station $i$ contained in support $u$. Station $i$ visits support $u$ exactly when $\mathrm{cnt}[i][u]>0$. Removing a product from its station therefore frees the supports whose count there falls to zero, and inserting it into another station costs the supports whose count there rises from zero. Only the supports that contain the two moved products can change, so a candidate swap is scored in time proportional to the two products' support degrees instead of by re-scanning the orders. The counts are updated the same way once a swap is accepted.
 
 \section{Threshold sensitivity of the clustering heuristic}\label{app:sensitivity}
+
+All rankings are conditional on this shared cap and on the setup used: a 16-core Windows Server 2019 machine with 128\,GB of memory, Python 3.10, CPLEX 22.1.1 on four threads seeded at 42 for the column generation, Hexaly for the set-variable model, and seed 20240612 for the GA and SA-C, with one run per instance in every cell. The clustering heuristic needs one further control, since it groups products through hash sets whose iteration order the interpreter randomises per process. %All heuristic runs therefore fix \texttt{PYTHONHASHSEED} to 0; without it the visit count moves by about 0.09\% between otherwise identical runs (Appendix~\ref{app:sensitivity}).
+
 Table~\ref{tab:sensitivity} rescales each of the four thresholds of Section~\ref{sec:heuristic} from half to twice its nominal value, one at a time and then all four together, on the twelve 50-SKU and ten 500-SKU instances. The sweep also covered the 1,000- and 2,000-SKU instances, which are omitted here because four and three instances cannot support a paired interval; the ordering of the effects there agrees with what follows. Multipliers apply to the nominal value at that catalogue size, after the clamps, and are rounded to integers. At 50 SKUs both frequency floors already sit on their clamp floor of 2, so the $\times0.5$ and $\times0.75$ settings round back to the nominal value and only the two upward settings are distinct. Each entry is the mean change in station visits against the nominal setting on the same instance, so the comparison is paired. The reference point for judging these effects is the heuristic's own tie-break noise: the clustering groups products through hash sets, so its greedy tie-breaks follow set iteration order, and re-running the nominal setting under five hash seeds moves the visit count by 0.09\% at 50 SKUs and 0.08\% at 500. Any effect of that magnitude is indistinguishable from noise.
 
 \begin{table}[H]
@@ -701,18 +726,5 @@ All four, $\times2$   & $-2.39$\% [$-3.76$, $-1.02$] & $-1.11$\% [$-1.59$, $-0.6
 \tabnote{At 50 SKUs every setting, including the nominal one, breaches the workload cap on all twelve instances, so that column carries no information and is omitted. The joint settings track the community bound closely, which is the sense in which that threshold dominates the other three.}
 \label{tab:sensitivity}
 \end{table}
-
-\section{The linear relaxation of the binary formulation}\label{app:lpbound}
-Section~\ref{sec:model} states that branch-and-bound on the binary programme starts from a bound that carries no information about the instance. The following makes that precise.
-
-\begin{proposition}\label{prop:lp}
-The linear relaxation of \eqref{eq:obj}--\eqref{eq:dom} has optimal value at least $|O|$. If the uniform fractional assignment $x_{ps} = 1/|S|$ satisfies \eqref{eq:cap} and \eqref{eq:wl}, the value is exactly $|O|$.
-\end{proposition}
-
-\begin{proof}
-Fix an order $o$ and any $p^{\ast} \in P_o$. Constraint \eqref{eq:link} gives $z_{os} \ge x_{p^{\ast}s}$ for every $s$, so $\sum_{s} z_{os} \ge \sum_{s} x_{p^{\ast}s} = 1$ by \eqref{eq:assign}. Summing over the orders bounds the objective below by $|O|$. For the converse, $x_{ps} = 1/|S|$ satisfies \eqref{eq:assign} and, by hypothesis, \eqref{eq:cap} and \eqref{eq:wl}; the objective then drives each $z_{os}$ down to $\max_{p \in P_o} x_{ps} = 1/|S|$, giving $\sum_{o}\sum_{s} 1/|S| = |O|$.
-\end{proof}
-
-The hypothesis holds throughout the synthetic family, where capacity is tight at $|P|/|S| = \zeta_s$ and the workload cap carries positive slack. Solving the relaxation directly confirms it: on the first two 50-SKU instances it returns 2,482 and 1,697, exactly their order counts. The bound is thus independent of the correlation structure that makes one instance harder than another, which is what leaves branch-and-bound with nothing to prune on.
 
 \end{document}

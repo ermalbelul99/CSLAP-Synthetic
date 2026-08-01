@@ -536,3 +536,51 @@ argument with explicit "first" and "second" signposting, and splitting it would 
 
 The abstract was re-read and left as it stands. Its two triples are factual, three real methods and
 three real properties of the column generation, not decorative padding.
+
+### Part K — IJPR literature positioning (2026-08-01)
+
+Reviewer point: IJPR asks for an exhaustive reading of prior work in *Production Research* itself,
+and the bibliography carried only two IJPR entries out of 31. Sourced entirely from the user's
+NotebookLM notebook "IJPR Articles on CSLAP" (7 distinct IJPR articles across 11 sources); no open
+web search was used. Bibliography now holds 40 entries, 10 of them IJPR.
+
+Added and woven into Section 2:
+
+| Work | Where | Role in the argument |
+|---|---|---|
+| Pang & Chan (2017) | §2 ¶1, Table 1 | Correlated storage by association-rule mining, scored in travel distance: the closest predecessor whose objective we replace |
+| Larco et al. (2017) | §2 ¶1, Table 1 | IJPR storage assignment that optimises worker discomfort rather than distance, establishing that the objective should follow the system |
+| Jaghbeer et al. (2020) | §2 ¶2 | 119-study review of automated picking; design links to performance through system throughput, not picker travel |
+| de Koster et al. (2012) | §2 ¶2, Table 1 | Pick-and-sort zoning by batch completion time; sets the number of zones where we fill zones whose count the hardware fixes |
+| Saylam et al. (2023) | §2 ¶4 (new), Table 1 | Min--max makespan in synchronised dynamic zone picking: balance as the objective |
+| Vanheusden et al. (2022) | §2 ¶4 (new), Table 1 | Balancing measures under hard picker capacity; the right measure depends on the managerial reason for balancing |
+| Vanheusden et al. (2023) | §2 ¶4 (new) | Planning models that omit real operating constraints yield schedules a warehouse cannot run |
+
+The new fourth paragraph of Section 2 uses Saylam and Vanheusden to state a choice the paper had
+left implicit: balance can sit in the objective or in the constraints, and we put it in the
+constraints because an installed conveyor gives each station an engineered budget that operations
+treat as a line not to cross. Table 1 grows from six comparators to ten.
+
+**Not added, deliberately.** de Vries et al. (2016) was named in the review but studies picker
+personality with pick-by-voice and RF terminals. Our system has no walking picker, so the citation
+would support no claim we make. Larco and de Vries were also available only second-hand, as entries
+in the reference list of the Vanheusden review rather than as sources in the notebook; Larco is
+cited on the single point that review actually documents.
+
+Two bibliographic traps resolved against the sources: de Koster et al. is dated **2012**, the issue
+year for IJPR 50(3), not the 2011 online-first date; and Pang & Chan is carried without volume or
+pages because the notebook holds the accepted manuscript, with a `TODO` in the `.bib`. A third was
+avoided: the review lists van Gils et al. (2018) as "IJPR 197(Part C)", but volume 197 with those
+pages is *International Journal of Production Economics*, so that work was not added on this record.
+
+**Word budget.** These additions pushed the estimated total past the 12,000 cap. Recovered by
+tightening prose written earlier in this revision (the industrial table note, the data availability
+statement, the reproducibility paragraph, the GA-probe sentence, and a bound-versus-layout passage
+that duplicated Section 3.2.5), and by removing **Notes on contributors**, which is a Taylor &
+Francis template element absent from the sequence IJPR's instructions require. Its removal also
+brings the back matter into exact agreement with that sequence. The section is preserved at
+`C:\tmp\tex_with_bios_backup.tex` and can be restored in full if the editor asks for author
+biographies; roughly 100 words would then have to come out elsewhere.
+
+Estimated total ~11,965 of 12,000; abstract 198/200; floats 13/15; citations and bibliography in
+exact 1:1 correspondence.

@@ -1,0 +1,11 @@
+scenario_name: industrial_gurobi
+num_orders: 83183
+num_products: 15975
+num_stations: 24
+station_capacity: 1941
+station_time_capacity: 5187.613305039713
+starting_master_obj: 680604.0000000003
+total_iterations: 50
+heuristic_pricing_calls: 1200
+exact_pricing_calls: 0
+lower_bound: Not rigorosly proven bound due to heuristic pricing / time limit

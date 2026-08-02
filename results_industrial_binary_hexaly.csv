@@ -1,0 +1,2 @@
+Method,visits,solver_obj,products_moved_off_warm_start,time,time_limit,max_workload,utilization_std_dev,cap_broken,wl_broken,n_bool_vars,num_orders,num_skus,num_stations
+Binary MILP (Hexaly),989320,617462,10596,36106.5,36000,10355.6,3.441,0,9,383400,284862,21874,24

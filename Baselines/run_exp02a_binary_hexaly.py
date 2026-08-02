@@ -37,9 +37,14 @@ import pandas as pd  # noqa: E402
 
 from milp_gurobi_synthetic import read_data  # noqa: E402  (plain CSV reader)
 from milp_binary_hexaly import run_milp_binary_hexaly  # noqa: E402
+from milp_synthetic import run_milp_hexaly  # noqa: E402  (set-variable twin)
 
 INSTANCE_DIR = os.path.join(_ROOT, "exp02a_instances")
 OUT_CSV = os.path.join(_ROOT, "exp02a_results", "exp02a_binary_hexaly.csv")
+# Same harness, set-variable decisions: the on-machine control for the
+# comparison, so both columns come from identical hardware.
+OUT_CSV_SETVAR = os.path.join(_ROOT, "exp02a_results",
+                              "exp02a_setvar_hexaly_localmachine.csv")
 REF_CSV = os.path.join(_ROOT, "exp02a_results_rerun", "exp02a_per_instance.csv")
 
 BUDGET = {50: 120, 500: 300, 1000: 600, 2000: 1200}
@@ -144,11 +149,17 @@ def main() -> None:
     ap.add_argument("--sizes", nargs="+", type=int,
                     default=[50, 500, 1000, 2000])
     ap.add_argument("--compare", action="store_true")
+    ap.add_argument("--model", choices=["binary", "setvar"], default="binary",
+                    help="which decision representation to run")
     args = ap.parse_args()
 
     if args.compare:
         compare()
         return
+
+    global OUT_CSV
+    if args.model == "setvar":
+        OUT_CSV = OUT_CSV_SETVAR
 
     done = done_keys()
     pat = re.compile(r"syn_(\d+)sku_seed(\d+)")
@@ -168,9 +179,15 @@ def main() -> None:
             warm = lpt_start(pr, st, pl)
             wv = count_visits(warm, op)
             t0 = time.time()
-            (a, obj, el, mw, ws, cb, wb, moved) = run_milp_binary_hexaly(
-                op, st, pr, pl, time_limit=budget, verbosity=0,
-                warm_start_assignment=warm)
+            if args.model == "binary":
+                (a, obj, el, mw, ws, cb, wb, moved) = run_milp_binary_hexaly(
+                    op, st, pr, pl, time_limit=budget, verbosity=0,
+                    warm_start_assignment=warm)
+            else:
+                (a, obj, el, mw, ws, cb, wb) = run_milp_hexaly(
+                    op, st, pr, pl, time_limit=budget, verbosity=0,
+                    warm_start_assignment=warm)
+                moved = sum(1 for q, sx in a.items() if warm.get(q) != sx)
             recounted = count_visits(a, op)
             row = dict(base, status="OK", visits=recounted, model_obj=obj,
                        warm_start_visits=wv, products_moved=moved,

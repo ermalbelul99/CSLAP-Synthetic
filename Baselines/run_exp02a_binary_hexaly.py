@@ -151,6 +151,12 @@ def main() -> None:
     ap.add_argument("--compare", action="store_true")
     ap.add_argument("--model", choices=["binary", "setvar"], default="binary",
                     help="which decision representation to run")
+    ap.add_argument("--tag", default="",
+                    help="suffix for the output file, e.g. --tag server16core; "
+                         "use a distinct tag per machine so results from "
+                         "different hardware never mix")
+    ap.add_argument("--fresh", action="store_true",
+                    help="ignore any existing rows and re-run every instance")
     args = ap.parse_args()
 
     if args.compare:
@@ -160,8 +166,27 @@ def main() -> None:
     global OUT_CSV
     if args.model == "setvar":
         OUT_CSV = OUT_CSV_SETVAR
+    if args.tag:
+        root, ext = os.path.splitext(OUT_CSV)
+        OUT_CSV = f"{root}_{args.tag}{ext}"
 
-    done = done_keys()
+    done = set() if args.fresh else done_keys()
+    print(f"model={args.model}  sizes={args.sizes}")
+    print(f"output -> {OUT_CSV}")
+    if done:
+        print(f"{len(done)} instance(s) already recorded there and will be "
+              f"SKIPPED. Use --fresh to redo them, or --tag <name> to write a "
+              f"separate file.")
+    planned = 0
+    for _d in sorted(os.listdir(INSTANCE_DIR)):
+        _m = re.fullmatch(r"syn_(\d+)sku_seed(\d+)", _d)
+        if _m and int(_m.group(1)) in args.sizes                 and (int(_m.group(1)), int(_m.group(2))) not in done:
+            planned += 1
+    print(f"{planned} instance(s) to run.", flush=True)
+    if planned == 0:
+        print("Nothing to do. Every requested instance is already in the "
+              "output file above.")
+        return
     pat = re.compile(r"syn_(\d+)sku_seed(\d+)")
     for d in sorted(os.listdir(INSTANCE_DIR)):
         m = pat.fullmatch(d)

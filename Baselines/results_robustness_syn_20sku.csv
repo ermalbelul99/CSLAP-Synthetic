@@ -1,5 +1,0 @@
-instance,solver,k,variant,nominal_visits,mean_test_visits,PoR,G,n_test_cells
-syn_20sku,heuristic,1,exact,3700,3603.75,0.0,0.0,4
-syn_20sku,heuristic,2,exact,3754,3605.5,0.014594594594594595,-0.00048560527228581337,4
-syn_20sku,sa,1,exact,3923,3664.25,0.0,0.0,4
-syn_20sku,sa,2,exact,3981,3611.0,0.014784603619678817,0.014532305383093403,4

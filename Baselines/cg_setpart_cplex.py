@@ -897,7 +897,7 @@ if __name__ == "__main__":
         description="Aggregated set-partitioning CG for flat-warehouse CSLAP (CPLEX)"
     )
     parser.add_argument("--prefix", type=str, required=True)
-    parser.add_argument("--dir", type=str, default="synthetic_datasets")
+    parser.add_argument("--dir", type=str, default="exp02a_instances")
     parser.add_argument("--time", type=int, default=120)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--pool-cap", type=int, default=10)

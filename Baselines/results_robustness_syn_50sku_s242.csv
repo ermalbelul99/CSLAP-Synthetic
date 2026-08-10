@@ -1,4 +1,0 @@
-instance,solver,k,variant,nominal_visits,mean_test_visits,PoR,G,n_test_cells,c_bar,degenerate
-syn_50sku_s242,ga,1,exact,8341,9296.08888888889,0.0,0.0,45,1.0,False
-syn_50sku_s242,ga,2,exact,8581,9274.422222222222,0.028773528353914397,0.002330729291171567,45,1.7511,False
-syn_50sku_s242,ga,3,exact,8447,9365.91111111111,0.012708308356312193,-0.007510924546523634,45,2.1848,False

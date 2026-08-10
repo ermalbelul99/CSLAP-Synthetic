@@ -19,9 +19,7 @@ from sa_correlated import simulated_annealing_correlated
 from ga_baseline import genetic_algorithm
 from heuristic_synthetic import heuristic_cslap
 from milp_gurobi_synthetic import run_milp_gurobi
-from cg_gurobi_synthetic import column_generation_gurobi
 from milp_synthetic import run_milp_hexaly
-from cg_synthetic import column_generation_hexaly
 
 from data_loader_industrial import load_industrial_data
 
@@ -219,9 +217,10 @@ def run_industrial_benchmarks(data_path, time_limit=72000, quick=False):
     exact_tasks = [
         ("MILP Gurobi", run_milp_gurobi, {"time_limit": tl, "warm_start_assignment": active_warm_start}),
         ("MILP Hexaly", run_milp_hexaly, {"time_limit": tl, "warm_start_assignment": active_warm_start}),
-        ("CG Gurobi", column_generation_gurobi, {"time_limit": tl, "warm_start_assignment": active_warm_start, "scenario_name": "industrial_gurobi"}),
-        ("CG Hexaly", column_generation_hexaly, {"time_limit": tl, "warm_start_assignment": active_warm_start, "scenario_name": "industrial_hexaly"})
     ]
+    # The legacy station-indexed column generation ran here until the set-partitioning
+    # formulation replaced it. Its industrial run is now run_industrial_cg_setpart.py,
+    # which drives Baselines/cg_setpart_hetero_cplex.py.
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
         future_to_name = {

@@ -346,7 +346,7 @@ def recompute_visits(
     """Order-station visits from a product->station assignment (F1).
 
     Uses the EXACT formula the other methods use (ga_baseline.fitness and
-    cg_synthetic.evaluate_assignment): for each order, count the DISTINCT
+    cg_setpart_cplex.evaluate_assignment): for each order, count the DISTINCT
     stations among its products that are present in `assignment`, then sum
     over orders. Products not in `assignment` (unassigned / not modelled) are
     skipped, exactly as the baselines skip products absent from their state

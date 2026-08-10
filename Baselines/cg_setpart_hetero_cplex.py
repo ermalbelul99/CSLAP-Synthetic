@@ -757,7 +757,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Heterogeneous set-partitioning CG for CSLAP (CPLEX)")
     parser.add_argument("--prefix", type=str, required=True)
-    parser.add_argument("--dir", type=str, default="synthetic_datasets")
+    parser.add_argument("--dir", type=str, default="exp02a_instances")
     parser.add_argument("--time", type=int, default=3600)
     args = parser.parse_args()
     from cg_setpart_cplex import read_data

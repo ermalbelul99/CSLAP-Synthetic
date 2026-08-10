@@ -630,7 +630,7 @@ CG (station-indexed) & 1{,}000{,}844 & 5.80 & 9.09 & 36{,}000 & 10{,}074 & \text
 Heuristic & 1{,}050{,}514 & 1.13 & 14.50 & \cellcolor{blue!12}\textbf{109} & 10{,}913 & 26.87 & None \\
 GA & 1{,}046{,}071 & 1.55 & 14.02 & 19{,}358 & \textcolor{red}{\textbf{10{,}972}} & 18.52 & \textcolor{red}{\textbf{WL}} \\
 SA-C & 1{,}058{,}563 & 0.37 & 15.38 & 36{,}000 & 10{,}811 & 12.14 & \textcolor{red}{\textbf{WL}} \\
-\bottomrulef
+\bottomrule
 \end{tabular*}}
 \tabnote{Reduction is against the original layout, Gap vs.\ ref against the set-variable MILP. Util.\ SD is the standard deviation, across the 24 evaluated stations, of each station's realised load as a percentage of its own legacy load. Max WL is the busiest station's workload $\sum_{p} L_p/V_s$, in the units of \eqref{eq:wl}, not a count of lines. Viol.\ tests each station against the site's $+10\%$ tolerance, so a low Max WL does not by itself certify feasibility; the GA and SA-C layouts breach it, so their visits and gaps are not comparable with the feasible rows. Times are reported to the nearest cap where a method exhausted its budget.}
 \label{tab:industrial}

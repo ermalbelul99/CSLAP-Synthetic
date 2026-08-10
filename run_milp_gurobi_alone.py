@@ -112,7 +112,7 @@ def do_milp_gurobi(N, prefix, data_dir, tl, heur_assignment, num_orders, num_sku
         }
         return res, None, None
 
-def run_gurobi_alone(size, data_dir="synthetic_datasets", time_limit=72000):
+def run_gurobi_alone(size, data_dir="exp02a_instances", time_limit=72000):
     N = size
     prefix = f"syn_{N}sku"
     print("=" * 70)
@@ -257,7 +257,7 @@ def run_gurobi_alone(size, data_dir="synthetic_datasets", time_limit=72000):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run solely MILP Gurobi for a specific synthetic data size.")
     parser.add_argument("--size", type=int, required=True, help="Number of SKUs (e.g. 1000 or 2000)")
-    parser.add_argument("--data_dir", type=str, default="synthetic_datasets", help="Path to synthetic datasets folder")
+    parser.add_argument("--data_dir", type=str, default="exp02a_instances", help="Path to synthetic datasets folder")
     parser.add_argument("--time_limit", type=int, default=72000, help="Time limit in seconds for MILP Gurobi")
     args = parser.parse_args()
 

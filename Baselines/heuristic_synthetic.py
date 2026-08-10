@@ -484,7 +484,7 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df, *,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Heuristic CSLAP (synthetic)")
     parser.add_argument("--prefix", type=str, required=True)
-    parser.add_argument("--dir", type=str, default="synthetic_datasets")
+    parser.add_argument("--dir", type=str, default="exp02a_instances")
     args = parser.parse_args()
 
     print(f"Running Heuristic on {args.prefix}...")

@@ -164,7 +164,7 @@ def run_milp_gurobi(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MILP CSLAP (Gurobi, synthetic)")
     parser.add_argument("--prefix", type=str, required=True)
-    parser.add_argument("--dir", type=str, default="synthetic_datasets")
+    parser.add_argument("--dir", type=str, default="exp02a_instances")
     parser.add_argument("--time", type=int, default=120)
     args = parser.parse_args()
 

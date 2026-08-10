@@ -26,21 +26,6 @@ venv/
 *.toc
 *.log
 
-# Compiled paper PDFs (regenerable build artifacts)
-Computer_and_OR.pdf
-
-# ---- Generated solver artifacts (do not commit) ----
-Baselines/layouts/
-Baselines/covers/
-Baselines/logs/
-
-# ---- Results CSVs (large, generated — store externally or reference in reports/) ----
-Baselines/results_*.csv
-Baselines/berner_t5c_solver_runs.csv
-
-# ---- Synthetic datasets (retired — removed from test infrastructure) ----
-synthetic_datasets/
-
 # ---- Capacity-sweep instances (557 MB, kept on disk, not in git) ----
 # EXP-02c geometry study, withdrawn from the manuscript (changelog B4ter).
 # Regenerate exactly: python Baselines/make_capsweep_instances.py  (seeds 2001-2010)
@@ -51,7 +36,5 @@ graphify-out/
 .graphify_detect.json
 .graphify_extract.json
 
-# ---- Local backups ----
-exp02a_results_rev2_backup/
+# ---- Scratch run output ----
 *_backup/
-overleaf_bundle/

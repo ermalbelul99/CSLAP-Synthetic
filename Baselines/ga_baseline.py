@@ -361,7 +361,7 @@ def genetic_algorithm(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GA baseline for CSLAP")
     parser.add_argument("--prefix", type=str, required=True)
-    parser.add_argument("--dir", type=str, default="synthetic_datasets")
+    parser.add_argument("--dir", type=str, default="exp02a_instances")
     parser.add_argument("--time", type=int, default=72000)
     parser.add_argument("--quick", action="store_true")
     args = parser.parse_args()

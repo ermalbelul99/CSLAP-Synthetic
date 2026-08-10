@@ -220,6 +220,7 @@ def scaling_test(fr: pd.DataFrame) -> Dict[str, object]:
     return {
         "estimable": True,
         "coverage": coverage,
+        "n_instances_total": int(len(fr)),
         "n_cells_with_frontier": int(n_cells_with_frontier),
         "n_cells_total": int(n_cells_total),
         "n": int(len(y)), "dof": dof, "r2": r2,

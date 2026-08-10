@@ -198,8 +198,32 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df, *,
                         else int(min_freq_preproc))
     MIN_FREQ = max(2, N // 50) if min_freq is None else int(min_freq)
     RATIO_TO_KEEP = 0.1 if ratio_to_keep is None else float(ratio_to_keep)
-    # community size limit
-    MNOPPC = (max(5, min(15, N // 20)) if mnoppc is None else int(mnoppc))
+    # Community size limit, indexed on the STATION SLOT CAPACITY, not on N.
+    #
+    # EXP-02c (Baselines/run_capacity_sweep.py, re-run on the repaired heuristic)
+    # crosses two catalogue sizes with four station counts so the same zeta grid
+    # appears at both. The visit-optimal bound tracks zeta and not N:
+    # corr(beta*, zeta) = 0.947 against corr(beta*, N) = -0.085, with beta*
+    # identical at both sizes for zeta in {20, 50, 100} and beta*/zeta ~ 0.4-0.6.
+    # The previous rule, max(5, min(15, N // 20)), was indexed on N and clamped
+    # at 15, which put every benchmark block of 500 SKUs and above at
+    # beta/zeta = 0.15 -- below the basin. Applying 0.4*zeta on the 29 published
+    # instances moves the gap to the set-variable reference from +3.2 to +2.5
+    # (500), +2.5 to +1.4 (1000) and +0.1 to -1.3 (2000); at 50 SKUs zeta = 10 so
+    # the floor of 5 binds and that block is bit-identical to the published run.
+    #
+    # zeta is a scalar here because communities are formed (Step 2) before any
+    # station is chosen (Step 4), so the bound is a property of the clustering,
+    # not of a station. The mean is taken over stations: on the synthetic family
+    # capacities are uniform so every aggregator coincides, and on a
+    # heterogeneous site the mean is the aggregator under which a community
+    # still fits whole in the stations holding the large majority of slots.
+    if mnoppc is not None:
+        MNOPPC = int(mnoppc)
+    else:
+        _caps = [s["CAPACITY"] for s in stations]
+        _zeta = (sum(_caps) / len(_caps)) if _caps else 0.0
+        MNOPPC = max(5, int(round(0.4 * _zeta)))
     if ratio_denominator not in ("max", "first"):
         raise ValueError(
             f"ratio_denominator must be 'max' or 'first', got {ratio_denominator!r}")
@@ -479,6 +503,79 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df, *,
         })
 
     return assignment, total_visits, elapsed, max_workload, workload_std_dev, cap_broken, wl_broken
+
+
+def heuristic_cslap_guarded(order_prods, stations, products, prod_lines,
+                            orders_df, *, beta_grid_ratio=0.75, beta_min=5,
+                            diag=None, **kwargs):
+    """`heuristic_cslap` with the community bound guarded on feasibility.
+
+    The bound beta = max(5, round(0.4 * zeta)) minimises visits on the geometries
+    EXP-02c covers, but feasibility is NOT monotone in beta: on the industrial
+    site beta = 350 leaves every station inside its budget while beta = 250 and
+    beta = 100 leave 12 and 10 stations over, each after the swap repair has run
+    to exhaustion (973 and 754 exchanges). A rule that names a single beta can
+    therefore return an infeasible layout on a real site, which is exactly the
+    property the method is relied on for.
+
+    This wrapper runs the heuristic at the rule's beta and, if the repair cannot
+    certify the layout, multiplies beta by `beta_grid_ratio` and retries, down to
+    `beta_min`. It returns the first certified layout, or -- if none certifies --
+    the least-overloaded one seen, so the caller always gets a result and can
+    read the failure off the diagnostics.
+
+    Certification is `n_overloaded_after == 0`, the count the repair itself
+    reports against each station's own budget. Do NOT substitute the returned
+    `wl_broken`: on the industrial run that is measured against raw legacy load
+    with no tolerance and reads 15 even for a layout inside the site's +10%.
+
+    On the 29 published synthetic instances the first beta always certifies, so
+    this wrapper is a no-op there and those results are bit-identical to calling
+    `heuristic_cslap` directly.
+    """
+    if kwargs.get("mnoppc") is not None:
+        raise ValueError("mnoppc is chosen by the guard; pass beta_min instead")
+
+    caps = [s["CAPACITY"] for s in stations]
+    beta0 = max(beta_min, int(round(0.4 * (sum(caps) / len(caps))))) if caps else beta_min
+
+    attempts = []
+    best = None
+    beta = beta0
+    seen = set()
+    while beta >= beta_min:
+        if beta in seen:
+            break
+        seen.add(beta)
+        d = {}
+        result = heuristic_cslap(order_prods, stations, products, prod_lines,
+                                 orders_df, mnoppc=beta, diag=d, **kwargs)
+        over = d.get("n_overloaded_after")
+        attempts.append({"beta": beta, "n_overloaded_after": over,
+                         "visits": result[1]})
+        if over == 0:
+            if diag is not None:
+                diag.update(d)
+                diag["beta_attempts"] = attempts
+                diag["beta_rule"] = beta0
+                diag["beta_used"] = beta
+                diag["beta_guard_fired"] = beta != beta0
+            return result
+        if best is None or (over is not None and over < best[0]):
+            best = (over, beta, result, d)
+        beta = max(beta_min, int(round(beta * beta_grid_ratio)))
+        if beta == beta_min and beta in seen:
+            break
+
+    over, beta_used, result, d = best
+    if diag is not None:
+        diag.update(d)
+        diag["beta_attempts"] = attempts
+        diag["beta_rule"] = beta0
+        diag["beta_used"] = beta_used
+        diag["beta_guard_fired"] = True
+        diag["beta_guard_failed"] = True
+    return result
 
 
 if __name__ == "__main__":

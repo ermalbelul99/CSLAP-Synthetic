@@ -2,9 +2,18 @@ r"""
 Rebuild Table 5 of IJPR_CSLAP_v2.tex from the 2026-07-29/30 re-run.
 
 Sources (authoritative):
-  exp02a_results_rerun/exp02a_per_instance.csv   Heuristic, SA-C, GA, Hexaly
+  exp02a_results_rerun/exp02a_per_instance.csv   SA-C, GA, Hexaly
+  exp02a_results_repaired/heuristic_benchmark.csv Heuristic (mode=preference)
   exp02a_results/exp02a_cg_setpart.csv           CG-SetPart, corrected budgets
   exp02a_results/exp02a_feasible_start.csv       LPT anchor (deterministic)
+
+The Heuristic does NOT come from the multiseed campaign. That campaign predates
+the B4ter repair and its heuristic breaches the workload cap on 80-100% of
+instances per size (7,698 / 78,647 / 196,341 / 483,326 visits), so its rows are
+not comparable with the feasible ones and must never reach a published table.
+Table 4 has always taken the heuristic from the repaired benchmark; this module
+used to disagree with it silently, which mattered the moment a Heuristic row was
+added to the paired tests.
 
 Emits, per (size, method): n, mean visits, 95% t-CI, mean PER-INSTANCE relative
 gap to the Hexaly reference, the Table 5 time entry under the convention of
@@ -47,6 +56,15 @@ def load_visits() -> pd.DataFrame:
     keep = ["size_n", "instance_seed", "method", "visits", "time_s", "wl_broken",
             "cap_broken"]
     runs = runs[keep]
+    # Drop this campaign's pre-repair heuristic; it is replaced below.
+    runs = runs[runs["method"] != "Heuristic"]
+
+    heur = pd.read_csv(os.path.join(_ROOT, "exp02a_results_repaired",
+                                    "heuristic_benchmark.csv"))
+    heur = heur[(heur["status"] == "OK") & (heur["mode"] == "preference")]
+    heur = heur[["size_n", "instance_seed", "visits", "time_s", "wl_broken",
+                 "cap_broken"]]
+    heur["method"] = "Heuristic"
 
     cg = pd.read_csv(os.path.join(_ROOT, "exp02a_results", "exp02a_cg_setpart.csv"))
     cg = cg[cg["status"] == "OK"]
@@ -60,7 +78,8 @@ def load_visits() -> pd.DataFrame:
                "cap_broken"]]
     lpt["method"] = "LPT start"
 
-    df = pd.concat([runs, cg[runs.columns], lpt[runs.columns]], ignore_index=True)
+    df = pd.concat([runs, heur[runs.columns], cg[runs.columns],
+                    lpt[runs.columns]], ignore_index=True)
     df["visits"] = df["visits"].astype(float)
     return df
 

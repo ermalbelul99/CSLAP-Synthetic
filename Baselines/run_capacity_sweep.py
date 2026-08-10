@@ -163,9 +163,14 @@ def beta_grid(zeta: int) -> List[int]:
     return sorted({b for b in _BETA_ANCHORS if b <= zeta} | {int(zeta)})
 
 
-def effective_params(size_n: int, beta: int) -> Dict[str, Any]:
-    """Nominal thresholds with the community bound replaced by beta (C1)."""
-    params = base_params(size_n)
+def effective_params(size_n: int, beta: int, zeta: int) -> Dict[str, Any]:
+    """Nominal thresholds with the community bound replaced by beta (C1).
+
+    `zeta` only sets the nominal community bound, which this function then
+    overwrites with `beta`; it is threaded through so the three filter
+    thresholds still come from one shared definition.
+    """
+    params = base_params(size_n, zeta)
     params["mnoppc"] = int(beta)
     return params
 
@@ -288,7 +293,7 @@ def sweep(instances: Sequence[Dict[str, Any]], out_dir: str, done_keys: set,
             print(f"[{idx}/{total}] skip N={inst['size_n']} S={inst['n_stations']} "
                   f"seed={inst['instance_seed']} {cid} h={hseed} (done)")
             continue
-        params = effective_params(inst["size_n"], beta)
+        params = effective_params(inst["size_n"], beta, inst["zeta"])
         cap_s = time_cap(inst["size_n"])
         print(f"[{idx}/{total}] N={inst['size_n']} S={inst['n_stations']} "
               f"zeta={inst['zeta']} seed={inst['instance_seed']} {cid} h={hseed} "

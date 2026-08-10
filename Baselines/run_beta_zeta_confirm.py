@@ -118,9 +118,20 @@ def discover(instance_dir: str, sizes: Optional[Sequence[int]]) -> List[Dict[str
     return sorted(out, key=lambda r: (r["size_n"], r["instance_seed"]))
 
 
+def legacy_beta(size_n: int) -> int:
+    """The community bound as it was BEFORE this experiment changed it.
+
+    Pinned locally on purpose. This runner is the evidence that moved the rule
+    from N-indexed to zeta-indexed, so its `nominal` arm must keep meaning the
+    old rule; importing it from `base_params` would make nominal follow the new
+    rule and collapse the comparison this file exists to record.
+    """
+    return max(5, min(15, size_n // 20))
+
+
 def beta_grid(size_n: int, zeta: int, alphas: Sequence[float]) -> List[Dict[str, Any]]:
     """nominal + one config per alpha, de-duplicated on the resulting beta (D2)."""
-    nominal = int(base_params(size_n)["mnoppc"])
+    nominal = legacy_beta(size_n)
     grid = [{"config_id": "nominal", "alpha": float("nan"), "beta": nominal}]
     seen = {nominal}
     for a in alphas:
@@ -197,7 +208,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             key = (inst["size_n"], inst["instance_seed"], cfg["beta"])
             if key in done:
                 continue
-            params = base_params(inst["size_n"])
+            params = base_params(inst["size_n"], inst["zeta"])
             params["mnoppc"] = cfg["beta"]
             tag = (f"[{k}/{len(plan)}] N={inst['size_n']} seed={inst['instance_seed']} "
                    f"zeta={inst['zeta']} beta={cfg['beta']} ({cfg['config_id']})")
@@ -257,7 +268,8 @@ def report(per_inst: str, out_dir: str) -> int:
             lo = hi = pval = float("nan")
         rows.append({
             "size_n": n, "config_id": cid, "zeta": int(g.zeta.iloc[0]),
-            "beta": int(g.beta.iloc[0]), "nominal_beta": 15, "K": K,
+            "beta": int(g.beta.iloc[0]),
+            "nominal_beta": legacy_beta(int(n)), "K": K,
             "mean_visits": float(g.visits[common].mean()),
             "nominal_visits": float(base[common].mean()),
             "mean_pct_delta": mu, "ci95_lo": lo, "ci95_hi": hi,

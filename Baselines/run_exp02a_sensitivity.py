@@ -148,17 +148,40 @@ def all_config_ids() -> List[str]:
 # --------------------------------------------------------------------------- #
 #  CONFIG GRID                                                                #
 # --------------------------------------------------------------------------- #
-def base_params(size_n: int) -> Dict[str, Any]:
-    """The POST-CLAMP effective base thresholds for an instance of N SKUs.
+def read_zeta(inst_dir: str, prefix: str) -> int:
+    """Station slot capacity from the instance's own stations CSV.
+
+    The community bound is indexed on zeta, and zeta is NOT recoverable from
+    size_n in general: the EXP-02a generator ties |S| to N, but the EXP-02c
+    capacity-sweep family varies |S| independently at fixed N, which is the
+    whole point of that design. Read it, never derive it.
+    """
+    st = pd.read_csv(os.path.join(inst_dir, f"{prefix}_stations.csv"), sep=";")
+    caps = st["CAPACITY"].astype(int)
+    if caps.nunique() != 1:
+        raise ValueError(
+            f"{inst_dir}: non-uniform CAPACITY {sorted(caps.unique())}; this "
+            "runner indexes beta on a single zeta per instance")
+    return int(caps.iloc[0])
+
+
+def base_params(size_n: int, zeta: int) -> Dict[str, Any]:
+    """The POST-CLAMP effective base thresholds for one instance.
 
     Mirrors heuristic_synthetic.heuristic_cslap exactly; multipliers are applied
-    to THESE values (S1), never to the unclamped N//k expressions.
+    to THESE values (S1), never to the unclamped expressions.
+
+    The three filters stay indexed on N. The community bound is indexed on the
+    station slot capacity zeta (EXP-02c: corr(beta*, zeta) = 0.947 against
+    corr(beta*, N) = -0.085), so it takes zeta, not size_n. `zeta` is required
+    rather than defaulted precisely so a caller cannot silently fall back to a
+    geometry that does not hold for its instance family.
     """
     return {
         "min_freq_preproc": max(2, size_n // 100),
         "min_freq": max(2, size_n // 50),
         "ratio_to_keep": 0.1,
-        "mnoppc": max(5, min(15, size_n // 20)),
+        "mnoppc": max(5, int(round(0.4 * zeta))),
     }
 
 
@@ -176,9 +199,9 @@ def _apply(params: Dict[str, Any], key: str, label: str, mult: float) -> None:
         params[key] = _scale_count(int(params[key]), mult, floor)
 
 
-def effective_params(config_id: str, size_n: int) -> Dict[str, Any]:
+def effective_params(config_id: str, size_n: int, zeta: int) -> Dict[str, Any]:
     """The four thresholds actually handed to the heuristic for this config."""
-    params = base_params(size_n)
+    params = base_params(size_n, zeta)
     if config_id == "base":
         return params
     if config_id in ("corner_loose", "corner_tight"):
@@ -193,15 +216,17 @@ def effective_params(config_id: str, size_n: int) -> Dict[str, Any]:
     return params
 
 
-def print_dry_run(sizes: Sequence[int], config_ids: Sequence[str]) -> None:
+def print_dry_run(sizes: Sequence[int], config_ids: Sequence[str],
+                  zeta_by_size: Dict[int, int]) -> None:
     """Print the config grid per size WITHOUT running anything."""
     for size_n in sizes:
-        print(f"\n=== N = {size_n} (cap {time_cap(size_n):.0f}s) ===")
+        zeta = zeta_by_size[size_n]
+        print(f"\n=== N = {size_n}, zeta = {zeta} (cap {time_cap(size_n):.0f}s) ===")
         print(f"{'config_id':<16}{'min_freq_preproc':>18}{'min_freq':>10}"
               f"{'ratio_to_keep':>15}{'mnoppc':>8}")
         print("-" * 67)
         for cid in config_ids:
-            p = effective_params(cid, size_n)
+            p = effective_params(cid, size_n, zeta)
             print(f"{cid:<16}{p['min_freq_preproc']:>18d}{p['min_freq']:>10d}"
                   f"{p['ratio_to_keep']:>15g}{p['mnoppc']:>8d}")
     print()
@@ -467,6 +492,7 @@ def sweep(
     t0 = time.time()
     for size_n, seed, inst_dir, prefix in instances:
         cap_s = time_cap(size_n)
+        zeta = read_zeta(inst_dir, prefix)
         for cid, hseed in plan:
             idx += 1
             key = (size_n, seed, cid, hseed)
@@ -474,7 +500,7 @@ def sweep(
                 print(f"[{idx}/{total}] skip N={size_n} seed={seed} {cid} "
                       f"h={hseed} (done)")
                 continue
-            params = effective_params(cid, size_n)
+            params = effective_params(cid, size_n, zeta)
             print(f"[{idx}/{total}] N={size_n} seed={seed} {cid} h={hseed} "
                   f"pre={params['min_freq_preproc']} mf={params['min_freq']} "
                   f"ratio={params['ratio_to_keep']:g} mn={params['mnoppc']} "
@@ -650,7 +676,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             sizes = sorted(_TIME_CAPS)
         print(f"[dry-run] {len(config_ids)} configs x {len(instances)} instances "
               f"= {len(config_ids) * len(instances)} runs")
-        print_dry_run(sizes, config_ids)
+        zeta_by_size = {s: read_zeta(d, p)
+                        for s, _seed, d, p in instances if s in sizes}
+        print_dry_run(sizes, config_ids, zeta_by_size)
         return 0
 
     if not instances:

@@ -58,7 +58,9 @@ for _p in (BASE_DIR, os.path.join(BASE_DIR, "Baselines")):
         sys.path.insert(0, _p)
 
 from data_loader_industrial import load_industrial_data          # noqa: E402
-from heuristic_synthetic import heuristic_cslap                  # noqa: E402
+from heuristic_synthetic import (                                # noqa: E402
+    heuristic_cslap, heuristic_cslap_guarded,
+)
 # Same function run_benchmarks_industrial uses; it lives in its own module so this
 # import does not drag in gurobipy / Hexaly, which the heuristic does not need.
 from industrial_metrics import evaluate_full_metrics             # noqa: E402
@@ -151,16 +153,28 @@ def main(argv=None) -> int:
           f"tolerance={args.wl_tolerance} folded into per-station budgets, "
           f"repair={not args.no_repair}, "
           f"beta={args.mnoppc if args.mnoppc is not None else 'auto(15)'}")
-    beta_kw = {} if args.mnoppc is None else {"mnoppc": args.mnoppc}
     diag: dict = {}
     t0 = time.time()
-    assignment, _v, elapsed, _mw, _sd, _cb, _wb = heuristic_cslap(
-        data["op_solver"], st_budget, data["pr_solver"],
-        pl_eval, data["odf_solver"],
+    common = dict(
         ratio_denominator=args.ratio_denominator,
         placement=args.placement, wl_tolerance=0.0,
-        repair=not args.no_repair, diag=diag, **beta_kw,
+        repair=not args.no_repair,
     )
+    if args.mnoppc is None:
+        # The published path. The guard matters here and only here: on this site
+        # feasibility is not monotone in beta, so the rule's beta may need to
+        # step down before the repair can certify the layout.
+        result = heuristic_cslap_guarded(
+            data["op_solver"], st_budget, data["pr_solver"],
+            pl_eval, data["odf_solver"], diag=diag, **common,
+        )
+    else:
+        result = heuristic_cslap(
+            data["op_solver"], st_budget, data["pr_solver"],
+            pl_eval, data["odf_solver"], mnoppc=args.mnoppc, diag=diag,
+            **common,
+        )
+    assignment, _v, elapsed, _mw, _sd, _cb, _wb = result
     visits, max_wl, wl_std, cap_b, wl_b = evaluate_full_metrics(
         assignment, data["static_assignment"],
         data["op_full"], data["st_full"], data["pl_full"],
@@ -181,7 +195,12 @@ def main(argv=None) -> int:
         "ratio_denominator": args.ratio_denominator,
         "placement": args.placement,
         "wl_tolerance": args.wl_tolerance,
-        "mnoppc": args.mnoppc if args.mnoppc is not None else 15,
+        # The beta actually used, read back from the run. Never a literal: the
+        # rule computes it from zeta and the guard may have stepped it down.
+        "mnoppc": diag.get("mnoppc"),
+        "beta_rule": diag.get("beta_rule"),
+        "beta_guard_fired": diag.get("beta_guard_fired"),
+        "beta_guard_failed": diag.get("beta_guard_failed", False),
         "n_swaps": diag.get("n_swaps"),
         "n_overloaded_before": diag.get("n_overloaded_before"),
         "n_overloaded_after": diag.get("n_overloaded_after"),

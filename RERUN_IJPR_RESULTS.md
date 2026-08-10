@@ -167,6 +167,11 @@ beside the notebook, so it re-runs as-is.
 Fix by either shipping the dated extract as supplementary data, or stating in the caption that the
 released instance approximates the split by order-ID rank.
 
+> **Update, 2026-08-10.** `Baselines/build_berner_instance.py` was removed when this branch was
+> trimmed to the article (it served the robust-covering study, not Table 9). It remains on `main`.
+> Nothing above changes: the script never produced Table 9's numbers, and the conclusion stands —
+> the six values need the dated extract, which this repository does not ship.
+
 Minor, not affecting published numbers: the notebook also computes a "full assignment" row
 (245,619 / 391,324) that Table 9 omits, and in cell 7 that row reads a global `v5W_fulldata` for both
 windows regardless of the argument passed.

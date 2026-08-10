@@ -1,0 +1,2 @@
+Method,visits,time,max_workload,utilization_std_dev,cap_broken,wl_broken,num_orders,num_skus,num_stations,ratio_denominator,placement,wl_tolerance,mnoppc,beta_rule,beta_guard_fired,beta_guard_failed,n_swaps,n_overloaded_before,n_overloaded_after,n_pairs_kept,n_pstar,community_size_max
+Heuristic,1030112,108.51145243644714,10917.690079575577,29.38372812538708,0,16,284862,21874,24,max,preference,0.1,365,,,False,1040,13,12,162,2010,365

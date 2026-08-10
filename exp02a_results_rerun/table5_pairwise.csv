@@ -1,46 +1,46 @@
 size_n,method_a,method_b,n,a_wins,ties,mean_gap_pct,wilcoxon_p,paired_t_p
 50,CG-SetPart,Hexaly,12,1,0,0.45,0.003418,0.000537
-50,Heuristic,Hexaly,12,3,0,1.97,0.17627,0.195904
+50,Heuristic,Hexaly,12,0,0,7.57,0.000488,8e-06
 50,SA-C,Hexaly,12,0,0,1.0,0.000488,0.000346
 50,GA,Hexaly,12,0,0,2.82,0.000488,1.6e-05
 50,LPT start,Hexaly,12,0,0,17.44,0.000488,0.0
-50,CG-SetPart,Heuristic,12,9,0,-1.32,0.203613,0.303724
+50,CG-SetPart,Heuristic,12,12,0,-6.58,0.000488,1.5e-05
 50,CG-SetPart,SA-C,12,11,0,-0.54,0.002441,0.009301
 50,CG-SetPart,GA,12,12,0,-2.29,0.000488,3.3e-05
 50,CG-SetPart,LPT start,12,12,0,-14.39,0.000488,0.0
 500,CG-SetPart,Hexaly,10,1,0,0.37,0.005859,0.003821
-500,Heuristic,Hexaly,10,0,0,2.97,0.001953,1e-06
+500,Heuristic,Hexaly,10,0,0,3.14,0.001953,0.0
 500,SA-C,Hexaly,10,0,0,16.06,0.001953,0.0
 500,GA,Hexaly,10,0,0,11.68,0.001953,0.0
 500,LPT start,Hexaly,10,0,0,17.98,0.001953,0.0
-500,CG-SetPart,Heuristic,10,10,0,-2.52,0.001953,1e-06
+500,CG-SetPart,Heuristic,10,10,0,-2.68,0.001953,1e-06
 500,CG-SetPart,SA-C,10,10,0,-13.49,0.001953,0.0
 500,CG-SetPart,GA,10,10,0,-10.12,0.001953,0.0
 500,CG-SetPart,LPT start,10,10,0,-14.88,0.001953,0.0
 1000,CG-SetPart,Hexaly,4,4,0,-2.01,0.125,0.017212
-1000,Heuristic,Hexaly,4,3,0,-0.07,0.875,0.755283
+1000,Heuristic,Hexaly,4,2,0,0.38,0.625,0.46778
 1000,SA-C,Hexaly,4,0,0,22.76,0.125,0.00083
 1000,GA,Hexaly,4,0,0,19.89,0.125,0.000568
 1000,LPT start,Hexaly,4,0,0,25.07,0.125,0.000578
-1000,CG-SetPart,Heuristic,4,4,0,-1.94,0.125,0.020862
+1000,CG-SetPart,Heuristic,4,4,0,-2.38,0.125,0.007994
 1000,CG-SetPart,SA-C,4,4,0,-20.12,0.125,0.000784
 1000,CG-SetPart,GA,4,4,0,-18.24,0.125,0.000645
 1000,CG-SetPart,LPT start,4,4,0,-21.6,0.125,0.000587
 2000,CG-SetPart,Hexaly,3,3,0,-5.85,0.25,0.028335
-2000,Heuristic,Hexaly,3,3,0,-4.51,0.25,0.059184
+2000,Heuristic,Hexaly,3,3,0,-4.23,0.25,0.098796
 2000,SA-C,Hexaly,3,0,0,21.38,0.25,0.021647
 2000,GA,Hexaly,3,0,0,20.08,0.25,0.021089
 2000,LPT start,Hexaly,3,0,0,22.48,0.25,0.021821
-2000,CG-SetPart,Heuristic,3,3,0,-1.4,0.25,0.073099
+2000,CG-SetPart,Heuristic,3,3,0,-1.68,0.25,0.114382
 2000,CG-SetPart,SA-C,3,3,0,-22.39,0.25,0.021925
 2000,CG-SetPart,GA,3,3,0,-21.56,0.25,0.021525
 2000,CG-SetPart,LPT start,3,3,0,-23.09,0.25,0.021967
 pooled,CG-SetPart,Hexaly,29,9,0,-0.57,0.733209,0.055507
-pooled,Heuristic,Hexaly,29,9,0,1.37,0.091958,0.292503
+pooled,Heuristic,Hexaly,29,5,0,3.83,0.008594,0.453378
 pooled,SA-C,Hexaly,29,0,0,11.3,0.0,0.0021
 pooled,GA,Hexaly,29,0,0,10.02,0.0,0.003466
 pooled,LPT start,Hexaly,29,0,0,19.2,0.0,0.001302
-pooled,CG-SetPart,Heuristic,29,26,0,-1.83,2e-06,0.000128
+pooled,CG-SetPart,Heuristic,29,29,0,-4.15,0.0,5.3e-05
 pooled,CG-SetPart,SA-C,29,28,0,-9.97,0.0,0.004209
 pooled,CG-SetPart,GA,29,29,0,-9.18,0.0,0.00648
 pooled,CG-SetPart,LPT start,29,29,0,-16.45,0.0,0.00282

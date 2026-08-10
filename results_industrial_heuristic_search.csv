@@ -1,0 +1,2 @@
+Method,visits,time,max_workload,utilization_std_dev,cap_broken,wl_broken,num_orders,num_skus,num_stations,ratio_denominator,placement,wl_tolerance,mnoppc,beta_rule,beta_search_grid,beta_search_n_points,beta_search_n_feasible,beta_search_failed,n_swaps,n_overloaded_before,n_overloaded_after,n_pairs_kept,n_pstar,community_size_max
+Heuristic,1044932,88.94596838951111,10910.529814323572,27.90444142903177,0,17,284862,21874,24,max,preference,0.1,33,266,"[33, 67, 133, 200, 266, 333, 399]",7,1,False,592,11,0,162,2010,33

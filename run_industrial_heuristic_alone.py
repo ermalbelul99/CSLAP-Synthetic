@@ -59,7 +59,7 @@ for _p in (BASE_DIR, os.path.join(BASE_DIR, "Baselines")):
 
 from data_loader_industrial import load_industrial_data          # noqa: E402
 from heuristic_synthetic import (                                # noqa: E402
-    heuristic_cslap, heuristic_cslap_guarded,
+    heuristic_cslap, heuristic_cslap_search,
 )
 # Same function run_benchmarks_industrial uses; it lives in its own module so this
 # import does not drag in gurobipy / Hexaly, which the heuristic does not need.
@@ -152,7 +152,7 @@ def main(argv=None) -> int:
     print(f"[run] heuristic, placement={args.placement}, "
           f"tolerance={args.wl_tolerance} folded into per-station budgets, "
           f"repair={not args.no_repair}, "
-          f"beta={args.mnoppc if args.mnoppc is not None else 'auto(15)'}")
+          f"beta={args.mnoppc if args.mnoppc is not None else 'auto (rule + guard)'}")
     diag: dict = {}
     t0 = time.time()
     common = dict(
@@ -161,10 +161,11 @@ def main(argv=None) -> int:
         repair=not args.no_repair,
     )
     if args.mnoppc is None:
-        # The published path. The guard matters here and only here: on this site
-        # feasibility is not monotone in beta, so the rule's beta may need to
-        # step down before the repair can certify the layout.
-        result = heuristic_cslap_guarded(
+        # The published path. This site is heterogeneous (zeta spans 8 to 2,575),
+        # so the homogeneous rule beta = 0.4*zeta does not apply: it returns 266,
+        # which is infeasible here. beta is selected by an explicit feasibility
+        # search instead, and the search is reported with the result.
+        result = heuristic_cslap_search(
             data["op_solver"], st_budget, data["pr_solver"],
             pl_eval, data["odf_solver"], diag=diag, **common,
         )
@@ -199,8 +200,13 @@ def main(argv=None) -> int:
         # rule computes it from zeta and the guard may have stepped it down.
         "mnoppc": diag.get("mnoppc"),
         "beta_rule": diag.get("beta_rule"),
-        "beta_guard_fired": diag.get("beta_guard_fired"),
-        "beta_guard_failed": diag.get("beta_guard_failed", False),
+        "beta_search_grid": diag.get("beta_search_grid"),
+        "beta_search_n_points": (len(diag["beta_attempts"])
+                                 if diag.get("beta_attempts") else None),
+        "beta_search_n_feasible": (
+            sum(1 for a in diag["beta_attempts"] if a["feasible"])
+            if diag.get("beta_attempts") else None),
+        "beta_search_failed": diag.get("beta_search_failed", False),
         "n_swaps": diag.get("n_swaps"),
         "n_overloaded_before": diag.get("n_overloaded_before"),
         "n_overloaded_after": diag.get("n_overloaded_after"),

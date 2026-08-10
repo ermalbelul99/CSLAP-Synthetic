@@ -1,0 +1,2 @@
+size_n,instance_seed,config_id,hash_seed,min_freq_preproc,min_freq,ratio_to_keep,mnoppc,visits,time_s,cap_broken,wl_broken,n_pstar,n_pairs_kept,n_corr_communities,n_assigned,community_size_max,status
+500,1001,base,0,5.0,10.0,0.1,40.0,87367.0,9.440661907196045,0.0,0.0,500.0,598.0,30.0,500.0,40.0,OK

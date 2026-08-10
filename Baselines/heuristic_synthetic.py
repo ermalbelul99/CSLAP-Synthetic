@@ -505,76 +505,72 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df, *,
     return assignment, total_visits, elapsed, max_workload, workload_std_dev, cap_broken, wl_broken
 
 
-def heuristic_cslap_guarded(order_prods, stations, products, prod_lines,
-                            orders_df, *, beta_grid_ratio=0.75, beta_min=5,
-                            diag=None, **kwargs):
-    """`heuristic_cslap` with the community bound guarded on feasibility.
+def heuristic_cslap_search(order_prods, stations, products, prod_lines,
+                           orders_df, *, alpha_grid=(0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
+                           beta_min=5, diag=None, **kwargs):
+    """Select the community bound by feasibility search, for HETEROGENEOUS sites.
 
-    The bound beta = max(5, round(0.4 * zeta)) minimises visits on the geometries
-    EXP-02c covers, but feasibility is NOT monotone in beta: on the industrial
-    site beta = 350 leaves every station inside its budget while beta = 250 and
-    beta = 100 leave 12 and 10 stations over, each after the swap repair has run
-    to exhaustion (973 and 754 exchanges). A rule that names a single beta can
-    therefore return an infeasible layout on a real site, which is exactly the
-    property the method is relied on for.
+    The rule beta = max(5, round(0.4 * zeta)) is a property of warehouses whose
+    stations are interchangeable. It is derived on the EXP-02c family, whose
+    stations are uniform, and it validates on all 29 EXP-02a instances: the
+    rule's beta is feasible on every one of them and no search is needed.
 
-    This wrapper runs the heuristic at the rule's beta and, if the repair cannot
-    certify the layout, multiplies beta by `beta_grid_ratio` and retries, down to
-    `beta_min`. It returns the first certified layout, or -- if none certifies --
-    the least-overloaded one seen, so the caller always gets a result and can
-    read the failure off the diagnostics.
+    It does NOT transfer to a site whose stations differ. On Company A, zeta
+    spans 8 to 2,575 slots and the rule returns beta = 266, which is infeasible.
+    Worse, feasibility there is not merely non-monotone but DISCONNECTED --
+    measured: beta = 15 and 47 certify, 63, 84, 100, 112, 150, 200, 250, 266 and
+    300 do not, and 350 certifies again. A community sized for the mean station
+    cannot fit the small ones, so the repair has to undo the placement rather
+    than tune it, and whether it succeeds stops tracking beta.
 
-    Certification is `n_overloaded_after == 0`, the count the repair itself
-    reports against each station's own budget. Do NOT substitute the returned
+    A one-directional guard is therefore the wrong shape: stepping down from the
+    rule's beta walks into the infeasible band and lands far below the good
+    region it never reaches. This searches an anchored grid instead and returns
+    the FEASIBLE layout with fewest visits, so the selection is explicit,
+    reproducible, and reportable as part of the method rather than hidden.
+
+    Certification is `n_overloaded_after == 0`, the count the repair reports
+    against each station's own budget. Do NOT substitute the returned
     `wl_broken`: on the industrial run that is measured against raw legacy load
     with no tolerance and reads 15 even for a layout inside the site's +10%.
 
-    On the 29 published synthetic instances the first beta always certifies, so
-    this wrapper is a no-op there and those results are bit-identical to calling
-    `heuristic_cslap` directly.
+    Cost is one heuristic pass per grid point; `diag["beta_attempts"]` records
+    every point so the search can be reported honestly.
     """
     if kwargs.get("mnoppc") is not None:
-        raise ValueError("mnoppc is chosen by the guard; pass beta_min instead")
+        raise ValueError("mnoppc is chosen by the search; pass alpha_grid instead")
 
     caps = [s["CAPACITY"] for s in stations]
-    beta0 = max(beta_min, int(round(0.4 * (sum(caps) / len(caps))))) if caps else beta_min
+    zeta = (sum(caps) / len(caps)) if caps else 0.0
+    grid = sorted({max(beta_min, int(round(a * zeta))) for a in alpha_grid})
 
-    attempts = []
-    best = None
-    beta = beta0
-    seen = set()
-    while beta >= beta_min:
-        if beta in seen:
-            break
-        seen.add(beta)
+    attempts, feasible, fallback = [], [], None
+    for beta in grid:
         d = {}
         result = heuristic_cslap(order_prods, stations, products, prod_lines,
                                  orders_df, mnoppc=beta, diag=d, **kwargs)
         over = d.get("n_overloaded_after")
         attempts.append({"beta": beta, "n_overloaded_after": over,
-                         "visits": result[1]})
+                         "visits": result[1], "feasible": over == 0})
         if over == 0:
-            if diag is not None:
-                diag.update(d)
-                diag["beta_attempts"] = attempts
-                diag["beta_rule"] = beta0
-                diag["beta_used"] = beta
-                diag["beta_guard_fired"] = beta != beta0
-            return result
-        if best is None or (over is not None and over < best[0]):
-            best = (over, beta, result, d)
-        beta = max(beta_min, int(round(beta * beta_grid_ratio)))
-        if beta == beta_min and beta in seen:
-            break
+            feasible.append((result[1], beta, result, d))
+        elif fallback is None or (over is not None and over < fallback[0]):
+            fallback = (over, beta, result, d)
 
-    over, beta_used, result, d = best
+    if feasible:
+        _v, beta_used, result, d = min(feasible, key=lambda t: t[0])
+        failed = False
+    else:
+        _o, beta_used, result, d = fallback
+        failed = True
+
     if diag is not None:
         diag.update(d)
         diag["beta_attempts"] = attempts
-        diag["beta_rule"] = beta0
+        diag["beta_rule"] = max(beta_min, int(round(0.4 * zeta)))
         diag["beta_used"] = beta_used
-        diag["beta_guard_fired"] = True
-        diag["beta_guard_failed"] = True
+        diag["beta_search_grid"] = grid
+        diag["beta_search_failed"] = failed
     return result
 
 

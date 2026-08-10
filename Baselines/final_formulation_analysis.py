@@ -36,8 +36,19 @@ cg = pd.read_csv(f"{R}/exp02a_cg_setpart.csv")
 cg = cg[cg.status == "OK"][["size_n", "instance_seed", "visits"]].rename(
     columns={"visits": "cg"})
 
+# The heuristic under beta = 0.4*zeta. Sourced from the repaired-and-rebaselined
+# benchmark, never from exp02a_results_rerun/exp02a_per_instance.csv: that
+# campaign predates the B4ter repair and its heuristic breaches the workload cap
+# on 80-100% of instances per size, so its rows are not comparable with the
+# feasible ones.
+heur = pd.read_csv("exp02a_results_betarule/heuristic_benchmark.csv")
+heur = heur[(heur.status == "OK") & (heur["mode"] == "preference")]
+heur = heur[["size_n", "instance_seed", "visits", "time_s"]].rename(
+    columns={"visits": "heur", "time_s": "heur_t"})
+
 m = bin_s.merge(set_s, on=["size_n", "instance_seed"]).merge(
-    ref, on=["size_n", "instance_seed"]).merge(cg, on=["size_n", "instance_seed"])
+    ref, on=["size_n", "instance_seed"]).merge(
+    cg, on=["size_n", "instance_seed"]).merge(heur, on=["size_n", "instance_seed"])
 
 
 def wilcox(a, b):
@@ -100,6 +111,34 @@ for n, g in m.groupby("size_n"):
                  "p_vs_this": round(wilcox(g.cg, g.setvar), 4)})
 print(pd.DataFrame(rows).to_string(index=False))
 print("\n(paper reports CG at -2.0% (1000) and -5.9% (2000) against the multiseed column)")
+
+print()
+print("=" * 78)
+print("4. HEURISTIC vs the set-variable reference  ->  tab:tests block")
+print("=" * 78)
+# The heuristic is the method whose sign flips once beta is indexed on zeta, so
+# it is the one that most needs testing. Same convention as every other block:
+# exact Wilcoxon on the raw per-instance differences, ties discarded, wins
+# counted as instances where the first-named method returns fewer visits.
+rows = []
+for n, g in m.groupby("size_n"):
+    d = g.heur.values - g.setvar.values
+    gap = 100.0 * d / g.setvar.values
+    rows.append({"N": n, "n": len(g),
+                 "heuristic": round(g.heur.mean(), 1),
+                 "setvar": round(g.setvar.mean(), 1),
+                 "gap_%": round(gap.mean(), 2),
+                 "heur_wins": int((d < 0).sum()), "ties": int((d == 0).sum()),
+                 "p": round(wilcox(g.heur, g.setvar), 4),
+                 "min_p": round(2.0 ** (1 - len(g)), 4),
+                 "heur_t": round(g.heur_t.mean(), 1)})
+print(pd.DataFrame(rows).to_string(index=False))
+d = m.heur.values - m.setvar.values
+print(f"\npooled n={len(m)}  heuristic wins {int((d < 0).sum())}  "
+      f"mean gap {(100.0 * d / m.setvar.values).mean():+.2f}%  "
+      f"p={wilcox(m.heur, m.setvar):.4f}")
+print("\nNote: at 1,000 and 2,000 SKUs n is 4 and 3, so the smallest attainable")
+print("two-sided p is 0.125 and 0.25. A saturated p there is not a failed test.")
 
 m.to_csv(f"{R}/final_formulation_analysis_perinstance.csv", index=False)
 print(f"\nwrote {R}/final_formulation_analysis_perinstance.csv")

@@ -9,9 +9,13 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-IMG = os.path.join(BASE, "..", "..", "..", "LaTeX_Articles_We_Have_Drafted", "Images_CSLAP")
+# IJPR_CSLAP_v2.tex resolves Images_CSLAP/ relative to this directory, so the
+# panels must land here. The copy under LaTeX_Articles_We_Have_Drafted/ serves
+# the older C&IE draft and is left alone.
+IMG = os.path.join(BASE, "Images_CSLAP")
 CSV = os.path.join(BASE, "Heuristic_Connex_Set_Project", "data", "BERNER_ORDER_LINES_09-12.csv")
 
 # --- plot universe: same as nb_code Cell 48 (only 01.Z8 excluded, GE4->E4) ---
@@ -26,6 +30,18 @@ df["STATION"] = df["STATION_fx"].where(df["STATION_fx"].notna(), df["STATION"])
 df = df.drop(columns=["STATION_fx", "k"])
 df = df[df["STATION"] != "01.Z8"]
 df.loc[df["STATION"] == "01.GE4", "STATION"] = "01.E4"
+
+# The S_i numbering is fixed on the universe that excludes 01.Z8 only, which is
+# what nb_code cell 14 numbered, so it must be taken before the next filter.
+order_seen = list(dict.fromkeys(df["STATION"]))
+smap = {s: f"S_{i}" for i, s in enumerate(order_seen, start=1)}
+
+# Report on the 24 evaluated stations of Table 6. 01.15 and 01.GED carry 11 and
+# 5 order lines, are never re-slotted, and appear as two flat bars at 0.0%;
+# dropping them puts this panel on the same 24 stations as the heuristic panel
+# of the same figure. Their exclusion does not renumber anything: both are last
+# in appearance order, hence S_25 and S_26.
+df = df[~df["STATION"].isin(["01.15", "01.GED"])]
 
 # --- new assignment: CG JSON + static fixed + original for the rest ---------
 # Default to the FAIR match-hexaly layout (the one reported in the paper,
@@ -49,9 +65,6 @@ tab = pd.DataFrame({"orig": orig.reindex(all_st).fillna(0),
                     "new": new.reindex(all_st).fillna(0)}).astype(int)
 tab["rel"] = np.where(tab["orig"] > 0, 100.0 * (tab["new"] - tab["orig"]) / tab["orig"], 0.0)
 
-# anonymize S_i in appearance order of the plot universe (as nb_code did)
-order_seen = list(dict.fromkeys(df["STATION"]))
-smap = {s: f"S_{i}" for i, s in enumerate(order_seen, start=1)}
 tab["label"] = [smap.get(s, s) for s in tab.index]
 tab = tab.sort_values("orig")
 
@@ -71,16 +84,24 @@ ax.legend()
 fig.tight_layout()
 fig.savefig(os.path.join(IMG, "CG_SetPart_number_of_lines_per_station.png"))
 
-fig2, ax2 = plt.subplots(figsize=(14, 6), dpi=100)
-ax2.bar(x, tab["rel"], 0.55, color="#4a90c4")
-for xi, v in zip(x, tab["rel"]):
+# Same conventions as the heuristic panel of this figure: bars scaled to the
+# data rather than to a fixed +/-60% window, and the +10% tolerance drawn in,
+# so the two panels are read against the same reference and the same axis.
+rel = tab["rel"].to_numpy(dtype=float)
+fig2, ax2 = plt.subplots(figsize=(14, 6), dpi=150)
+ax2.bar(x, rel, 0.6, color="tab:blue")
+for xi, v in zip(x, rel):
     ax2.annotate(f"{v:.1f}%", (xi, v), textcoords="offset points",
-                 xytext=(0, 6 if v >= 0 else -14), ha="center", fontsize=9)
-ax2.axhline(0, color="gray", lw=1)
-ax2.set_ylim(-60, 60)
-ax2.set_yticks(range(-60, 61, 20))
-ax2.set_yticklabels([f"{t}%" for t in range(-60, 61, 20)])
-ax2.grid(axis="y", ls="--", alpha=0.4)
+                 xytext=(0, 4 if v >= 0 else -12), ha="center", fontsize=8)
+ax2.axhline(0, color="grey", lw=1.0)
+ax2.axhline(10.0, color="red", ls="--", lw=1.0, label="+10% operational slack")
+pad = 0.10 * (rel.max() - rel.min())
+ax2.set_ylim(rel.min() - pad, max(rel.max(), 10.0) + pad)
+ax2.yaxis.set_major_locator(mtick.MaxNLocator(nbins=8, steps=[1, 2, 2.5, 5, 10]))
+ax2.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
+ax2.grid(axis="y", ls="--", lw=0.5, alpha=0.4)
+ax2.set_axisbelow(True)
+ax2.legend(loc="lower left")
 ax2.set_xticks(x); ax2.set_xticklabels(tab["label"], rotation=45)
 ax2.set_ylabel("Change in Lines (%)"); ax2.set_xlabel("Station Name")
 ax2.set_title("Relative Change in Number of Lines per Station")

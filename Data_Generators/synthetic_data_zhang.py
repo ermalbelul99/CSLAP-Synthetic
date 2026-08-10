@@ -13,7 +13,26 @@ def generate_synthetic_data_zhang(
     theta=0.7,
     seed=42,
     output_dir="synthetic_datasets",
+    num_stations=None,
+    prefix=None,
 ):
+    """Generate one Zhang-style synthetic CSLAP instance.
+
+    ``num_stations`` defaults to the historical ``max(5, num_skus // 100)``. When
+    it is left at None the whole generator, including the RNG stream, behaves
+    exactly as before, so the cached EXP-02a instances regenerate byte-identically.
+
+    When ``num_stations`` IS given explicitly, the per-line historical-station
+    label is drawn from a SEPARATE RNG stream. ``RandomState.randint`` consumes a
+    range-dependent number of words through its rejection sampling, so drawing
+    the station label from the main stream would desynchronise every later draw
+    (including QTY) as soon as |S| changed. Isolating it means the order
+    structure - sizes, itemsets, product fills, quantities - is identical across
+    station counts at a fixed seed, so a sweep over |S| varies the station
+    capacity zeta = floor(N/|S|) and nothing else.
+
+    ``prefix`` overrides the output file stem (default ``syn_{num_skus}sku``).
+    """
     rng = np.random.RandomState(seed)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -38,8 +57,18 @@ def generate_synthetic_data_zhang(
     num_orders = int(num_skus * rng.uniform(30.0, 50.0))
 
     # --- 4. Stations (Flat Setup) ---
-    num_stations = max(5, num_skus // 100)
-    
+    # station_rng is the main stream in the historical path (so nothing changes)
+    # and a dedicated stream whenever |S| is set explicitly (see the docstring).
+    if num_stations is None:
+        num_stations = max(5, num_skus // 100)
+        station_rng = rng
+    else:
+        num_stations = int(num_stations)
+        if num_stations < 1 or num_stations > num_skus:
+            raise ValueError(
+                f"num_stations must be in [1, num_skus={num_skus}], got {num_stations}")
+        station_rng = np.random.RandomState(seed + 999983)
+
     # Exact slot capacity to ensure uniform product counts across stations
     base_cap = num_skus // num_stations
     capacities = np.full(num_stations, base_cap)
@@ -77,7 +106,7 @@ def generate_synthetic_data_zhang(
 
         # Zhang et al. notes an item can appear more than once in an order
         for prod in current_order_items:
-            original_station = rng.randint(1, num_stations + 1)
+            original_station = station_rng.randint(1, num_stations + 1)
             order_data.append({
                 "ORDER": f"ORD_{order_id}",
                 "PRODUCT": f"PROD_{prod}",
@@ -121,12 +150,14 @@ def generate_synthetic_data_zhang(
     })
 
     # --- 7. Save ---
-    prefix = f"syn_{num_skus}sku"
+    if prefix is None:
+        prefix = f"syn_{num_skus}sku"
     df_orders.to_csv(os.path.join(output_dir, f"{prefix}_orders.csv"), index=False, sep=";")
     df_stations.to_csv(os.path.join(output_dir, f"{prefix}_stations.csv"), index=False, sep=";")
     df_products.to_csv(os.path.join(output_dir, f"{prefix}_products.csv"), index=False, sep=";")
 
-    print(f"[Zhang Generator] N={num_skus} | Orders: {num_orders} | Itemsets: {num_itemsets}")
+    print(f"[Zhang Generator] N={num_skus} | Stations: {num_stations} "
+          f"| Zeta: {base_cap} | Orders: {num_orders} | Itemsets: {num_itemsets}")
     return df_orders, df_stations, df_products
 
 if __name__ == "__main__":
@@ -135,6 +166,10 @@ if __name__ == "__main__":
     parser.add_argument("--theta", type=float, default=0.7)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output_dir", type=str, default="synthetic_datasets")
+    parser.add_argument("--num-stations", type=int, default=None,
+                        help="Station count |S| (default: max(5, N//100), the "
+                             "historical formula). Setting it explicitly also "
+                             "isolates the station-label RNG stream.")
     args = parser.parse_args()
 
     for sku_size in args.sizes:
@@ -143,4 +178,5 @@ if __name__ == "__main__":
             theta=args.theta,
             seed=args.seed,
             output_dir=args.output_dir,
+            num_stations=args.num_stations,
         )

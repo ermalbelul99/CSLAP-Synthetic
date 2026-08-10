@@ -154,8 +154,139 @@ Every sweep run therefore pins the seed, and the base configuration is repeated 
 measure the tie-break noise floor — without it, a small delta from a threshold change cannot be
 told apart from run-to-run noise.
 
-*(Sensitivity numbers, the appendix table, and the calibration recipe are inserted once the sweep
-completes; this section is finalised then.)*
+**Superseded 2026-08-04 by B4bis, and B4bis in turn by B4ter.** The threshold work below stands as
+internal record; what the article now reports is the repaired heuristic of B4ter, which is feasible
+by construction and therefore no longer needs the failure narrative B4bis built.
+
+### B4ter. The heuristic now respects the workload constraint (supersedes B4bis for the article)
+
+**What changed in the method.** Station assignment used to place communities by historical preference
+under the slot capacity alone, never reading constraint~(5). It now (i) restricts candidates to
+stations that keep *both* the slot capacity and the workload cap, choosing the most historically
+preferred among them with the lowest resulting relative load as tie-break, and (ii) runs a repair
+that exchanges products between stations until every station is inside its cap, taking at each step
+the exchange that breaks the least co-occurrence weight.
+
+**Why an exchange and not a relocation.** Slot capacity is exhausted by construction: the generator
+gives $\sum_s \zeta_s = |P|$ exactly at all four sizes, and industrially each station's capacity is
+the count of products it already holds. Every station is full once placement ends, so a move-based
+repair has nowhere to move anything and would have run to no effect on all 29 instances. Exchanges
+preserve each station's product count, so slot feasibility is maintained for free.
+
+**Placement rule chosen by measurement.** Two rules were implemented and run over all 29 instances.
+Balance-first and preference-first are statistically indistinguishable there (paired Wilcoxon
+$p = 0.35$, mean difference $+0.006\%$) — unsurprising, since the synthetic generator assigns the
+historical station at random, so that signal is noise on this family. The industrial instance, where
+the history is real, decides: preference-first gives 1,050,514 visits against balance-first's
+1,076,849, the latter being *worse than the legacy layout*. Preference-first ships.
+
+**Results.** All 29 instances feasible (`wl_broken = cap_broken = 0`) with every product placed.
+Table 5 heuristic rows become 8,142 (+7.6\%), 78,804 (+3.2\%), 197,146 (+2.5\%) and 484,398
+(+0.1\%), all at 0\% workload violation; the heuristic now joins the ranking and its standing
+improves with scale, from last-but-one at 50 SKUs to second of seven at 2,000. Table 6 becomes
+1,050,514 visits (14.50\% above the best layout, 1.1\% below the site's current one) with **every
+station inside the +10\% tolerance**, making it the only method on that instance that is both
+feasible and fast. Runners: `Baselines/run_heuristic_benchmark.py`,
+`run_industrial_heuristic_alone.py`; results under `exp02a_results_repaired/`.
+
+**A pre-existing industrial defect this surfaced.** The industrial pipeline optimises in `pl_solver`
+units and is judged in `pl_full` units. The two disagree per product (ratio 1.03–2.63, mean 1.35) and
+per station (a station's solver capacity covers 56–77\% of its true load), so a repair that targets
+the solver-unit ceiling lands on its boundary there and overshoots the real tolerance — measured at
++16.7\% on the worst station, 10 of 24 outside +10\%. `run_industrial_heuristic_alone.py` therefore
+rebuilds the workload view in evaluation units, giving each station the budget the tolerance leaves
+for movable products once the statically fixed ones are paid for. This affects only the heuristic's
+own run; the other methods in Table 6 still optimise in solver units, which is worth revisiting.
+
+**Side effects.** The method is now deterministic: repeating the nominal configuration under five
+hash seeds returns an identical layout on every instance at every size, so the tie-break noise floor
+the appendix used to report is gone (0.000\% everywhere) and the `PYTHONHASHSEED` pinning is belt and
+braces rather than a requirement. A latent bug was also closed — the old Step 4 silently dropped
+products once every station was full, which corrupts the visit count; every run is now asserted to
+place all $|P|$ products.
+
+**Article scope.** Per author decision the article presents the final method only, tested on the 29
+synthetic instances plus the industrial case. Appendix D collapses to one table on the shipped
+configuration; the dominance table, the 80-instance geometry study and the geometry table are
+withdrawn from the manuscript (artifacts retained in the repository). The float budget falls from
+15/15 to 13/15. The Data Availability Statement, which promises exactly the 29 instances, is correct
+again without edit.
+
+---
+
+*The B4bis record below is retained for provenance.*
+
+### B4bis. Threshold calibration, corrected and extended (Q4, and the open half of Q3)
+
+**(i) A paper↔code mismatch in the kept-edge ratio.** §4.1 described the pair-support ratio as
+"at least a tenth of the more frequent product's own demand", but the code divided by the frequency
+of the **lexicographically first** endpoint (`combinations(sorted(...))` makes `p1` the alphabetically
+smaller identifier, not the more frequent product). The filter was therefore asymmetric and dependent
+on product naming, which is what produced the non-monotone `r` rows of the old appendix table
+(+0.49, −0.06, +0.06, +0.40 at 500 SKUs). `heuristic_synthetic.heuristic_cslap` now normalises by
+`max(cnt_i, cnt_j)`, matching the article; `ratio_denominator="first"` reproduces the pre-fix
+behaviour bit-for-bit and is retained only as an audit path.
+*Effect.* Kept pairs fall 22 % at 50 SKUs and 0.2 % at 500; at 1,000 and 2,000 SKUs the output is
+**per-instance identical**. Table 5's heuristic rows move to 7,715 (+2.2 %) and 78,727 (+3.2 %), the
+1,000- and 2,000-SKU rows are unchanged, and the 500-SKU workload-violation share drops 80 %→70 %
+(so "80 to 100 %" becomes "70 to 100 %" throughout). Table 6's heuristic row becomes 1,012,538 visits
+/ max WL 11,009 / util. sd 37.26 / 9 stations over cap. Every kept-edge-ratio interval now covers
+zero at both scales: that threshold has **no effect this design can resolve**, correcting the
+"small but measurable, at most 1.2 %" claim listed in the audit table below.
+
+**(ii) The inertness of the two floors is structural, and it expires.** Reporting Δ = 0.00 % is weak
+evidence. `Baselines/verify_threshold_dominance.py` replays the filter chain on all 29 instances and
+evaluates the two conditions now stated as eq. (12) in §4.1. The frequency floor removes no product
+at any scale, with a margin falling 78 → 29 → 14.8 → 7.1 as $N$ grows. The co-occurrence floor removes
+no pair either, but the *sufficient condition* certifies that only to 1,000 SKUs (margins 8.05, 2.68,
+1.53); at 2,000 it drops to 0.77. The redundancy is therefore size-dependent and would lapse on a
+catalogue materially larger than 2,000 SKUs — a caveat the previous wording did not carry.
+Artifact: `exp02a_results/threshold_dominance_all.csv`.
+
+**(iii) The calibration recipe was wrong, and the new experiment says so.** The old §4.1 advised
+setting the community bound "to the largest value the workload cap will absorb". That recipe was
+never tested, and it is untestable on the benchmark family, whose generator ties $|S|$ to $N$ so that
+$\zeta = 100$ at every size from 500 SKUs up while $\beta$ is clamped at 15 above 300 products —
+$\beta/\zeta$ is the constant 0.15 across the entire published benchmark, which is also the
+unanswered half of the reviewer's "MNOPPC independent of $|S|$".
+New experiment EXP-02c (`Baselines/make_capsweep_instances.py`, `run_capacity_sweep.py`,
+`analyze_capacity_sweep.py`): 80 instances crossing $N \in \{500, 1000\}$ with four station counts so
+the same $\zeta \in \{100,50,25,20\}$ occurs at both sizes, ten seeds per cell, station labels drawn
+from a separate RNG stream so the order structure is identical across cells at a fixed seed. 926 runs,
+$\beta$ from 2 to $\zeta$.
+*Result, and it is negative.* Visits fall essentially monotonically in $\beta$ (mean Spearman −0.98,
+−14.0 % end to end), so the objective identifies no interior optimum. Neither does the constraint: the
+least overloaded setting in every one of the eight geometries still breaches the cap on average (1.01×
+to 1.38×), and it is always the *smallest* bound, at which clustering is effectively off. Only 24 of
+940 runs are feasible, all in the two $\zeta = 100$ cells; six of eight geometries admit no feasible
+layout at any $\beta$. Because the overload survives switching the clustering off, it is produced by
+the **station-assignment stage**, which never reads constraint (5) — no clustering threshold can
+repair it. The pre-registered scaling hypotheses ($\beta^\ast \sim \zeta$ vs $\beta^\ast \sim N$) are
+reported as **not estimable**: the quantity they predict does not exist on 70 of 80 instances, and the
+analysis withholds the verdict rather than reading it off the 10 survivors.
+Appendix D is restructured into three parts (dominance, sensitivity, geometry) with two new tables,
+`tab:dominance` and `tab:capsweep`; the orphan hardware paragraph that opened it moved to §5.2, where
+it belongs and where it was previously absent.
+
+**Methodology references added** (`IJPR_CSLAP.bib`): Barr et al. (1995), Hooker (1995), Eiben & Smit
+(2011), López-Ibáñez et al. (2016), Derrac et al. (2011).
+
+**Reproducibility repairs found along the way.** (a) The industrial heuristic row was not
+reproducible: two unpinned runs returned 1,014,600 and 1,014,784 visits with 10 and 9 stations over
+cap. `run_industrial_heuristic_alone.py` now re-execs itself with `PYTHONHASHSEED=0`, after which
+repeated runs agree exactly. (b) Figure 11's two panels had **no generator in the repository**;
+`plot_industrial_heuristic_workload.py` now draws them from the same run that produces the Table 6
+row, and cross-checks that the number of stations over capacity equals that row's `wl_broken`.
+While writing it, an error was caught: `TIME_CAPACITY` is expressed in speed-adjusted units and must
+never be compared against raw line counts, which differ by orders of magnitude on this site.
+(c) `evaluate_full_metrics` moved to `Baselines/industrial_metrics.py` so a solver-free re-run is
+possible on machines without gurobipy; `run_benchmarks_industrial.py` imports it back, keeping one
+definition.
+
+**Timings.** The article reports a single environment, the 16-core server of Section 5.2, and the
+`Budget (s)` and `Time (s)` columns are read on that machine. The heuristic's entries are to be
+confirmed there on a quiet box before submission; the layouts themselves are deterministic, so
+visits, workloads and violations are unaffected by where they were computed.
 
 ### B5. Multi-homing for high-demand SKUs (Q5)
 
@@ -411,7 +542,9 @@ blocking defects were found elsewhere, all in prose or provenance, and all are n
 | §5.3, §7 old CG | "returned its warm start unchanged after the full ten hours" | terminated after **1.0 h and 3.0 h** of the ten-hour allowance (3,542 s Hexaly, 10,654 s Gurobi) |
 | §5.3 uniqueness | "the only method that respects both constraints on all 29 instances" | every method except the heuristic does; CG is the one whose standing improves with size |
 | §5.3 dominance | "dominates every method that respects the cap" (contradicted the tie with the reference in the same sentence) | dominance stated against the two literature baselines only |
-| §4.1 sensitivity | "three of the four thresholds are inert" | **two** are inert; the kept-edge ratio is small but above the 0.09 % noise floor |
+| §4.1 sensitivity | "three of the four thresholds are inert" | **two** are inert; the kept-edge ratio is small but above the 0.09 % noise floor — *superseded by B4bis: after the ratio-denominator fix every kept-edge-ratio interval covers zero, so three of the four are in fact without resolvable effect* |
+| §4.1 recipe | "set the community bound to the largest value the workload cap will absorb" | withdrawn: on six of eight warehouse geometries the cap absorbs nothing at any bound (B4bis iii) |
+| §4.1 ratio | "a tenth of the more frequent product's own demand" | the code divided by the lexicographically first endpoint; code corrected to match the article (B4bis i) |
 | §7 industrial deviations | CG range [−3.8 %, +5.8 %] had no producing artifact (the CSV's `dev_*` columns measure deviation against the cap, not the legacy load) | recomputed by the new `Baselines/report_industrial_deviation.py`: **[−3.78 %, +5.82 %]**, std 2.41 %, 10 stations above legacy, 24/24 inside the +10 % tolerance — matching every printed value |
 
 Reporting fixes in the same pass: the GA/SA-C early-stop claim now restricted to 50 SKUs; "converges"
@@ -641,3 +774,89 @@ port of `milp_gurobi_synthetic.run_milp_gurobi`.
 **Word budget.** Appendix D sits in an appendix deliberately: IJPR counts "Abstract, Main Text,
 Tables, References and Figure/Table Captions", and appendices are not in that list. The main text
 carries a five-line summary and a pointer. Counted total ~11,996 of 12,000.
+
+### Part N — Narrative clean-up for referee legibility (2026-08-04)
+
+The draft read as over-generated: too many numbers inline, redundant prose around every table, and
+terms used before they were defined. This pass changed no result. Nothing was re-derived from the
+project; everything is grounded in the article's own tables.
+
+**Corrected a real error introduced in the previous round.** Section 5.3 asserted that the paired
+tests ran "on per-instance percentage gaps". They do not. Reproducing the published values against
+`exp02a_results/final_formulation_analysis_perinstance.csv` shows the tests were run on **raw
+per-instance visit differences** with ties dropped: that convention returns 0.0488, 0.0010, 0.0273,
+1.00, 0.25 and 0.1828, matching six of the seven published figures. On percentage gaps the pooled
+CG comparison would return 0.0258 and contradict the paper's own null result. The protocol
+paragraph now states the raw-difference convention and notes that the Gap column measures size
+while the test measures consistency. Every published p-value is printed unchanged; only cells the
+article did not previously report were recomputed.
+
+**Fixed a comment that was deleting text from the compiled PDF.** A `% TODO(before submission)`
+marker sat on the same source line as live prose, silently removing two sentences including the
+"best found rather than a proven optimum" caveat. The caveat is restored, reworded to claim nothing
+about any solver. All TODO markers are now gone from the `.tex` and the `.bib`: the ORCID
+placeholders were deleted, the Funding statement no longer prints a placeholder grant number, and
+`pang2017datamining` was completed to IJPR 55(14), 4035--4052.
+
+**Legibility.** A statistical-protocol paragraph now defines the paired test, the null, and the
+$2^{1-n}$ floor before any $p$ appears. All p-values moved out of prose into a new table
+(`tab:tests`) whose Min.\ $p$ column shows that the 1,000- and 2,000-SKU rows are saturated rather
+than failing. Section 5.3 was rewritten as five bold-led findings. The two pooling conventions,
+which disagree in sign, were split into their own paragraph.
+
+**Tables and figures.** Table 4 rebuilt with one fixed method order across all four blocks, a
+"Gap vs.\ ref" header, a "Time (s)" header, `n` instead of `K` (removing the collision with the
+pattern set $K_s$ and the relocation cap $k$), and `[min, max]` marked in the 2,000-SKU block. The
+industrial table gained a "Reduction (%)" column carrying the headline 13.65 and 5.80 figures,
+which previously appeared only in prose. The three near-identical workload figures were merged into
+one three-panel float, and the freed slots went to `tab:tests` and a new crossover figure built
+from Table 4's Gap column. Display items stand at exactly 15.
+
+**Wording.** Method names normalised to "set-variable MILP" and "binary MILP"; "cap" used for the
+time limit throughout. Every characterisation of the Hexaly solver's internals was removed, in both
+directions, since the paper cannot claim what the engine does. "Support", "pattern", "master",
+"pricing" and "LPT" are now defined on first use. The contributions paragraph was split into three.
+The temporal claim "captures most of the attainable benefit" was corrected to over half on the
+10-week split and nearly three-quarters on the 8-week one, which is what the table supports.
+
+**Still open.** GA and SA-C parameters are not reported, so those two baselines are not reproducible
+from the text alone. The industrial `Binary MILP` and station-indexed `CG` rows have no producing
+artifact in this repository. The set-variable industrial deviation range rests on the original run's
+recorded output.
+
+Abstract 191 words, main text 10,030, appendices 769, total 10,799 of 12,000.
+
+### Part O — GA and SA-C parameters, and two corrections they exposed (2026-08-04)
+
+New Appendix D reports the parameters of both metaheuristic baselines, closing the reproducibility
+gap left open in Part N. It is written as prose rather than a table so that it adds no display item
+to the 15/15 count. Values were read from `Baselines/ga_baseline.py` and `Baselines/sa_correlated.py`
+and checked against the harness that produced the published rows,
+`Baselines/run_exp02a_multiseed.py`, which passes only `time_limit` and overrides no algorithmic
+parameter. The published GA, SA-C and LPT rows of Table 4 reproduce
+`exp02a_results_rerun/table5_rebuilt.csv` exactly.
+
+**Correction 1: the shared warm start did not exist on the synthetic campaign.** Section 4.4 stated
+that "every method is seeded with the same feasible start" and that "the GA and SA-C receive the
+same start". `run_exp02a_multiseed.py` contains no `warm_start` argument at all. In that campaign
+SA-C starts from its own cube-per-order-index ordering, the GA from a random capacity-feasible
+population, the column generation from the LPT partition of Algorithm 1, and the two model
+formulations from no warm start (the harness marks the Hexaly call "NO warm start" explicitly). The
+text now describes each start as it actually was, and notes that each baseline uses the
+initialisation its own source prescribes. The LPT row remains the correlation-blind anchor. This
+does not weaken the comparison: the baselines trail by 20 to 27\% at the two larger sizes, and
+starting each from its own literature-standard initialisation is the more faithful reading of
+Kim \& Smith (2012) and Zhang et al. (2019) than forcing a common start.
+
+**Correction 2: the seed statement was wrong for SA-C.** The text reported "seed 20240612 for the GA
+and SA-C". Both algorithms in fact draw their search decisions from `np.random.RandomState(42)`.
+SA-C makes no other random call, so it is deterministic and 20240612 never touches it. The GA's
+capacity repair alone uses the global NumPy stream, which the harness seeds at 20240612. The
+protocol paragraph now says this, and the sentence classifying methods as randomised was corrected:
+SA-C belongs with the clustering heuristic as deterministic, not with the randomised methods.
+
+Two further descriptions of the GA were corrected against the code: selection is binary tournament,
+not quality-proportional, and the crossover is a partially mapped crossover adapted to
+station-assignment vectors, not a subset crossover.
+
+Abstract 191 words, total main text plus appendices 11,248 of 12,000. Display items unchanged at 15.

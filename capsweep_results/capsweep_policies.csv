@@ -1,0 +1,5 @@
+policy,n_instances,mean_beta,mean_visits,frac_feasible,mean_pct_excess_vs_oracle
+nominal (beta=15),40,15.0,174089.55,0.0,-2.5667335405708136
+capacity (beta=round(nan*zeta)),0,,,,
+catalogue (beta=nan),0,,,,
+oracle (per-instance beta_max),4,16.0,75127.5,1.0,0.0

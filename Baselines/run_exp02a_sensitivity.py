@@ -261,13 +261,12 @@ def _child_entry(inst_dir: str, prefix: str, params: Dict[str, Any],
     try:
         op, st, pr, pl, odf = heuristic_synthetic.read_data(prefix, inst_dir)
         diag: Dict[str, Any] = {}
+        # `params` is passed straight through as keyword arguments, so a caller
+        # can drive any of the heuristic's knobs (placement rule, workload
+        # tolerance, ...) without this module needing to know about them. The
+        # four threshold keys this campaign uses are simply the default case.
         result = heuristic_synthetic.heuristic_cslap(
-            op, st, pr, pl, odf,
-            min_freq_preproc=params["min_freq_preproc"],
-            min_freq=params["min_freq"],
-            ratio_to_keep=params["ratio_to_keep"],
-            mnoppc=params["mnoppc"],
-            diag=diag,
+            op, st, pr, pl, odf, diag=diag, **params
         )
         # 7-tuple: (assignment, visits, elapsed, max_wl, wl_std, cap_b, wl_b)
         _assignment, visits, elapsed, _max_wl, _wl_std, cap_broken, wl_broken = result
@@ -277,10 +276,16 @@ def _child_entry(inst_dir: str, prefix: str, params: Dict[str, Any],
             "time_s": float(elapsed),
             "cap_broken": float(cap_broken),
             "wl_broken": float(wl_broken),
+            # Busiest station's realised load. run_exp02a_sensitivity ignores it
+            # (its metrics dict is built key by key); EXP-02c divides it by T_s to
+            # get a CONTINUOUS overload response, so that a threshold's effect on
+            # visits is never read without its effect on feasibility beside it.
+            "max_wl": float(_max_wl),
             "n_products": int(len(pr)),
-            "diag": {k: diag.get(k) for k in (
-                "n_pstar", "n_pairs_kept", "n_corr_communities", "n_assigned",
-                "community_size_max")},
+            # Whole diag travels: callers that record extra diagnostics (swap
+            # counts, overload before/after) get them without this module having
+            # to enumerate them. Non-numeric entries are dropped by run_one.
+            "diag": dict(diag),
         })
     except Exception as exc:  # noqa: BLE001 - must never crash the campaign
         out_q.put({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
@@ -303,6 +308,7 @@ def run_one(
     nan_metrics: Dict[str, Any] = {
         "visits": float("nan"), "time_s": float("nan"),
         "cap_broken": float("nan"), "wl_broken": float("nan"),
+        "max_wl": float("nan"),
         "n_pstar": float("nan"), "n_pairs_kept": float("nan"),
         "n_corr_communities": float("nan"), "n_assigned": float("nan"),
         "community_size_max": float("nan"),
@@ -365,11 +371,22 @@ def run_one(
     metrics: Dict[str, Any] = {
         "visits": payload["visits"], "time_s": payload["time_s"],
         "cap_broken": payload["cap_broken"], "wl_broken": payload["wl_broken"],
+        # Not in this campaign's _COLS, so append_row drops it; EXP-02c reads it.
+        "max_wl": float(payload.get("max_wl", float("nan"))),
     }
     for key in ("n_pstar", "n_pairs_kept", "n_corr_communities", "n_assigned",
                 "community_size_max"):
         val = diag.get(key)
         metrics[key] = float("nan") if val is None else float(val)
+    # Any further numeric diagnostics the heuristic reported (e.g. n_swaps,
+    # n_overloaded_before/after). Keys already handled above are not overwritten.
+    for key, val in diag.items():
+        if key in metrics or isinstance(val, str):
+            continue
+        try:
+            metrics[key] = float(val)
+        except (TypeError, ValueError):
+            continue
 
     # S4: refine OK. PARTIAL_ASSIGN first (it invalidates the visit count);
     # DEGENERATE stays recoverable from the n_pairs_kept column.

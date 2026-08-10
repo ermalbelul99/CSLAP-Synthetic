@@ -80,8 +80,23 @@ def main(argv=None) -> int:
     # generator instead folds its 10% slack into TIME_CAPACITY, hence 0.0 there.
     p.add_argument("--wl-tolerance", type=float, default=0.10)
     p.add_argument("--no-repair", action="store_true")
+    # Community bound beta. None => heuristic_cslap's own max(5, min(15, N//20)),
+    # i.e. 15 here, which is what the published Table 6 row was run with; the
+    # row is bit-identical whenever this flag is omitted. EXP-02c (repaired)
+    # found beta* ~ 0.4-0.6 * zeta over zeta in [20, 100], and this site's
+    # per-station slot capacity has mean 897 / median 242, far outside that
+    # range -- so this flag exists to probe whether the clamp at 15 leaves
+    # visits on the table industrially. Any value here is an extrapolation
+    # beyond the tested range and must be reported as such.
+    p.add_argument("--mnoppc", type=int, default=None,
+                   help="community size bound beta (default: auto-scaled, =15)")
     p.add_argument("--out", type=str,
                    default="results_industrial_heuristic_ratiofix.csv")
+    # Figure 11 is drawn from this file, and the Table 6 row from --out, so both
+    # come from one and the same run. It keeps its historical name by default; a
+    # parameter probe should redirect it so it cannot clobber the figure's data.
+    p.add_argument("--per-station-out", type=str,
+                   default="results_industrial_heuristic_per_station.csv")
     args = p.parse_args(argv)
 
     print(f"[load] {args.data_path}")
@@ -134,7 +149,9 @@ def main(argv=None) -> int:
 
     print(f"[run] heuristic, placement={args.placement}, "
           f"tolerance={args.wl_tolerance} folded into per-station budgets, "
-          f"repair={not args.no_repair}")
+          f"repair={not args.no_repair}, "
+          f"beta={args.mnoppc if args.mnoppc is not None else 'auto(15)'}")
+    beta_kw = {} if args.mnoppc is None else {"mnoppc": args.mnoppc}
     diag: dict = {}
     t0 = time.time()
     assignment, _v, elapsed, _mw, _sd, _cb, _wb = heuristic_cslap(
@@ -142,7 +159,7 @@ def main(argv=None) -> int:
         pl_eval, data["odf_solver"],
         ratio_denominator=args.ratio_denominator,
         placement=args.placement, wl_tolerance=0.0,
-        repair=not args.no_repair, diag=diag,
+        repair=not args.no_repair, diag=diag, **beta_kw,
     )
     visits, max_wl, wl_std, cap_b, wl_b = evaluate_full_metrics(
         assignment, data["static_assignment"],
@@ -164,6 +181,7 @@ def main(argv=None) -> int:
         "ratio_denominator": args.ratio_denominator,
         "placement": args.placement,
         "wl_tolerance": args.wl_tolerance,
+        "mnoppc": args.mnoppc if args.mnoppc is not None else 15,
         "n_swaps": diag.get("n_swaps"),
         "n_overloaded_before": diag.get("n_overloaded_before"),
         "n_overloaded_after": diag.get("n_overloaded_after"),
@@ -221,7 +239,7 @@ def main(argv=None) -> int:
     per_station["pct_change"] = 100.0 * (
         per_station["lines_heuristic"] - per_station["lines_original"]
     ) / per_station["lines_original"].replace(0, np.nan)
-    ps_path = os.path.join(BASE_DIR, "results_industrial_heuristic_per_station.csv")
+    ps_path = os.path.join(BASE_DIR, args.per_station_out)
     per_station.to_csv(ps_path, index=False)
     print(f"[out] {ps_path}")
 

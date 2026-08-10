@@ -61,7 +61,7 @@
 \title{Efficient and practical solutions for the correlated storage location assignment problem in automated pick-and-pass warehouses}
 
 \author{
-\name{Ermal Belul\textsuperscript{a,b}\thanks{CONTACT Ermal Belul. Email: ermalbeluli10@gmail.com},
+\name{Ermal Belul\textsuperscript{a,b}\thanks{CONTACT Ermal Belul. Email: ermal.belul@hds.utc.fr},
 Marwane Bouznif\textsuperscript{b},
 Dritan Nace\textsuperscript{a} and
 Antoine Jouglet\textsuperscript{a}}
@@ -491,9 +491,9 @@ A single instance cannot tell whether a ranking reflects method quality or one f
 
 The set-variable MILP is the per-instance reference, so each gap is measured against its solution on the same instance. It is the reference because it is the form we deploy and the one the industrial recommendation rests on, not because it is always the best: at 2,000 SKUs the column generation beats it, which a negative gap records. Across all 29 instances every method held both the slot capacity and the workload cap, so the comparison below is one of quality and time alone, measured against that per-instance reference layout rather than against a proven optimum.
 
-All optimising methods run under a common per-size cap: 120, 300, 600, and 1,200 seconds for the four scales. The column generation returns before the cap at the two smaller sizes, because each of its four stages is allotted a fraction of the budget (Appendix~\ref{app:baselines}) and the later stages finish inside theirs, and it uses the cap in full at 1,000 and 2,000. The clustering heuristic takes no time parameter and the LPT start is immediate, so both finish well inside the cap at every size.
+All optimising methods run under a common per-size cap: 120, 300, 600, and 1,200 seconds for the four scales. All rankings are conditional on this shared cap and on the common computational setup, which Appendix~\ref{app:baselines} states in full.%The column generation returns before the cap at the two smaller sizes, because each of its four stages is allotted a fraction of the budget (Appendix~\ref{app:baselines}) and the later stages finish inside theirs, and it uses the cap in full at 1,000 and 2,000. The clustering heuristic takes no time parameter and the LPT start is immediate, so both finish well inside the cap at every size.
 
-All rankings are conditional on this shared cap and on the common computational setup, which Appendix~\ref{app:baselines} states in full.
+
 
 % =====================================================================
 \subsection{Results across the instance distribution}\label{sec:reliability}
@@ -611,7 +611,7 @@ GA and SA-C vs.\ reference & 50      & 12 & 0  & 0.0005 & 0.0005 \\
 % =====================================================================
 \section{Industrial application}\label{sec:industrial}
 % =====================================================================
-We validate the framework on a real warehouse, Company~A, with $|P| = 21{,}874$ products and 26 stations, 24 of which carry movable SKUs after pruning and enter the solvers and the evaluation. Two of the 26 stations are static, in the sense that the site does not re-slot them between cycles. Products appearing in at most five orders and already held at a static station are frozen at their current location, leaving $15{,}975$ free to relocate and fixing the remaining $5{,}899$. Frozen products retain their slots and their share of station workload, so the solver receives the tolerance remaining after their load is accounted for, while the evaluation charges every station with its complete load. The visit counts in Tables~\ref{tab:industrial} and~\ref{tab:reassign} are measured on the complete order stream, so the reductions below are not inflated by the reduced decision pool.
+We validate the framework on a real warehouse, Company~A, with $|P| = 21{,}874$ products and 26 stations, 24 of which carry movable SKUs after pruning and enter the solvers and the evaluation. Two of the 26 stations are static (S25 and S26), in the sense that the site does not re-slot them between cycles because they contain 1 and 2 locations respectively. Products appearing in at most five orders and already held at a static station are frozen at their current location, leaving $15{,}975$ free to relocate and fixing the remaining $5{,}899$. Frozen products retain their slots and their share of station workload, so the solver receives the tolerance remaining after their load is accounted for, while the evaluation charges every station with its complete load. The visit counts in Tables~\ref{tab:industrial} and~\ref{tab:reassign} are measured on the complete order stream, so the reductions below are not inflated by the reduced decision pool.
 
 The workload budget of each station is anchored on its current operation: the solver may load a station up to $110\%$ of the legacy line load of the movable products it holds. Station geometries and calibrated speeds differ, so absolute workload variance is not comparable across stations. We therefore report each station's utilisation, its realised load as a percentage of its own full legacy load, and take the standard deviation of those percentages across the 24 evaluated stations. Since that denominator is the station's own legacy load, every station sits at $100\%$ under the original placement and the legacy layout has zero dispersion on this measure by construction. The metric therefore reads as departure from the balance the site currently operates, not as balance in the abstract: a value near zero means a layout preserves the existing distribution of work, and a large value means it has concentrated work on some stations.
 
@@ -632,11 +632,12 @@ GA & 1{,}046{,}071 & 1.55 & 14.02 & 19{,}358 & \textcolor{red}{\textbf{10{,}972}
 SA-C & 1{,}058{,}563 & 0.37 & 15.38 & 36{,}000 & 10{,}811 & 12.14 & \textcolor{red}{\textbf{WL}} \\
 \bottomrule
 \end{tabular*}}
-\tabnote{Reduction is against the original layout, Gap vs.\ ref against the set-variable MILP. Util.\ SD is the standard deviation, across the 24 evaluated stations, of each station's realised load as a percentage of its own legacy load. Max WL is the busiest station's workload $\sum_{p} L_p/V_s$, in the units of \eqref{eq:wl}, not a count of lines. Viol.\ tests each station against the site's $+10\%$ tolerance, so a low Max WL does not by itself certify feasibility; the GA and SA-C layouts breach it, so their visits and gaps are not comparable with the feasible rows. Times are reported to the nearest cap where a method exhausted its budget.}
+\tabnote{Reduction is against the original layout, Gap vs.\ ref against the set-variable MILP. Util.\ SD is the standard deviation of each station's realised load against its own legacy load (\%). Max WL is the realised busiest-station workload $\sum_{p} L_p/V_s$, in the units of \eqref{eq:wl}. The site tolerates up to 10\% above each station's legacy load; the busiest legacy station carries 9,923 lines, so its bound is 10,915. The flag marks a method whose realised load exceeds its own bound at one or more stations; the check is per station, so a breach can occur away from the busiest station, and a Max WL below 10,915 does not by itself certify feasibility. Times are reported to the nearest cap where a method exhausted its budget.}
 \label{tab:industrial}
 \end{table}
 
 Table~\ref{tab:industrial} reports the outcome on the operating site, where the methods separate on feasibility before they separate on visits. The heuristic occupies the fast end of that separation: it holds every station inside the site's tolerance (Figure~\ref{fig:workload}a) and still improves on the live layout. That improvement is the smallest of the feasible reductions, but it is the only one available at that running time, since the two metaheuristics take hours and still leave stations over their limits. It achieves that speed at a cost the visit column does not show: its utilisation dispersion of 26.87 is the highest in the table, and the individual shifts span $[-81.7\%, +10.0\%]$, so while it respects every cap it fills some stations to the edge of the tolerance and leaves others far below their legacy load.
+
 
 The set-variable MILP takes the opposite position, removing 13.7\% of the station visits while every station's utilisation shift stays within $[-5.9\%, +9.6\%]$, inside the site's 10\% slack (Figure~\ref{fig:workload}b), so the deepest reduction we obtain is also deployable. No method here returns a certified optimum, so this layout is the best found rather than a proven one.
 
@@ -654,7 +655,7 @@ The binary MILP of Section~\ref{sec:model}, given the same engine and budget, is
 (c) Station-indexed column generation\par\smallskip
 \includegraphics[width=0.46\linewidth]{Images_CSLAP/CG_SetPart_number_of_lines_per_station.png}\hfill
 \includegraphics[width=0.46\linewidth]{Images_CSLAP/CG_SetPart_pt_relative_change_number_of_lines_per_station.png}
-\caption{Station workload on the industrial site for the three deployable layouts, each against the original placement, with (a) the clustering heuristic, (b) the set-variable MILP and (c) the station-indexed column generation: lines per station (left) and relative change in utilisation (right). No station exceeds the site's $+10\%$ tolerance in any of the three. The column-generation layout (c) tracks the engineered legacy balance most closely.}
+\caption{Station workload on the industrial site for the three deployable layouts, each against the original placement, with (a) the clustering heuristic, (b) the set-variable MILP and (c) the station-indexed column generation: lines per station (left) and relative change in utilisation (right). No station exceeds the site's $+10\%$ tolerance in any of the three. The column-generation layout (c) tracks the engineered legacy balance most closely. (Stations S25 and S26 are not considered on the relative change utilization graph because they would show 0\% due to the fact that they are static as mentioned here \ref{sec:industrial}.)}
 \label{fig:workload}
 \end{figure}
 
@@ -823,6 +824,14 @@ Algorithm~\ref{alg:heuristic} states the five stages of Figure~\ref{fig:heuristi
   \EndWhile
   \State $\mathcal{C}\gets\mathcal{C}\cup\{c\}$
 \EndWhile
+
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\addtocounter{algorithm}{-1}
+\caption{Greedy product clustering and station assignment (continued)}
+\begin{algorithmic}[1]
 \Statex
 \State \textbf{Step 3: post-processing}
 \ForAll{products $p$ with $\mathrm{freq}(p)<\phi$}
@@ -831,13 +840,6 @@ Algorithm~\ref{alg:heuristic} states the five stages of Figure~\ref{fig:heuristi
   \EndIf
 \EndFor
 \State group any still-unassigned products into new communities of size at most $\beta$
-\end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}[H]
-\addtocounter{algorithm}{-1}
-\caption{Greedy product clustering and station assignment (continued)}
-\begin{algorithmic}[1]
 \Statex
 \State \textbf{Step 4: station assignment}
 \State call $s$ \emph{admissible} for a block $c$ when $|s|+|c|\le\zeta_s$ and $\mathrm{load}(s)+\sum_{p\in c}L_p/V_s\le T_s$

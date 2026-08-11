@@ -74,7 +74,7 @@ Antoine Jouglet\textsuperscript{a}}
 % Unstructured abstract (<= 200 words, single paragraph)
 % ---------------------------------------------------------------------
 \begin{abstract}
-Automated pick-and-pass warehouses are limited by mechanical station stops, not by picker travel. We study the correlated storage location assignment problem for these systems, replacing the distance objective with minimisation of station visits per order under hard capacity and workload limits. The visit count changes only when an order gains or loses a station, so this piecewise constant objective stalls branch-and-bound and metaheuristics at scale. Three methods serve distinct roles: a set-variable MILP for strategic re-slotting, a clustering heuristic for fast feasible layouts, and a set-partitioning column-generation metaheuristic that prices bundles from one persistent subproblem, removes station symmetry where stations are interchangeable, and maintains a valid lower bound. Across 29 instances of 50 to 2,000 products, the MILP formulations lead at the smaller sizes and the column generation at the largest. On a real warehouse of 21,874 products the set-variable MILP removes 13.7\% of station visits within every station limit, while the binary form, given the same engine and budget, carries 7.8\% more. The column generation removes about 6\%, less than half as much, but stays closest to the balance the site already runs. A bounded reassignment extension maps the gain against the number of products relocated.
+Automated pick-and-pass warehouses are limited by mechanical station stops, not by picker travel. We study the correlated storage location assignment problem for these systems, replacing the distance objective with minimisation of station visits per order under hard capacity and workload limits. The visit count changes only when an order gains or loses a station, so this piecewise constant objective stalls branch-and-bound and metaheuristics at scale. Three methods serve distinct roles: a set-variable MILP for strategic re-slotting, a clustering heuristic whose community bound we index on station capacity rather than catalogue size, and a set-partitioning column-generation metaheuristic that prices bundles from one persistent subproblem, removes station symmetry where stations are interchangeable, and maintains a valid lower bound. Across 29 instances of 50 to 2,000 products the MILP formulations lead at the smaller sizes, while at 2,000 both the column generation and the heuristic return fewer visits than the reference, the heuristic in two minutes against twenty. On a real warehouse of 21,874 products the set-variable MILP removes 13.7\% of station visits within every station limit, while the binary form, given the same engine and budget, carries 7.8\% more. The column generation removes about 6\%, less than half as much, but stays closest to the balance the site already runs. A bounded reassignment extension maps the gain against the number of products relocated.
 \end{abstract}
 
 \begin{keywords}
@@ -294,23 +294,27 @@ where the objective \eqref{eq:setobj} counts, for each order, the stations holdi
 % =====================================================================
 \section{Solution methods}\label{sec:methods}
 % =====================================================================
-Each method answers a different operational question: the two compact formulations of Sections~\ref{sec:model} and~\ref{sec:setvar} target strategic re-slotting and are compared against each other to isolate the effect of the decision representation, the clustering heuristic returns a feasible layout in minutes, and the set-partitioning column generation adds a valid bound. The GA and SA-C baselines of Section~\ref{sec:baselines} provide the comparison.
+Each method answers a different operational question: the two compact formulations of Sections~\ref{sec:model} and~\ref{sec:setvar} target strategic re-slotting and are compared against each other to isolate the effect of the decision representation, the clustering heuristic returns a feasible layout in minutes and, at the largest catalogue we test, one that also beats the reference, and the set-partitioning column generation adds a valid bound. The GA and SA-C baselines of Section~\ref{sec:baselines} provide the comparison.
 
 \subsection{Greedy clustering heuristic}\label{sec:heuristic}
-For catalogues of this size we use a fast heuristic that groups strongly co-ordered products into communities and places them on stations under both capacity constraints. It extends the agglomerative idea of \citet{chuang2016} but builds disjoint communities by greedy graph connectivity \citep{west2001introduction} and indexes its filters on catalogue volume, so a co-occurrence count signalling affinity in a 50-product instance is not read as noise in a 20,000-product one. With $N=|P|$, three thresholds filter the correlation graph and a fourth bounds the communities built on it.
+For catalogues of this size we use a fast heuristic that groups strongly co-ordered products into communities and places them on stations under both capacity constraints. It extends the agglomerative idea of \citet{chuang2016} but builds disjoint communities by greedy graph connectivity \citep{west2001introduction}. Three thresholds filter the correlation graph and a fourth bounds the communities built on it. The three filters are indexed on catalogue volume $N=|P|$, so a co-occurrence count signalling affinity in a 50-product instance is not read as noise in a 20,000-product one. The fourth is indexed on the station slot capacity $\zeta$ instead, for the reason Appendix~\ref{app:capsweep} establishes: a community is a block of products that has to fit inside one station, so what bounds its useful size is the room a station has, not the length of the catalogue.
 \begin{itemize}
 \item $\phi=\max(2,\lfloor N/100\rfloor)$, the frequency floor. A product enters the graph only if it appears in at least $\phi$ orders.
 \item $\gamma=\max(2,\lfloor N/50\rfloor)$, the co-occurrence floor. A pair enters only if its two products are ordered together at least $\gamma$ times.
 \item $r=0.1$, the kept-edge ratio. A pair survives only if its co-occurrence reaches a tenth of the more frequent endpoint's own demand, which drops edges that are frequent only because one endpoint is ubiquitous.
-\item $\beta=\max(5,\min(15,\lfloor N/20\rfloor))$, the community size bound. No community grows past $\beta$ products.
+\item $\beta=\max\!\left(5,\big\lfloor 0.4\,\zeta+\tfrac12 \big\rfloor\right)$, the community size bound, where $\zeta=|P|/|S|$ is the slot capacity of a station. No community grows past $\beta$ products.
 \end{itemize}
-Appendix~\ref{app:sensitivity} rescales the four volume-indexed thresholds over 667 feasible layout evaluations: the two filtering floors are inert at these demand densities, only the community bound has a consistent effect, and no setting moves the objective by more than 1.8\%. Because those effects are negligible and every setting returned a feasible layout, we keep all four at their scaled defaults and tune none per instance.
+Appendix~\ref{app:capsweep} derives the coefficient $0.4$ on a separate family of instances that crosses two catalogue sizes with four station counts, so that the same $\zeta$ occurs at both sizes. The visit-minimising bound tracks $\zeta$ and not $N$ there, and the value carries over unchanged to the benchmark of Section~\ref{sec:experiments}, which is a different family and was not used to choose it.
+
+Appendix~\ref{app:sensitivity} then rescales all four thresholds around these defaults: the two filtering floors are inert, the kept-edge ratio separates from the default only when doubled, and the community bound costs visits in \emph{both} directions, so the defaults sit in a flat basin rather than on a slope. That is the evidence for keeping them and tuning none per instance.
+
+The bound is stated for a warehouse of interchangeable stations, where $\zeta$ is a single number. Where stations differ it is not, and Section~\ref{sec:industrial} reports what that costs.
 
 Figure~\ref{fig:heuristic_flow} gives the five stages. At placement, a community can go to any station with room for it whole under the slot capacity $\zeta_s$ and the workload cap~\eqref{eq:wl}; among those it goes to the station already holding the largest share of its products in the incumbent layout, a quantity Algorithm~\ref{alg:heuristic} calls the station's historical preference, with ties settled towards the lower load ratio $\mathrm{load}(s)/T_s$, where $\mathrm{load}(s)=\sum_{p\in s}L_p/V_s$. The incumbent is the live layout on the industrial case and, on the synthetic instances, the longest-processing-time (LPT) start of Section~\ref{sec:baselines}. A community fitting nowhere whole is split; Appendix~\ref{app:heuristic} states the procedure in full.
 
 The repair stage exchanges products rather than relocating them because there is nowhere to relocate to: the benchmark instances give $\sum_s \zeta_s = |P|$ exactly, and on the industrial site each station's capacity is the number of products it already holds, so no station has a free slot once placement ends. An exchange leaves both product counts unchanged, so it moves only the workload.
 
-The heuristic is a single-pass, deterministic constructive procedure with no objective-improving local search phase, so it executes in seconds on the synthetic benchmarks and within minutes on the industrial catalogue. 
+The heuristic is a single-pass, deterministic constructive procedure with no objective-improving local search phase. One pass takes 4 to 119 seconds across the synthetic benchmarks, rising with $\beta$ because larger communities cost more to assemble, and 89 seconds on the industrial catalogue.
 
 \begin{figure}[H]
 \centering
@@ -489,7 +493,7 @@ Synthetic instances of $N \in \{50, 500, 1000, 2000\}$ products are adapted from
 \subsection{Protocol and metrics}
 A single instance cannot tell whether a ranking reflects method quality or one favourable draw of the generator. We therefore evaluate every method over 29 independently generated instances: twelve at 50 SKUs, ten at 500, four at 1,000 and three at 2,000, from the same generator with distinct seeds. The count falls with size because a single cell at 2,000 SKUs costs more solver time than the whole 50-SKU block. A method counts as feasible only when no instance breaches the workload cap. 
 
-The set-variable MILP is the per-instance reference, so each gap is measured against its solution on the same instance. It is the reference because it is the form we deploy and the one the industrial recommendation rests on, not because it is always the best: at 2,000 SKUs the column generation beats it, which a negative gap records. Across all 29 instances every method held both the slot capacity and the workload cap, so the comparison below is one of quality and time alone, measured against that per-instance reference layout rather than against a proven optimum.
+The set-variable MILP is the per-instance reference, so each gap is measured against its solution on the same instance. It is the reference because it is the form we deploy and the one the industrial recommendation rests on, not because it is always the best: at 2,000 SKUs both the column generation and the clustering heuristic beat it, which a negative gap records. Across all 29 instances every method held both the slot capacity and the workload cap, so the comparison below is one of quality and time alone, measured against that per-instance reference layout rather than against a proven optimum.
 
 All optimising methods run under a common per-size cap: 120, 300, 600, and 1,200 seconds for the four scales. All rankings are conditional on this shared cap and on the common computational setup, which Appendix~\ref{app:baselines} states in full.%The column generation returns before the cap at the two smaller sizes, because each of its four stages is allotted a fraction of the budget (Appendix~\ref{app:baselines}) and the later stages finish inside theirs, and it uses the cap in full at 1,000 and 2,000. The clustering heuristic takes no time parameter and the LPT start is immediate, so both finish well inside the cap at every size.
 
@@ -523,7 +527,7 @@ Set-variable MILP & 76{,}330 & [68{,}286, 84{,}373] & (ref) & 300 & 0\% \\
 \rowcolor{green!20}
 Binary MILP & \textbf{75{,}976} & [68{,}054, 83{,}897] & $-0.4$\% & 300 & 0\% \\
 CG & 76{,}681 & [68{,}658, 84{,}704] & $+0.5$\% & 256 & 0\% \\
-Heuristic & 78{,}804 & [70{,}526, 87{,}082] & $+3.2$\% & 20 & 0\% \\
+Heuristic & 78{,}197 & [70{,}083, 86{,}311] & $+2.5$\% & 25 & 0\% \\
 GA & 85{,}363 & [76{,}202, 94{,}523] & $+11.8$\% & 300 & 0\% \\
 SA-C & 88{,}689 & [79{,}245, 98{,}132] & $+16.2$\% & 300 & 0\% \\
 LPT start & 90{,}177 & [80{,}419, 99{,}936] & $+18.1$\% & $<0.1$ & 0\% \\
@@ -533,7 +537,7 @@ LPT start & 90{,}177 & [80{,}419, 99{,}936] & $+18.1$\% & $<0.1$ & 0\% \\
 Set-variable MILP & \textbf{192{,}276} & [150{,}483, 234{,}068] & (ref) & 600 & 0\% \\
 Binary MILP & 192{,}939 & [150{,}350, 235{,}528] & $+0.3$\% & 600 & 0\% \\
 CG & 192{,}452 & [149{,}959, 234{,}945] & $+0.1$\% & 600 & 0\% \\
-Heuristic & 197{,}146 & [153{,}829, 240{,}463] & $+2.5$\% & 17 & 0\% \\
+Heuristic & 194{,}883 & [153{,}380, 236{,}386] & $+1.4$\% & 54 & 0\% \\
 GA & 235{,}208 & [186{,}297, 284{,}118] & $+22.4$\% & 600 & 0\% \\
 SA-C & 240{,}693 & [191{,}894, 289{,}492] & $+25.4$\% & 600 & 0\% \\
 LPT start & 245{,}228 & [195{,}489, 294{,}967] & $+27.7$\% & $<0.1$ & 0\% \\
@@ -543,7 +547,7 @@ Set-variable MILP & 484{,}535 & [412{,}372, 571{,}164] & (ref) & 1{,}200 & 0\% \
 Binary MILP & 487{,}357 & [412{,}969, 576{,}006] & $+0.5$\% & 1{,}200 & 0\% \\
 \rowcolor{green!20}
 CG & \textbf{476{,}692} & [406{,}962, 560{,}599] & $-1.6$\% & 1{,}200 & 0\% \\
-Heuristic & 484{,}398 & [415{,}517, 562{,}986] & $+0.1$\% & 38 & 0\% \\
+Heuristic & 477{,}626 & [408{,}052, 555{,}991] & $-1.3$\% & 119 & 0\% \\
 GA & 608{,}867 & [522{,}402, 732{,}053] & $+25.5$\% & 1{,}200 & 0\% \\
 SA-C & 615{,}490 & [528{,}303, 741{,}011] & $+26.9$\% & 1{,}200 & 0\% \\
 LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+28.0$\% & $<0.1$ & 0\% \\
@@ -578,15 +582,20 @@ GA and SA-C vs.\ reference & 50      & 12 & 0  & 0.0005 & 0.0005 \\
                            & 500     & 10 & 0  & 0.0020 & 0.0020 \\
                            & 1{,}000 & 4  & 0  & 0.125  & 0.125  \\
                            & 2{,}000 & 3  & 0  & 0.25   & 0.25   \\
+\midrule
+Heuristic vs.\ reference   & 50      & 12 & 0  & 0.0005 & 0.0005 \\
+                           & 500     & 10 & 0  & 0.0020 & 0.0020 \\
+                           & 1{,}000 & 4  & 0  & 0.125  & 0.125  \\
+                           & 2{,}000 & 3  & \textbf{3}  & 0.25   & 0.25   \\
 \bottomrule
 \end{tabular*}}
-\tabnote{``Wins'' counts instances on which the first-named method returns fewer visits. ``Min.\ $p$'' is the smallest two-sided $p$ attainable at that sample size, $2^{1-n}$; where $p$ equals it the test is saturated, not failed, and the win count carries the evidence. The GA and SA-C rows coincide because neither wins a single paired instance.}
+\tabnote{``Wins'' counts instances on which the first-named method returns fewer visits. ``Min.\ $p$'' is the smallest two-sided $p$ attainable at that sample size, $2^{1-n}$; where $p$ equals it the test is saturated, not failed, and the win count carries the evidence. The GA, SA-C and Heuristic rows coincide at 50, 500 and 1{,}000 SKUs because none of the three wins a single paired instance there, so the test is determined by the sample size alone. The Heuristic separates from them only at 2{,}000 SKUs, where it wins all three.}
 \label{tab:tests}
 \end{table}
 
 \textbf{The tests saturate at the two larger sizes.} The resolution of the test is bounded by the number of instances available, and on this benchmark that bound is binding: at 1{,}000 and 2{,}000 SKUs no result, however unanimous, can reach the conventional 0.05 threshold. At those two sizes we therefore treat the win count as the primary evidence.
 
-\textbf{The separations are reported without correction for multiplicity.} Of the five separations below 0.05 that they show, the three at $p \le 0.0020$ survive a Bonferroni, Holm or Benjamini--Hochberg correction over the fourteen tests reported; the two at $p = 0.0273$ and $p = 0.049$ do not. A small $p$ indicates that the methods differ; a large $p$ indicates only that these instances are insufficient to separate them, which is a weaker statement than equivalence. Effect size and consistency are reported separately: the Gap column of Table~\ref{tab:reliability} quantifies the magnitude of a difference, and the test quantifies how reliably it recurs.
+\textbf{The separations are reported without correction for multiplicity.} Of the seven separations below 0.05 that they show, the five at $p \le 0.0020$ survive a Bonferroni, Holm or Benjamini--Hochberg correction over the eighteen tests reported; the two at $p = 0.0273$ and $p = 0.049$ do not. A small $p$ indicates that the methods differ; a large $p$ indicates only that these instances are insufficient to separate them, which is a weaker statement than equivalence. Effect size and consistency are reported separately: the Gap column of Table~\ref{tab:reliability} quantifies the magnitude of a difference, and the test quantifies how reliably it recurs.
 
 \textbf{The two model formulations are not separable on this family.} Given the same solver and the same cap, the binary MILP of Section~\ref{sec:model} and the set-variable MILP of Section~\ref{sec:setvar} land within 0.6\% of each other at every scale (Gap column, Table~\ref{tab:reliability}). The paired test separates them at 500 SKUs only, and pooled over all 29 instances it splits them almost evenly (Table~\ref{tab:tests}). The work the set encoding saves is the repair work of holding every product at exactly one station without writing constraint~\eqref{eq:assign}, and that work scales with $|P| \times |S|$. At a few thousand products it is too small to see. It becomes visible at industrial scale, where the same model under the same cap costs 7.8\% more visits in binary MILP form (Section~\ref{sec:industrial}).
 
@@ -595,15 +604,15 @@ GA and SA-C vs.\ reference & 50      & 12 & 0  & 0.0005 & 0.0005 \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.86\linewidth]{Images_CSLAP/gap_vs_size_crossover.png}
-\caption{Mean gap to the set-variable MILP reference against catalogue size. The reference is the horizontal line at zero, so a curve below it uses fewer station visits. The column generation crosses the reference between 1,000 and 2,000 SKUs; the clustering heuristic closes most of its gap over the same range without crossing.}
+\caption{Mean gap to the set-variable MILP reference against catalogue size. The reference is the horizontal line at zero, so a curve below it uses fewer station visits. Both the column generation and the clustering heuristic cross the reference between 1,000 and 2,000 SKUs, by $1.6\%$ and $1.3\%$; the binary MILP does not cross and widens its gap over the same range.}
 \label{fig:crossover}
 \end{figure}
 
-\textbf{The two ways of pooling disagree, and the disagreement is the crossover.} Averaging the per-instance percentage gaps treats every instance as one vote and puts the column generation 0.20\% behind; summing visits across instances lets the large ones count for more and puts it 0.61\% ahead. The disagreement is the crossover itself: the column generation loses on the many small instances and wins on the few large ones. Neither pooled figure should determine the choice of method; the catalogue size at which the ranking reverses should.
+\textbf{The two ways of pooling disagree, and the disagreement is the crossover.} Averaging the per-instance percentage gaps treats every instance as one vote and puts the column generation 0.20\% behind; summing visits across instances lets the large ones count for more and puts it 0.61\% ahead. The disagreement is the crossing itself: the column generation loses on the many small instances and wins on the few large ones. The heuristic behaves the same way and crosses in the same interval. Neither pooled figure should determine the choice of method; the catalogue size at which the ranking reverses should.
 
 \textbf{Both literature baselines trail, and the objective accounts for it.} Their gap to the reference widens with size, from a few percent at 50 SKUs to more than a quarter at 2,000 (Table~\ref{tab:reliability}), and they lose on every instance at all four sizes (Table~\ref{tab:tests}). We attribute this to the objective rather than to their tuning, though the two are not isolated experimentally here. The surrogate's dispersion term is directionally aligned with the visit objective, so it does not steer the search away from the metric on which the baselines are judged. What weakens with scale is the conversion rate between the two: the surrogate keeps improving, but a decreasing share of the exchanges it rewards changes an order's station set, and only those exchanges reduce visits. Swapping two products changes the visit count only when the swap removes an order's last product from a station or carries its first product to a new one, and most swaps do neither, so each generation or temperature level returns less as the catalogue grows. The LPT anchor is the opposite case: it ignores correlation altogether, so it spreads workload most evenly and pays the largest visit penalty at every scale.
 
-\textbf{The heuristic trades quality for time, and the terms of that trade improve with scale.} It is the only constructive method in the table, and its gap to the reference narrows as the catalogue grows until the two are level at 2,000 SKUs. The reason is the unit of work: the heuristic commits a whole community to a station in one step, so its effort per product barely changes with scale, whereas a search that moves one product at a time covers a shrinking share of the possibilities under a fixed cap. At 50 SKUs the search-based methods cover the space well and the heuristic is the weakest of them; from 500 SKUs upward it overtakes both literature baselines.
+\textbf{The heuristic's trade of quality for time does not merely improve with scale; it reverses.} Its gap to the reference falls from $+7.6\%$ at 50 SKUs to $+1.4\%$ at 1,000 and to $-1.3\%$ at 2,000, where it returns fewer visits than the reference on all three instances in 119 seconds against the reference's 1,200. The reason is the unit of work, and it is the same mechanism the column generation exploits: the heuristic commits a whole community to a station in one step, so its effort per product barely changes with scale, whereas a search that moves one product at a time covers a shrinking share of the possibilities under a fixed cap. Indexing the community bound on the station's slot capacity rather than on the catalogue (Section~\ref{sec:heuristic}) makes that unit grow with the station, which is what carries the effect to the largest size. At 50 SKUs the search-based methods cover the space well and the heuristic is the weakest of them; from 500 SKUs upward it overtakes both literature baselines. Three instances cannot resolve the crossing statistically, and Table~\ref{tab:tests} reports it as a unanimous split rather than a significant one.
 
 \textbf{These readings are bounded by the instance counts at the two larger sizes.} The intervals at 1,000 and 2,000 SKUs rest on four and three instances, so at 2,000 we report the observed range rather than a confidence interval; a unanimous split across three instances is weaker evidence than a tight interval across many, though it agrees with the ordering of the means. Where the column generation returns before its cap it does so at a local optimum of its final descent, not because it has priced out its master; at the two larger sizes it uses the cap in full, so a longer run could improve those rows. The industrial results of Section~\ref{sec:industrial} rest on the single instance the site provides.
 
@@ -627,16 +636,18 @@ Method & Visits & Reduction (\%) & Gap vs.\ ref (\%) & Time (s) & Max WL & Util.
 Set-variable MILP & \textcolor{green!60!black}{\textbf{917{,}465}} & \textcolor{green!60!black}{\textbf{13.65}} & 0.00 & 36{,}000 & 10{,}467 & 4.48 & None \\
 Binary MILP & \textcolor{orange!90!black}{\textbf{989{,}320}} & \textcolor{orange!90!black}{\textbf{6.89}} & 7.83 & 36{,}000 & 10{,}356 & \textcolor{orange!90!black}{\textbf{3.44}} & None \\
 CG (station-indexed) & 1{,}000{,}844 & 5.80 & 9.09 & 36{,}000 & 10{,}074 & \textcolor{green!60!black}{\textbf{2.41}} & None \\
-Heuristic & 1{,}050{,}514 & 1.13 & 14.50 & \cellcolor{blue!12}\textbf{109} & 10{,}913 & 26.87 & None \\
+Heuristic & 1{,}044{,}932 & 1.65 & 13.89 & \cellcolor{blue!12}\textbf{647}\textsuperscript{$\dagger$} & 10{,}911 & 27.90 & None \\
 GA & 1{,}046{,}071 & 1.55 & 14.02 & 19{,}358 & \textcolor{red}{\textbf{10{,}972}} & 18.52 & \textcolor{red}{\textbf{WL}} \\
 SA-C & 1{,}058{,}563 & 0.37 & 15.38 & 36{,}000 & 10{,}811 & 12.14 & \textcolor{red}{\textbf{WL}} \\
 \bottomrule
 \end{tabular*}}
-\tabnote{Reduction is against the original layout, Gap vs.\ ref against the set-variable MILP. Util.\ SD is the standard deviation of each station's realised load against its own legacy load (\%). Max WL is the realised busiest-station workload $\sum_{p} L_p/V_s$, in the units of \eqref{eq:wl}. The site tolerates up to 10\% above each station's legacy load; the busiest legacy station carries 9,923 lines, so its bound is 10,915. The flag marks a method whose realised load exceeds its own bound at one or more stations; the check is per station, so a breach can occur away from the busiest station, and a Max WL below 10,915 does not by itself certify feasibility. Times are reported to the nearest cap where a method exhausted its budget.}
+\tabnote{Reduction is against the original layout, Gap vs.\ ref against the set-variable MILP. Util.\ SD is the standard deviation of each station's realised load against its own legacy load (\%). Max WL is the realised busiest-station workload $\sum_{p} L_p/V_s$, in the units of \eqref{eq:wl}. The site tolerates up to 10\% above each station's legacy load; the busiest legacy station carries 9,923 lines, so its bound is 10,915. The flag marks a method whose realised load exceeds its own bound at one or more stations; the check is per station, so a breach can occur away from the busiest station, and a Max WL below 10,915 does not by itself certify feasibility. Times are reported to the nearest cap where a method exhausted its budget. \textsuperscript{$\dagger$}The heuristic's entry is the whole selection search of Section~\ref{sec:industrial}, seven layouts at 89 seconds each; the layout in this row is one of those seven. The colour marks it as the fastest method in the table, which it remains by a factor of thirty.}
 \label{tab:industrial}
 \end{table}
 
-Table~\ref{tab:industrial} reports the outcome on the operating site, where the methods separate on feasibility before they separate on visits. The heuristic occupies the fast end of that separation: it holds every station inside the site's tolerance (Figure~\ref{fig:workload}a) and still improves on the live layout. That improvement is the smallest of the feasible reductions, but it is the only one available at that running time, since the two metaheuristics take hours and still leave stations over their limits. It achieves that speed at a cost the visit column does not show: its utilisation dispersion of 26.87 is the highest in the table, and the individual shifts span $[-81.7\%, +10.0\%]$, so while it respects every cap it fills some stations to the edge of the tolerance and leaves others far below their legacy load.
+Table~\ref{tab:industrial} reports the outcome on the operating site, where the methods separate on feasibility before they separate on visits. The heuristic occupies the fast end of that separation: it holds every station inside the site's tolerance (Figure~\ref{fig:workload}a) and still improves on the live layout. That improvement is the smallest of the feasible reductions, but it is the only one available at that running time, since the two metaheuristics take hours and still leave stations over their limits. It achieves that speed at a cost the visit column does not show: its utilisation dispersion of 27.90 is the highest in the table, and the individual shifts span $[-83.8\%, +10.0\%]$, so while it respects every cap it fills some stations to the edge of the tolerance and leaves others far below their legacy load.
+
+\textbf{The community bound does not transfer to this site, and the reason is instructive.} Section~\ref{sec:heuristic} sets $\beta$ from a single slot capacity, which presumes interchangeable stations. Here the stations hold between 8 and 2{,}575 movable products, and the rule applied to their mean returns $\beta=266$, which no repair can make feasible: a community sized for the average station cannot fit the small ones, so placement overloads them and the repair spends itself undoing placement rather than balancing it. Nor is the failure a matter of overshooting. Across the nineteen values of $\beta$ we evaluated, feasibility is not an interval: $15$, $33$, $47$, $350$ and $450$ certify, while the fourteen between and beyond them, from $63$ to $399$, do not. We therefore select $\beta$ here by evaluating a grid anchored on the mean capacity, $\{33,67,133,200,266,333,399\}$, and keeping the feasible layout with fewest visits. Exactly one of the seven is feasible, $\beta=33$, and it gives the row above: seven layouts at 89 seconds each, 647 seconds in all. Two better feasible settings exist, $\beta=350$ and $\beta=450$ at $1{,}030{,}978$ and $1{,}036{,}764$ visits, but no grid we could have specified in advance selects them, and we report them as a limitation rather than a result. On a warehouse of interchangeable stations none of this arises: the rule's $\beta$ is feasible on all 29 benchmark instances and no search is needed.
 
 
 The set-variable MILP takes the opposite position, removing 13.7\% of the station visits while every station's utilisation shift stays within $[-5.9\%, +9.6\%]$, inside the site's 10\% slack (Figure~\ref{fig:workload}b), so the deepest reduction we obtain is also deployable. No method here returns a certified optimum, so this layout is the best found rather than a proven one.
@@ -738,7 +749,7 @@ Track station visits as a slotting indicator. Each diversion generates mechanica
 
 Read the labour effect as a planning figure, not a saving. The freed station dwell scales with a site's own per-visit cycle time (Section~\ref{sec:industrial}), and the projection assumes that time is fixed and no queue forms, so a site should substitute its measured cycle time and commission a discrete-event study before treating the figure as realised.
 
-Match the tool to the decision, and to the warehouse. Where stations differ in geometry and speed, as Company~A's do, the set-variable MILP gives the best layout we obtain within capacity; where they are interchangeable, the choice shifts with catalogue size and Section~\ref{sec:reliability} locates the crossover. Where the priority is minimal disturbance to an engineered balance, choose the column generation, which held the workload limit in every experiment. Where a layout is needed quickly, or often, only the clustering heuristic is applicable, and the quality it gives up narrows as the catalogue grows; it also disturbs the existing distribution of work the most, so a site adopting it should check station-level loads against its own operational tolerance rather than the cap alone.
+Match the tool to the decision, and to the warehouse. Where stations differ in geometry and speed, as Company~A's do, the set-variable MILP gives the best layout we obtain within capacity; where they are interchangeable, the choice shifts with catalogue size and Section~\ref{sec:reliability} locates the crossings. Where the priority is minimal disturbance to an engineered balance, choose the column generation, which held the workload limit in every experiment. The clustering heuristic is the choice where a layout is needed quickly or often, and on a large catalogue of interchangeable stations it is no longer only that: at 2,000 SKUs it returns fewer visits than either model formulation in two minutes rather than twenty. Two conditions attach to that. It disturbs the existing distribution of work the most, so a site adopting it should check station-level loads against its own operational tolerance and not against the cap alone; and its community bound has to be set from the station's slot capacity, which presumes stations that are alike. Where they are not, Section~\ref{sec:industrial} shows the bound has to be searched for rather than computed, and the gain shrinks accordingly.
 
 Improve continuously without a shutdown. The bounded-reassignment model lets a site move only as many products as its workforce can handle in one cycle, and every point on the curve of Table~\ref{tab:reassign} holds all stations within capacity and workload. Later waves should return more per relocated product than the first, since consolidation is realised in whole groups; we do not measure a full sequence.
 
@@ -762,7 +773,7 @@ We posed the correlated storage location assignment problem for automated pick-a
 
 Two routes clear that barrier. A set-variable MILP produces feasible layouts that beat the literature baselines by a margin widening with size, and lowers station visits on a real 21,874-product warehouse by 13.7\% while keeping every station within capacity; the binary form of the same model carries 7.8\% more visits on that catalogue, so the reformulation earns its place at scale. A set-partitioning column generation, driven as a price-and-complete metaheuristic, matches that reference at 1,000 products and leads by 1.6\% at 2,000. It never breaches a workload cap, carries a valid but loose lower bound, and on the industrial site improves the live layout by 5.8\% while disturbing the engineered balance least. 
 
-Where neither budget is available, the clustering heuristic returns a feasible layout on the industrial catalogue in under two minutes, at the cost of the largest departure from the site's existing distribution of work. A bounded-reassignment extension maps the trade-off between re-slotting effort and benefit, making the gains deployable on an active site without a shutdown. What these layouts are worth in throughput rather than stops is the question we leave open, and answering it calls for the queueing model Section~\ref{sec:perspectives} sets out.
+The clustering heuristic is not only the fallback where neither budget is available. Indexing its community bound on the slot capacity of a station rather than on the length of the catalogue, a choice we justify on a family of instances built to separate the two, moves it from level with the set-variable reference at 2,000 products to 1.3\% below it, reached in two minutes against twenty. That rule presumes interchangeable stations. On the industrial site, whose stations hold between 8 and 2,575 products, it does not hold: the bound has to be selected by search, only one of seven candidates is feasible, and the resulting layout improves the live one by 1.7\% at the cost of the largest departure from the site's existing distribution of work. A bounded-reassignment extension maps the trade-off between re-slotting effort and benefit, making the gains deployable on an active site without a shutdown. What these layouts are worth in throughput rather than stops is the question we leave open, and answering it calls for the queueing model Section~\ref{sec:perspectives} sets out.
 
 % ---------------------------------------------------------------------
 % BACK MATTER (IJPR order)
@@ -803,7 +814,7 @@ Algorithm~\ref{alg:heuristic} states the five stages of Figure~\ref{fig:heuristi
 \caption{Greedy product clustering and station assignment}
 \label{alg:heuristic}
 \begin{algorithmic}[1]
-\State \textbf{Input:} products $P$, orders $O$, stations $S$; thresholds from $N=|P|$: floor $\phi=\max(2,\lfloor N/100\rfloor)$, minimum co-occurrence $\gamma=\max(2,\lfloor N/50\rfloor)$, kept-edge ratio $r=0.1$, size bound $\beta=\max(5,\min(15,\lfloor N/20\rfloor))$.
+\State \textbf{Input:} products $P$, orders $O$, stations $S$; filters from $N=|P|$: floor $\phi=\max(2,\lfloor N/100\rfloor)$, minimum co-occurrence $\gamma=\max(2,\lfloor N/50\rfloor)$, kept-edge ratio $r=0.1$; size bound from the slot capacity $\zeta=|P|/|S|$: $\beta=\max(5,\lfloor 0.4\,\zeta+\tfrac12\rfloor)$.
 \Statex
 \State \textbf{Step 1: preprocessing and pair generation}
 \State $P^{\ast}\gets\{\,p\in P:\mathrm{freq}(p)\ge\phi\,\}$ %\Comment{keep frequent products}
@@ -868,11 +879,39 @@ Algorithm~\ref{alg:heuristic} states the five stages of Figure~\ref{fig:heuristi
 \section{Incremental evaluation of the swap descent}\label{app:swapeval}
 The descent of Section~\ref{sec:cgdrive} keeps a support-count matrix $\mathrm{cnt}[i][u]$, the number of products of station $i$ contained in support $u$; station $i$ visits $u$ exactly when $\mathrm{cnt}[i][u]>0$. Removing a product frees the supports whose count falls to zero and inserting it costs those whose count rises from zero. Only supports containing the two moved products can change, so a swap is scored in time proportional to their support degrees rather than by re-scanning the orders, and the counts are updated the same way once a swap is accepted.
 
+\section{What the community bound scales with}\label{app:capsweep}
+The three filters of Section~\ref{sec:heuristic} are indexed on the catalogue and the community bound on the station. That asymmetry needs evidence, because the benchmark of Section~\ref{sec:experiments} cannot supply it: its generator ties the station count to the catalogue, so $\zeta=100$ at every size from 500 SKUs upward and the ratio $\beta/\zeta$ is constant across the whole family. Catalogue size and slot capacity are confounded there, and no result measured on it can separate them.
+
+We therefore built a separate family that breaks the confound. Two catalogue sizes, $N\in\{500,1000\}$, are crossed with four station counts chosen so that the same slot capacities $\zeta\in\{20,25,50,100\}$ occur at both sizes; ten instances per cell give 80 in all, on seeds disjoint from those of Section~\ref{sec:experiments}. Station labels are drawn from a separate random stream, so the order structure is identical across the cells of a given seed and only the geometry changes. Sweeping $\beta$ from 2 to $\zeta$ in each cell gives 980 runs, every one of which returned a feasible layout. Table~\ref{tab:capsweep} reports the minimising bound in each cell.
+
+\begin{table}[H]
+\centering
+\tbl{Visit-minimising community bound $\beta^\ast$ across warehouse geometries, on 80 instances disjoint from the benchmark. The same $\zeta$ appears at both catalogue sizes.}
+{\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}rrrrrr@{}}
+\toprule
+$\zeta$ & $N$ & $|S|$ & $\beta^\ast$ & $\beta^\ast/\zeta$ & $\Delta$ visits vs.\ $\beta=15$ \\
+\midrule
+20  & 500   & 25 & 12 & 0.60 & $-0.72$\% \\
+20  & 1{,}000 & 50 & 12 & 0.60 & $-0.45$\% \\
+25  & 500   & 20 & 18 & 0.72 & $+0.43$\% \\
+25  & 1{,}000 & 40 & 10 & 0.40 & $+0.52$\% \\
+50  & 500   & 10 & 30 & 0.60 & $-0.87$\% \\
+50  & 1{,}000 & 20 & 30 & 0.60 & $-0.84$\%\textsuperscript{$\ast$} \\
+100 & 500   & 5  & 40 & 0.40 & $-1.01$\%\textsuperscript{$\ast$} \\
+100 & 1{,}000 & 10 & 40 & 0.40 & $-1.06$\%\textsuperscript{$\ast$} \\
+\bottomrule
+\end{tabular*}}
+\tabnote{$\beta^\ast$ minimises mean visits in its cell. The last column compares it with the catalogue-indexed bound of 15 that this study replaces. \textsuperscript{$\ast$}Separates from that bound at $p<0.05$ under a Holm-corrected Wilcoxon signed-rank test over the ten instances of the cell; the remaining cells are those where 15 already sits close to $\beta^\ast$.}
+\label{tab:capsweep}
+\end{table}
+
+At a fixed slot capacity, $\beta^\ast$ is the same at both catalogue sizes for $\zeta\in\{20,50,100\}$ and differs by one grid step at $\zeta=25$. At a fixed catalogue size it moves with $\zeta$ across the whole range. Over the eight cells the rank correlation between $\beta^\ast$ and $\zeta$ is $0.947$, and between $\beta^\ast$ and $N$ it is $-0.085$: the bound scales with the room a station has and is indifferent to the length of the catalogue. The minimising ratio $\beta^\ast/\zeta$ lies between $0.40$ and $0.72$ with a median of $0.60$, so the response is flat over a wide band rather than peaked. We adopt the lower end, $0.4$, because larger communities press harder on the workload constraint at placement, and Section~\ref{sec:industrial} shows what that pressure costs where stations are not interchangeable.
+
 \section{Threshold sensitivity of the clustering heuristic}\label{app:sensitivity}
 
-Table~\ref{tab:sensitivity} rescales each of the four thresholds of Section~\ref{sec:heuristic} from half to twice its nominal value, one at a time and then all four together, on the twelve 50-SKU and ten 500-SKU instances. The 1,000- and 2,000-SKU instances are omitted because four and three instances are too few for an informative interval; the ordering of the effects there agrees with what follows. Multipliers apply to the nominal value at that catalogue size, after the clamps. At 50 SKUs both frequency floors already sit on their clamp floor of 2, so only the two upward settings are distinct. Entries are paired mean changes against the nominal setting on the same instance. The procedure is deterministic: repeating the nominal setting under five hash seeds returns an identical layout on every instance, so any difference is a real threshold effect and not run-to-run variation. Reporting follows the conventions for computational experiments with heuristics \citep{barr1995designing, hooker1995testing}.
+Table~\ref{tab:sensitivity} rescales each of the four thresholds of Section~\ref{sec:heuristic} from half to twice its nominal value, one at a time and then all four together, on the twelve 50-SKU and ten 500-SKU instances. The 1,000- and 2,000-SKU instances are omitted because four and three instances are too few for an informative interval; the ordering of the effects there agrees with what follows. Multipliers apply to the effective nominal value on the instance, after the floor of 5: for the three filters that value is set by $N$ and for the community bound by $\zeta$. At 50 SKUs both frequency floors already sit on their clamp floor of 2, and the community bound sits on its floor of 5, so only the upward settings are distinct there. Entries are paired mean changes against the nominal setting on the same instance. The procedure is deterministic: repeating the nominal setting under five hash seeds returns an identical layout on every instance, so any difference is a real threshold effect and not run-to-run variation. Reporting follows the conventions for computational experiments with heuristics \citep{barr1995designing, hooker1995testing}.
 
-The two frequency floors are inert: rescaling either leaves the visit count unchanged and the surviving edge set bit-identical at every size, because neither removes a product or pair that the kept-edge ratio does not already remove. The ratio moves the edge set substantially but the objective barely, separating from the nominal setting only at $\times2$ on the 500-SKU instances. The community bound is the only threshold with a consistent effect, and it is modest. Leaving all four at their scaled defaults is therefore reasonable at any of these scales.
+The two frequency floors are inert: rescaling either leaves the visit count unchanged and the surviving edge set bit-identical at every size, because neither removes a product or pair that the kept-edge ratio does not already remove. The ratio moves the edge set substantially but the objective barely, separating from the nominal setting only at $\times2$. The community bound behaves differently, and the way it behaves is the point: moving it in \emph{either} direction costs visits. Halving it costs $0.63\%$ and doubling it $1.19\%$ at 500 SKUs, while $\times0.75$ and $\times1.5$ are indistinguishable from the nominal setting, and the same shape holds at 1,000 and 2,000 SKUs, where doubling costs $1.84\%$ and $2.27\%$. A threshold at the bottom of a basin is what a correctly indexed default looks like; a threshold on a slope is not. Under the catalogue-indexed bound this appendix previously reported, the response was monotone -- doubling the bound always saved visits -- which is the signature of a default sitting beside the optimum rather than on it. Leaving all four at their defaults is therefore supported here, not assumed.
 
 \begin{table}[H]
 \centering
@@ -884,18 +923,18 @@ Threshold setting & $\Delta$ visits, 50 SKUs & $\Delta$ visits, 500 SKUs \\
 Frequency floor $\phi$, $\times0.5$ to $\times2$\textsuperscript{a}     & $0.00$\% & $0.00$\% \\
 Co-occurrence floor $\gamma$, $\times0.5$ to $\times2$\textsuperscript{a} & $0.00$\% & $0.00$\% \\
 \midrule
-Kept-edge ratio $r$, $\times0.5$   & $-0.77$\% [$-2.13$, $+0.58$] & $-0.07$\% [$-0.34$, $+0.20$] \\
+Kept-edge ratio $r$, $\times0.5$   & $-0.77$\% [$-2.13$, $+0.58$] & $+0.16$\% [$-0.09$, $+0.41$] \\
 Kept-edge ratio $r$, $\times0.75$  & $-0.66$\% [$-1.98$, $+0.65$] & $0.00$\% \\
-Kept-edge ratio $r$, $\times1.5$   & $+0.23$\% [$-0.72$, $+1.17$] & $+0.05$\% [$-0.04$, $+0.14$] \\
-Kept-edge ratio $r$, $\times2$     & $-0.74$\% [$-2.26$, $+0.78$] & $+0.55$\% [$+0.04$, $+1.06$] \\
+Kept-edge ratio $r$, $\times1.5$   & $+0.23$\% [$-0.72$, $+1.17$] & $+0.08$\% [$-0.27$, $+0.43$] \\
+Kept-edge ratio $r$, $\times2$     & $-0.74$\% [$-2.26$, $+0.78$] & $+1.08$\% [$+0.18$, $+1.98$] \\
 \midrule
-Community bound $\beta$, $\times0.5$  & $+1.77$\% [$-0.17$, $+3.72$] & $+1.29$\% [$+0.76$, $+1.82$] \\
-Community bound $\beta$, $\times0.75$ & $+0.25$\% [$-1.19$, $+1.69$] & $+0.53$\% [$-0.01$, $+1.07$] \\
-Community bound $\beta$, $\times1.5$  & $-0.25$\% [$-2.29$, $+1.79$] & $-0.25$\% [$-0.74$, $+0.23$] \\
-Community bound $\beta$, $\times2$    & $-0.25$\% [$-1.60$, $+1.10$] & $-0.72$\% [$-1.11$, $-0.34$] \\
+Community bound $\beta$, $\times0.5$  & $+1.77$\% [$-0.17$, $+3.72$] & $+0.63$\% [$-0.07$, $+1.32$] \\
+Community bound $\beta$, $\times0.75$ & $+0.25$\% [$-1.19$, $+1.69$] & $+0.03$\% [$-0.46$, $+0.51$] \\
+Community bound $\beta$, $\times1.5$  & $-0.25$\% [$-2.29$, $+1.79$] & $-0.45$\% [$-1.20$, $+0.30$] \\
+Community bound $\beta$, $\times2$    & $-0.25$\% [$-1.60$, $+1.10$] & $+1.19$\% [$+0.25$, $+2.13$] \\
 \midrule
-All four, $\times0.5$ & $+1.15$\% [$-1.14$, $+3.43$] & $+1.43$\% [$+0.94$, $+1.92$] \\
-All four, $\times2$   & $-1.10$\% [$-2.57$, $+0.38$] & $+0.19$\% [$-0.33$, $+0.71$] \\
+All four, $\times0.5$ & $+1.15$\% [$-1.14$, $+3.43$] & $+0.59$\% [$-0.08$, $+1.27$] \\
+All four, $\times2$   & $-1.10$\% [$-2.57$, $+0.38$] & $+1.78$\% [$+1.02$, $+2.54$] \\
 \bottomrule
 \end{tabularx}}
 \tabnote{Entries are mean paired changes in station visits against the nominal setting, with 95\% confidence intervals; a positive value means more visits. Every setting returned a feasible layout on every instance. \textsuperscript{a}All four settings give bit-identical output, so the rows are collapsed into one.}

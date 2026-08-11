@@ -3,7 +3,8 @@ Rebuild Table 5 of IJPR_CSLAP_v2.tex from the 2026-07-29/30 re-run.
 
 Sources (authoritative):
   exp02a_results_rerun/exp02a_per_instance.csv   SA-C, GA, Hexaly
-  exp02a_results_repaired/heuristic_benchmark.csv Heuristic (mode=preference)
+  exp02a_results_betarule/heuristic_benchmark.csv Heuristic (mode=preference),
+                                                 beta = max(5, round(0.4*zeta))
   exp02a_results/exp02a_cg_setpart.csv           CG-SetPart, corrected budgets
   exp02a_results/exp02a_feasible_start.csv       LPT anchor (deterministic)
 
@@ -59,7 +60,7 @@ def load_visits() -> pd.DataFrame:
     # Drop this campaign's pre-repair heuristic; it is replaced below.
     runs = runs[runs["method"] != "Heuristic"]
 
-    heur = pd.read_csv(os.path.join(_ROOT, "exp02a_results_repaired",
+    heur = pd.read_csv(os.path.join(_ROOT, "exp02a_results_betarule",
                                     "heuristic_benchmark.csv"))
     heur = heur[(heur["status"] == "OK") & (heur["mode"] == "preference")]
     heur = heur[["size_n", "instance_seed", "visits", "time_s", "wl_broken",

@@ -702,6 +702,7 @@ def run_cg_setpart(
     imp_frac: float = 0.30,
     seed: int = 42,
     verbose: bool = True,
+    diag: Optional[Dict[str, object]] = None,
 ) -> Tuple[
     Optional[Dict[str, str]], Optional[int], float,
     Optional[float], Optional[float], Optional[int], Optional[int], Optional[float],
@@ -753,6 +754,12 @@ def run_cg_setpart(
     root_lp: Optional[float] = None
     converged = False
     it = n_exact = n_heur_cols = 0
+    # Diagnostics only: last pricing dual bound and why the loop stopped. These
+    # never influence the search; they exist so a run can report, per size,
+    # whether pricing converged and what z_RMP and rc_lb were when it stopped.
+    last_rc_lb: Optional[float] = None
+    last_pricing_optimal = False
+    stop_reason = "deadline"
     inc_assign: Dict[str, int] = dict(ws_assign)  # best feasible partition so far
     inc_visits: int = ws_visits
 
@@ -778,6 +785,7 @@ def run_cg_setpart(
         budget = min(max(10.0, time_limit / 10.0),
                      max(5.0, cg_deadline - time.time()))
         cols, rc_lb, optimal = pricer.price(sigma, mu, budget)
+        last_rc_lb, last_pricing_optimal = rc_lb, optimal
         for cpat, _crc in cols:
             if master.add_column(cpat, sidx.column_cost(cpat)):
                 added = True
@@ -788,6 +796,7 @@ def run_cg_setpart(
                 best_lb = lb
         if optimal and not cols:
             converged = True
+            stop_reason = "priced_out"
             best_lb = rmp_obj  # LP optimum proven (rc* >= -eps)
             if verbose:
                 print(f"  CG-SP: converged at LP opt {rmp_obj:.1f} (it {it})")
@@ -830,9 +839,12 @@ def run_cg_setpart(
                               f"visits={part_visits}", flush=True)
 
         if not added:
+            stop_reason = "no_new_column"
             if verbose:
                 print("  CG-SP: no new column (duplicates/timeout); stop loop")
             break
+
+    cg_loop_elapsed = time.time() - t0
 
     # ---- final integer master + repair --------------------------------------
     polish_reserve = 0.15 * time_limit
@@ -875,6 +887,28 @@ def run_cg_setpart(
     )
     elapsed = time.time() - t0
     bound = best_lb  # valid Lagrangian / converged-LP bound only (or None)
+
+    if diag is not None:
+        # When converged, LB == z_RMP == z_LP and the gap to the incumbent is a
+        # pure integrality gap. When not converged, LB = z_RMP + |S|*min(0,rc_lb)
+        # and the gap mixes the integrality gap with unfinished pricing.
+        diag.update({
+            "converged": converged,
+            "stop_reason": stop_reason,
+            "z_rmp_last": root_lp,
+            "rc_lb_last": last_rc_lb,
+            "pricing_optimal_last": last_pricing_optimal,
+            "best_lb": best_lb,
+            "n_stations": n_st,
+            "iterations": it,
+            "n_exact_pricing": n_exact,
+            "cg_deadline_s": time_limit * (1.0 - imp_frac),
+            "cg_loop_elapsed_s": cg_loop_elapsed,
+            "total_elapsed_s": elapsed,
+            "visits": total_visits,
+            "n_supports": sidx.n,
+            "n_orders": len(order_prods),
+        })
 
     if verbose:
         gap = ("-" if not bound else f"{(total_visits - bound) / total_visits:.3%}")

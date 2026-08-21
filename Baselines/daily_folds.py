@@ -235,6 +235,14 @@ def build_daily_folds(
         prod_df["REAL_LINES"] = prod_df["PRODUCT_ID"].map(
             lbar).fillna(0.0).astype(float).round(6)
 
+        if incumbent:
+            # The harness seeds its construction from WARM_STATION when the
+            # column is present. Seeding matters here because the ceilings are
+            # calibrated ON the incumbent, so a from-scratch greedy can miss
+            # the only feasible region and report a false infeasibility.
+            prod_df["WARM_STATION"] = prod_df["PRODUCT_ID"].astype(str).map(
+                lambda q: incumbent.get(q, "")).astype(str)
+
         st_df = stations.copy()
         st_df["STATION_ID"] = st_df["STATION_ID"].astype(str)
         st_df["TIME_CAPACITY"] = st_df["STATION_ID"].map(tcap).astype(float)

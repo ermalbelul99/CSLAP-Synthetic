@@ -80,6 +80,7 @@ def run_milp_cplex(
     top_n: int = 3000,
     mip_rel_gap: float = 0.0,
     ls_time: float = 45.0,
+    start_assignment: Optional[Dict[str, str]] = None,
     verbose: bool = True,
     threads: int = 0,
 ) -> Tuple[Optional[Dict[str, str]], float, float, float, float, int, int, float]:
@@ -116,8 +117,19 @@ def run_milp_cplex(
 
     # ---- warm start (identical to the HiGHS twin) ------------------------
     t_build0 = time.time()
+    # Seeding matters wherever the ceilings were calibrated ON an existing
+    # layout: a from-scratch greedy can miss the only feasible region and
+    # report an infeasibility that is an artefact of the construction order.
+    init_arr = None
+    if start_assignment is not None:
+        sid_pos = {sid: i for i, sid in enumerate(station_ids)}
+        init_arr = np.array([
+            sid_pos.get(start_assignment.get(p, station_ids[0]), 0)
+            for p in products
+        ], dtype=int)
     assign0, start_feasible = greedy_start(
-        products, lbar, lhat_v, speeds, caps, time_caps, gamma_i
+        products, lbar, lhat_v, speeds, caps, time_caps, gamma_i,
+        init_assign=init_arr,
     )
     if start_feasible and ls_time > 0:
         best_assign, best_obj = assign0, _obj_of(assign0, supports, p_idx, n_s)

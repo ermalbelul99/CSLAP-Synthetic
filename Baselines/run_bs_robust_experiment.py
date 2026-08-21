@@ -317,6 +317,103 @@ def eval_arm(
     }
 
 
+def fold_meta(data_dir: str, tag: str) -> Dict[str, object]:
+    """Read a fold's ``fold_meta.json``; empty dict when absent (old folds)."""
+    for cand in (os.path.join(data_dir, "fold_meta.json"),
+                 os.path.join(data_dir, tag, "fold_meta.json")):
+        if os.path.isfile(cand):
+            with open(cand, encoding="utf-8") as fh:
+                return json.load(fh)
+    return {}
+
+
+def apply_daily_tcap(stations: List[dict], data_dir: str,
+                     quantile: str) -> List[dict]:
+    r"""Re-derive each station's daily ceiling from its realised loads (A2).
+
+    ``station_daily_loads.csv`` records what the incumbent actually carried on
+    every training day, so the quantile sweep costs nothing at run time: folds
+    do not have to be rebuilt to tighten or loosen the ceiling.
+
+    Args:
+        stations: Station records from ``read_data``.
+        data_dir: Fold directory.
+        quantile: ``p90`` | ``p95`` | ``max``.
+
+    Returns:
+        The records with ``TIME_CAPACITY`` replaced.
+
+    Raises:
+        FileNotFoundError: If the loads file is missing.
+    """
+    path = os.path.join(data_dir, "station_daily_loads.csv")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(
+            "%s not found; --tcap-quantile needs folds built by "
+            "daily_folds.py" % path)
+    loads = pd.read_csv(path, index_col=0)
+    q = {"p90": 0.90, "p95": 0.95, "max": 1.0}[quantile]
+    out = []
+    for rec in stations:
+        rec = dict(rec)
+        sid = str(rec["STATION_ID"])
+        if sid in loads.columns:
+            col = loads[sid].to_numpy(dtype=float)
+            val = float(col.max()) if q >= 1.0 else float(np.quantile(col, q))
+            rec["TIME_CAPACITY"] = val / max(float(rec["SPEED"]), 1e-12)
+        out.append(rec)
+    return out
+
+
+def calibrate_lhat_daily(
+    train_orders: pd.DataFrame, lbar: Dict[str, float]
+) -> Tuple[Dict[str, float], float]:
+    r"""Per-product deviation measured across real training **days**.
+
+    The block variant splits the training *order list* into equal chunks as a
+    proxy for time, because no dates were available. With a calendar the proxy
+    is unnecessary: :math:`\hat L_p` is the standard deviation of product
+    ``p``'s daily line count over the training days, capped at :math:`ar L_p`
+    so the uncertainty interval stays non-negative.
+
+    This removes the study's weakest link. The earlier protocol had to rescale
+    the deviation by a factor chosen after seeing results; here it is measured
+    directly from the calendar.
+
+    Args:
+        train_orders: Training rows with ``PRODUCT`` and ``DELIVERY_DATE``.
+        lbar: Nominal mean daily pick-lines per product.
+
+    Returns:
+        ``(lhat, c_fit)``; ``c_fit`` is the volume-weighted 90th percentile of
+        the deviation-to-sqrt-mean ratio, recorded as a diagnostic only.
+
+    Raises:
+        ValueError: If the fold carries no ``DELIVERY_DATE`` column.
+    """
+    if "DELIVERY_DATE" not in train_orders.columns:
+        raise ValueError(
+            "daily lhat needs DELIVERY_DATE; rebuild folds with daily_folds.py")
+
+    days = sorted(train_orders["DELIVERY_DATE"].unique())
+    counts = (train_orders.groupby(["PRODUCT", "DELIVERY_DATE"]).size()
+              .unstack(fill_value=0).reindex(columns=days, fill_value=0))
+    sigma = counts.std(axis=1, ddof=1).fillna(0.0)
+
+    lhat: Dict[str, float] = {}
+    ratios: List[float] = []
+    weights: List[float] = []
+    for prod, mean in lbar.items():
+        dev = float(sigma.get(prod, 0.0))
+        lhat[prod] = float(min(dev, mean)) if mean > 0 else 0.0
+        if mean > 0:
+            ratios.append(dev / math.sqrt(mean))
+            weights.append(mean)
+    c_fit = (float(weighted_quantile(np.asarray(ratios), np.asarray(weights),
+                                     Q_HEADLINE)) if ratios else 0.0)
+    return lhat, c_fit
+
+
 def main() -> None:
     """Run the Gamma-sweep experiment (CLI)."""
     parser = argparse.ArgumentParser(
@@ -343,13 +440,24 @@ def main() -> None:
     parser.add_argument("--probe-time", type=int, default=180,
                         help="HiGHS feasibility-probe seconds when the "
                              "constructive pipeline finds no layout")
-    parser.add_argument("--backend", type=str, default="highs",
+    parser.add_argument("--backend", type=str, default="cplex",
                         choices=["highs", "cplex"],
                         help="MILP backend for the placement solve/polish. "
                              "'cplex' (docplex) is exact -> removes the HiGHS "
                              "symmetry-stall gap; everything else is identical.")
     parser.add_argument("--out", type=str,
                         default=os.path.join(RESULTS, "experiment"))
+    parser.add_argument("--lhat-mode", type=str, default="auto",
+                        choices=["auto", "blocks", "daily"],
+                        help="Deviation calibration. 'auto' reads "
+                             "fold_meta.json and uses real days on daily "
+                             "folds, order-rank blocks otherwise.")
+    parser.add_argument("--tcap-quantile", type=str, default=None,
+                        choices=["p90", "p95", "max"],
+                        help="Daily folds only: re-derive T_s from "
+                             "station_daily_loads.csv at this quantile (A2). "
+                             "Omit to keep the ceiling the fold was built "
+                             "with.")
     args = parser.parse_args()
 
     # Backend dispatch: rebinding the solver name routes ALL four solve sites
@@ -402,6 +510,15 @@ def main() -> None:
         te_lines = te_orders.groupby("PRODUCT").size().astype(float).to_dict()
         t_s = float(stations[0]["TIME_CAPACITY"])
 
+        meta = fold_meta(args.dir, tag)
+        is_daily = str(meta.get("granularity", "")) == "daily"
+        if args.tcap_quantile:
+            stations = apply_daily_tcap(stations, args.dir, args.tcap_quantile)
+            t_s = float(stations[0]["TIME_CAPACITY"])
+            med = float(np.median([r["TIME_CAPACITY"] for r in stations]))
+            print("[fold %s] T_s re-derived at q=%s (A2): median %.1f"
+                  % (f, args.tcap_quantile, med), flush=True)
+
         # Industrial folds carry the incumbent layout (WARM_STATION); using it
         # as the construction seed is required there, since the ceilings are
         # calibrated ON that layout (a from-scratch greedy can miss the only
@@ -427,7 +544,14 @@ def main() -> None:
                       f"{len(tr_products_df)} products -> IGNORED (greedy start)",
                       flush=True)
 
-        lhat, c_fit = calibrate_lhat(tr_orders, lbar)
+        lhat_mode = args.lhat_mode
+        if lhat_mode == "auto":
+            lhat_mode = "daily" if is_daily else "blocks"
+        if lhat_mode == "daily":
+            lhat, c_fit = calibrate_lhat_daily(tr_orders, lbar)
+        else:
+            lhat, c_fit = calibrate_lhat(tr_orders, lbar)
+        print("[fold %s] lhat mode=%s" % (f, lhat_mode), flush=True)
         alpha = float(args.lhat_scale)
         suffix = f"_a{alpha:g}" if alpha != 1.0 else ""
         if alpha != 1.0:

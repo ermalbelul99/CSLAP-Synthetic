@@ -1,0 +1,5 @@
+variant,mean_train_orders,mean_viol_asrun,mean_viol_norm,mean_imbalance,mean_max_ratio_norm,mean_B,mean_X,viol_norm_k1_mean,imbalance_k1_mean
+t500,500.0,7.56,2.24,2.2683,2.0608,5.0562,0.1774,1.6,2.5483
+t1000,1000.0,6.48,2.16,2.1376,1.9421,2.533,0.1696,2.0,2.3428
+t2000,2000.0,4.52,2.44,2.1152,1.9216,1.2675,0.189,2.6,2.0848
+temporal,7000.0,0.4,2.16,2.045,1.8579,0.4083,0.1711,2.2,2.1158

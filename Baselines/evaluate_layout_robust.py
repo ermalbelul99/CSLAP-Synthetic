@@ -159,6 +159,113 @@ def evaluate_layout(
     }
 
 
+def load_daily_orders(prefix: str, data_dir: str):
+    r"""Load a fold's orders keeping the delivery date.
+
+    :func:`load_test_instance` aggregates over the whole window, which is what
+    the original window-total protocol needed. The daily protocol needs the day
+    each line fell on, so this returns the raw rows instead.
+
+    Args:
+        prefix: Fold file prefix.
+        data_dir: Directory holding the fold CSVs.
+
+    Returns:
+        Frame with ``ORDER``, ``PRODUCT`` and ``DELIVERY_DATE``.
+
+    Raises:
+        ValueError: If the fold carries no ``DELIVERY_DATE`` column, i.e. it was
+            produced by the old rank-split adapters and cannot be scored daily.
+    """
+    import pandas as pd  # local: keeps the module importable without pandas
+
+    path = os.path.join(data_dir, f"{prefix}_orders.csv")
+    df = pd.read_csv(path, sep=";")
+    if "DELIVERY_DATE" not in df.columns:
+        raise ValueError(
+            f"{path} has no DELIVERY_DATE column. Daily evaluation needs dated "
+            f"folds -- rebuild with daily_folds.py.")
+    return df
+
+
+def evaluate_layout_daily(
+    assignment: Dict[str, object],
+    orders_df,
+    stations: List[dict],
+) -> Dict[str, object]:
+    r"""Per-day workload feasibility of a fixed layout (assumption A1).
+
+    The workload constraint is a throughput limit, so it binds **per day**, not
+    over a window whose length is an artefact of how the data was split. For
+    each day :math:`d` and station :math:`s` this recomputes
+
+    .. math::
+        W_s(d) \;=\; \sum_{p:\,a(p)=s} L_p(d) \,/\, V_s
+
+    and compares it against the station's daily ceiling :math:`T_s`, which under
+    assumption A2 is a quantile of the load the incumbent demonstrably carried.
+
+    Reporting is deliberately split into incidence and severity, because they
+    answer different questions: a layout that is slightly over on many days is a
+    staffing problem, while one that is far over on a single day is a breakdown.
+
+    Args:
+        assignment: Layout ``{product: station}``.
+        orders_df: Dated test orders from :func:`load_daily_orders`.
+        stations: Station records with ``STATION_ID``/``TIME_CAPACITY``/``SPEED``.
+
+    Returns:
+        Dict with ``days_total``, ``days_violated``, ``share_days_violated``,
+        ``worst_day_ratio`` and the day/station attaining it,
+        ``station_days_violated``, ``mean_daily_ratio``, ``p95_daily_ratio``,
+        ``excess_fraction`` and the per-day peak ratio series.
+    """
+    import numpy as np  # local: mirrors the lazy pandas import above
+
+    speeds = {str(s["STATION_ID"]): float(s["SPEED"]) for s in stations}
+    caps = {str(s["STATION_ID"]): float(s["TIME_CAPACITY"]) for s in stations}
+    sids = [str(s["STATION_ID"]) for s in stations]
+
+    mapped = orders_df["PRODUCT"].map(
+        {str(k): str(v) for k, v in assignment.items()})
+    sub = orders_df.assign(_S=mapped).dropna(subset=["_S"])
+    if sub.empty:
+        return {"days_total": 0, "days_violated": 0,
+                "share_days_violated": 0.0, "worst_day_ratio": 0.0}
+
+    piv = (sub.groupby(["DELIVERY_DATE", "_S"]).size().unstack(fill_value=0)
+              .reindex(columns=sids, fill_value=0))
+
+    speed_v = np.array([max(speeds.get(s, 1.0), 1e-12) for s in sids])
+    cap_v = np.array([caps.get(s, 0.0) for s in sids])
+    work = piv.to_numpy(dtype=float) / speed_v[None, :]
+    safe_cap = np.where(cap_v > 0, cap_v, np.inf)
+    ratio = work / safe_cap[None, :]
+
+    over = work > safe_cap[None, :] + 1e-9
+    day_peak = ratio.max(axis=1)
+    total_work = float(work.sum())
+    excess = float(np.maximum(work - safe_cap[None, :], 0.0).sum())
+    flat = int(np.argmax(ratio))
+    wd, ws = divmod(flat, ratio.shape[1])
+
+    return {
+        "days_total": int(ratio.shape[0]),
+        "days_violated": int(over.any(axis=1).sum()),
+        "share_days_violated": float(over.any(axis=1).mean()),
+        "worst_day_ratio": float(ratio.max()),
+        "worst_day": str(piv.index[wd]),
+        "worst_station": str(sids[ws]),
+        "station_days_violated": int(over.sum()),
+        "station_days_total": int(over.size),
+        "mean_daily_ratio": float(day_peak.mean()),
+        "p95_daily_ratio": float(np.quantile(day_peak, 0.95)),
+        "excess_fraction": float(excess / total_work) if total_work else 0.0,
+        "daily_peak_ratio": {str(d): float(v)
+                             for d, v in zip(piv.index, day_peak)},
+    }
+
+
 def load_layout(layout_path: str) -> Dict[str, object]:
     r"""Load a ``{product: station}`` layout JSON persisted by the harness."""
     with open(layout_path) as fh:

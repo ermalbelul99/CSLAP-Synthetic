@@ -1,0 +1,240 @@
+\section{Computational study: implementing the robust counterpart}
+\label{sec:experiment}
+
+The preceding section was written, in the first version of this report, as a
+theory-only contribution. This section removes that restriction: it implements
+the robust placement MILP of \cref{eq:bs-milp} and evaluates it under the same
+temporal protocol as \cref{sec:empirical}, on iscf480. Three questions drive
+the design. First, is the counterpart \emph{implementable at all} under the
+project's own capacity convention --- the $\sigma = 1.10$ slack rule that
+calibrates $T_s$? Second, when it is implementable, what does the protection
+buy out of sample, and at what price in visits? Third, does \emph{targeted}
+budgeted protection beat the obvious nominal alternative --- uniformly
+tightening the training ceiling by the same amount of visit price?
+
+\subsection{Setup}
+\label{sec:exp-setup}
+
+\paragraph{Solver.}
+No commercial solver is available on the experiment machine, so
+\cref{eq:bs-milp} is implemented on the open-source HiGHS solver
+(\texttt{src/milp\_highs\_robust.py}, via \texttt{highspy}). The visit
+variables are declared continuous, which is exact: for fixed integral
+$x_{ps}$ the minimal $y_{os} = \max_{p \in P_o} x_{ps}$ is automatically
+binary, so the model carries only the $|P|\,|S| = 3{,}840$ assignment binaries
+plus the continuous dual block of \cref{prop:bs-counterpart}. Exact
+branch-and-bound is nonetheless out of reach at useful time scales: the eight
+stations of iscf480 are identical, and the resulting symmetry left HiGHS
+unable to improve --- or even find --- an incumbent within minutes. Incumbents
+therefore come from a three-stage pipeline: (i) a feasibility-first greedy
+(best-fit decreasing on the \emph{robust} station load, swap repair); (ii) a
+deterministic pairwise-swap local search on the weighted visit objective, with
+the \emph{original} robust constraint --- nominal load plus the sum of the
+$\Gamma$ largest deviations, per station --- as a hard accept filter (three
+seeded restarts, pass-budgeted for cross-process reproducibility); (iii) a
+warm-started HiGHS run used for what an exact solver is still good for here:
+\emph{proofs of infeasibility} for budgets that do not fit, and dual bounds.
+The optimization objective aggregates the top 1{,}500 weighted distinct
+multi-item supports of the training orders; all reported visit counts,
+however, are evaluated on the \emph{full real} order sets, and all feasibility
+metrics on the fixed $1.10$-rule contract
+$T^{\mathrm n} = \lceil 1.10 \sum_p L^{te}_p / (V\,|S|) \rceil$ of
+\cref{sec:empirical}. Every solved robust layout was re-verified against the
+pre-dualization constraint by direct top-$\Gamma$ arithmetic
+(\texttt{robust\_ok} in the result tables): 21 of 21 feasible robust arms
+pass, so the dual block never ``cheats.''
+
+\paragraph{Deviations: ex-ante M3 with partial insurance.}
+The deviations $\hat L_p$ are calibrated with the only model of
+\cref{sec:calibration} available at decision time: M3, the per-product
+ddof-$1$ standard deviation of the five volume-rescaled temporal train-block
+line counts, capped at $\bar L_p$. (The global-$c$ M2 fit degenerates here:
+temporally concentrated SKUs push the $\bar L$-weighted quantile to
+$c \approx 70$--$97$, at which point the cap binds for essentially the whole
+catalogue and the set collapses to the Soyster box.) Because
+\cref{sec:gamma} showed M3 \emph{underestimates} realized drift on iscf480,
+and because --- as \cref{sec:exp-impl} shows --- even M3-sized deviations do
+not fit the slack contract in full, the experiment adds a partial-insurance
+factor $\alpha \in \{0.5, 0.25\}$: the robust constraint is built with
+$\alpha \hat L_p$ in place of $\hat L_p$. Formally this is just
+\cref{eq:bs-milp} on a shrunken uncertainty set, so
+\cref{prop:bs-counterpart} applies verbatim; operationally it asks what
+protection is \emph{purchasable} inside the existing capacity margin.
+
+\paragraph{Arms and pairing.}
+For each of the five expanding temporal cuts of \cref{sec:empirical}:
+the nominal arm $\Gamma = 0$; budgeted arms
+$\Gamma \in \{1, 2, 4, 8\} \times \alpha \in \{0.5, 0.25\}$; full-$\sigma$
+probes $\Gamma \in \{1, 4, 8, 16\}$ at $\alpha = 1$ (cut~0); two
+\emph{uniform-tightening} competitors, trained with the ceiling
+$T_s(\beta) = \lceil \beta \sum_p \bar L_p / (V |S|) \rceil$ for
+$\beta \in \{1.05, 1.02\}$ and $\Gamma = 0$ --- the same visit price paid as
+undirected balance instead of directed protection; and the stored Hexaly
+$k{=}1$ layout as an external reference. Every arm of a cut shares the same
+supports, budgets, calibration and evaluation, so within-cut comparisons are
+paired; the price of robustness $\mathrm{PoR} = (V_{tr}(\cdot) -
+V_{tr}(\Gamma{=}0))/V_{tr}(\Gamma{=}0)$ and the test-visit gain
+$G = (V_{te}(\Gamma{=}0) - V_{te}(\cdot))/V_{te}(\Gamma{=}0)$ are measured
+against the paired nominal arm.
+
+\subsection{Full-\texorpdfstring{$\sigma$}{sigma} protection does not fit the slack contract}
+\label{sec:exp-impl}
+
+The $1.10$ rule leaves each station a nominal headroom of
+$(1 - 1/1.10)\,T_s$ --- about $4{,}124$ lines per station on cut~0
+($T_s = 45{,}365$). The M3 deviations are far larger than that: the top SKU
+alone carries $\hat L_p = 13{,}307$ (its block-$\sigma$ exceeds its own
+nominal, so the cap binds), and the eight largest deviations sum to
+$48{,}621$ --- one and a half times the \emph{total} headroom
+$8 \times 4{,}124 \approx 33{,}000$ of the whole cell. Since the heavy
+deviators are also heavy products, the nominal constraint prevents parking
+them all in one station, and full-$\sigma$ protection has, arithmetically,
+nowhere to live. HiGHS makes this formal at moderate budgets:
+at $\alpha = 1$ it returns a \textbf{proven infeasibility} certificate for
+$\Gamma = 4$, $8$ and $16$ on cut~0, within a minute per arm ($28$--$41$\,s
+of total arm time including the constructive pipeline). The
+$\Gamma = 1$ case is harder --- its LP relaxation is feasible --- and remains
+\textbf{undetermined}: no incumbent and no certificate after a $318$-second
+probe and a separate $820$-second attempt (solver logs). The same caution applies at
+$\alpha < 1$: the arms marked infeasible in \cref{tab:exp-summary}
+($\Gamma \ge 4$ at $\alpha = 0.5$, $\Gamma = 8$ at both $\alpha$, and
+$\Gamma = 2$ at $\alpha = 0.5$ on four of five cuts) are
+\emph{undetermined-within-budget} --- neither the constructive pipeline nor a
+$180$-second HiGHS probe produced a layout --- not proven infeasible. At
+half-$\sigma$, by contrast, the top-eight deviation mass is $24{,}310 <
+33{,}000$, and indeed $\Gamma = 1$, $\alpha = 0.5$ is constructively feasible
+on all five cuts.
+
+The practical reading is blunt: under the project's own capacity convention,
+the drift that iscf480 actually exhibits (\cref{sec:gamma}) is too large to be
+insured in full. Either the protection target is scaled down ($\alpha$), or
+the slack $\sigma$ --- a capacity investment --- must grow. The remainder of
+the section quantifies the first option.
+
+\subsection{Results}
+\label{sec:exp-results}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Per-arm means over the temporal cuts on which the arm is feasible
+(iscf480; evaluation on real test orders against the fixed $1.10$ contract
+$T^{\mathrm n}$). PoR and $G$ are paired against the $\Gamma{=}0$ arm of the
+same cut; $G < 0$ means the arm pays visits out of sample too. Arms absent
+from the body: at $\alpha=1$, $\Gamma \in \{4,8,16\}$ \emph{proven} infeasible
+(HiGHS certificates, cut~0) and $\Gamma = 1$ undetermined; at $\alpha=0.5$,
+$\Gamma = 4, 8$ undetermined on 5/5 cuts; at $\alpha = 0.25$, $\Gamma = 8$
+undetermined on 5/5 cuts.}
+\label{tab:exp-summary}
+\begin{tabular}{lrrrrrrr}
+\toprule
+arm & cuts & PoR\,\% & $G$\,\% & viol.\ ($/8$) & peak $W_s/T^{\mathrm n}$ & worst peak & $X$\,\% \\
+\midrule
+$\Gamma{=}0$ (nominal)            & 5/5 & 0.00  & 0.00   & 2.6 & 1.77 & 2.11 & 17.4 \\
+$\Gamma{=}1$, $\alpha{=}0.5$      & 5/5 & 2.34  & $-$4.44  & 2.6 & \textbf{1.59} & 1.87 & \textbf{13.0} \\
+$\Gamma{=}1$, $\alpha{=}0.25$     & 5/5 & 1.44  & $-$2.49  & 2.6 & 1.67 & 1.90 & 15.4 \\
+$\Gamma{=}2$, $\alpha{=}0.25$     & 5/5 & 1.41  & $-$1.64  & 2.2 & 1.73 & 1.94 & 15.5 \\
+$\Gamma{=}4$, $\alpha{=}0.25$     & 5/5 & 1.77  & $-$2.41  & 2.8 & 1.74 & 2.11 & 15.2 \\
+$\Gamma{=}2$, $\alpha{=}0.5$      & 1/5 & 19.13 & $-$23.14 & 3.0 & 1.14 & 1.14 & 3.1 \\
+tightened $\beta{=}1.05$          & 5/5 & 0.41  & $-$0.28  & 2.8 & 1.76 & 2.03 & 16.8 \\
+tightened $\beta{=}1.02$          & 5/5 & 2.26  & $-$1.73  & 2.8 & 1.75 & 2.01 & 16.9 \\
+Hexaly $k{=}1$ (reference)        & 5/5 & $-$3.88 & 6.16 & 2.8 & 2.15 & 2.52 & 23.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_exp_tradeoff}
+\caption{Trade-off along the budget $\Gamma$ (means over cuts; open markers =
+arms feasible on fewer than five cuts, annotated with their coverage). Left:
+price of robustness in train visits. Center: stations above the normalized
+ceiling. Right: peak load ratio; the dashed line is contract feasibility.
+Partial insurance moves the peak, not the violation count.}
+\label{fig:exp-tradeoff}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\textwidth]{fig_exp_frontier}
+\caption{Price--severity frontier: mean out-of-sample peak ratio versus PoR.
+Budgeted arms (vermillion) move down-right; uniform tightening (blue squares)
+moves right \emph{without} moving down; the Hexaly reference (green) shows
+that a stronger visit optimizer concentrates load harder. The open marker is
+the single-cut $\Gamma{=}2$, $\alpha{=}0.5$ arm.}
+\label{fig:exp-frontier}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{fig_exp_stations}
+\caption{Per-station load ratios $W_s/T^{\mathrm n}$ on temporal cut~4 (the
+worst nominal peak), by arm. The budget compresses the top of the
+distribution --- the station a drifting SKU overloads --- rather than
+shifting all stations uniformly.}
+\label{fig:exp-stations}
+\end{figure}
+
+\paragraph{(i) Cheap partial insurance works on severity.}
+The efficient point of the sweep is $\Gamma = 1$ at $\alpha = 0.5$: for a
+$2.34\%$ visit price it cuts the mean out-of-sample peak from $1.77$ to
+$1.59$ and the excess workload fraction $X$ from $17.4\%$ to $13.0\%$
+(\cref{tab:exp-summary}). The reduction is \emph{paired sign-consistent}: the
+peak ratio falls in five cuts out of five ($1.49\!\to\!1.47$,
+$1.48\!\to\!1.34$, $1.81\!\to\!1.61$, $1.95\!\to\!1.87$, $2.11\!\to\!1.64$),
+as does $X$. Halving the insured magnitude again ($\alpha = 0.25$) roughly
+halves both the price and the effect.
+
+\paragraph{(ii) Equal price, uniform tightening buys nothing.}
+The $\beta = 1.02$ competitor pays essentially the same price as the
+efficient budgeted arm ($2.26\%$ vs.\ $2.34\%$) and leaves the mean peak at
+$1.75$ --- indistinguishable from the nominal $1.77$ --- with per-cut changes
+that are sign-\emph{inconsistent} (the peak worsens on two of five cuts).
+The mechanism is visible in \cref{fig:exp-stations}: tightening rebalances
+\emph{nominal} loads, but the out-of-sample peak is created by large
+deviators, and a uniformly tighter ceiling does nothing to separate them ---
+the budget constraint does exactly that, because co-locating two large
+$\hat L_p$ makes the station's top-$\Gamma$ protection unaffordable. On this
+instance family, at equal visit price, \textbf{targeted budgeted protection
+dominates uniform tightening on peak severity}.
+
+\paragraph{(iii) The feasibility wall is sharp.}
+One step further, $\Gamma = 2$ at $\alpha = 0.5$, is constructible on a
+single cut --- and there it nearly restores contract feasibility (peak
+$1.14$, $X = 3.1\%$) at a $19.1\%$ visit price. Insurance beyond the slack
+headroom is not gradually more expensive; it is discontinuously so, which is
+the operational face of the arithmetic in \cref{sec:exp-impl}.
+
+\paragraph{(iv) Severity, not incidence.}
+Violation \emph{counts} barely move across implementable arms
+($2.2$--$2.8$ of $8$; the count can even rise while the peak falls, as on
+cut~3). This is exactly what \cref{sec:gamma} predicts: M3 underestimates the
+realized drift, so ex-ante-calibrated protection trims how far stations
+overshoot, not whether some station somewhere overshoots. Restoring
+feasibility outright would need the drift-scale magnitudes
+($c_1(0.9) \approx 1.2$--$1.6$) that no train-internal model provides.
+
+\paragraph{(v) The visit--fragility trade-off, priced.}
+The Hexaly reference beats our incumbents by $3.88\%$ on train visits (and
+$6.16\%$ on test) --- and carries the worst workload profile of the table
+(peak $2.15$, $X = 23.1\%$). Better visit optimization concentrates
+correlated, drifting SKUs; the budget constraint is the first dial in this
+project that prices that concentration explicitly instead of discovering it
+out of sample.
+
+\subsection{Solver honesty}
+\label{sec:exp-honesty}
+
+Three caveats bound the claims. First, incumbents are metaheuristic: on the
+truncated support objective of cut~0 the HiGHS dual bound is $30{,}312$
+against an incumbent of $43{,}158$ ($\approx 30\%$ gap, largely inherited
+from the weak LP relaxation of the visit objective), so PoR magnitudes carry
+solver noise --- the paired, sign-consistent within-cut deltas are the
+reliable signal, not third digits. Second, HiGHS wall-times overran its
+\texttt{time\_limit} option on this model (up to $820$\,s against a
+$480$\,s limit in the solver logs; persisted arm times reach $465$\,s
+against $180$\,s probes), which is why the sweep runs on the deterministic
+local-search pipeline and reserves HiGHS for certificates and bounds. Third,
+$G < 0$ throughout: every robust arm pays its visit price out of sample as
+well ($-1.6\%$ to $-4.4\%$ at the implementable budgets). Nothing here claims
+a visits benefit --- the insured quantity is workload-feasibility risk, in
+line with the falsified-H1 lesson that opened this report.

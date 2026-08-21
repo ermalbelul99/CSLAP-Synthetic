@@ -1,0 +1,911 @@
+\documentclass[11pt]{article}
+
+% ----------------------------------------------------------------------
+%  A BEGINNER'S GUIDE to Robust Workload Feasibility in CSLAP
+%  Plain-language companion to this repository + the
+%  iscf10kt CPLEX-vs-HiGHS replication.  Self-contained; compile on Overleaf.
+% ----------------------------------------------------------------------
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\geometry{a4paper,margin=2.4cm}
+
+% Theorem-like environments
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% A simple "plain words" box that needs no extra package
+\newcommand{\plain}[1]{%
+  \par\medskip\noindent\fbox{\parbox{0.97\linewidth}{%
+  \textbf{In plain words.}\; #1}}\par\medskip}
+
+\newcommand{\Lnom}{L^{0}}   % nominal pick-line count
+\newcommand{\Lhat}{\hat{L}} % deviation magnitude
+
+\title{\bf Robust Workload Feasibility in Warehouse\\ Storage Assignment (CSLAP)\\[4pt]
+\large A Beginner's Guide to the Theory, the Model, and the Results}
+\author{Companion notes for the CSLAP research project}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note explains, from scratch, a piece of warehouse-optimization research.
+The warehouse problem is CSLAP: decide where to store each product so that
+orders are picked with as few station visits as possible, without overloading
+any station. The research asks a robustness question: \emph{if the demand we
+trained on changes later, does a good storage plan stay feasible, and can we
+protect it in advance?} We define every term, write out every equation, explain
+the robust-optimization theory (Bertsimas--Sim ``budget of uncertainty''), and
+then walk through all the experimental results in plain language. No prior
+knowledge of optimization is assumed beyond high-school algebra and the idea of
+``minimize something subject to rules''.
+\end{abstract}
+
+\tableofcontents
+
+% ======================================================================
+\section{The setting: what problem are we solving?}
+% ======================================================================
+
+Imagine an automated ``pick-and-pass'' warehouse. Products sit in slots at a
+number of \emph{picking stations}. A customer \emph{order} is a small basket of
+products. To fulfil an order, a tote travels past the stations; it must
+\emph{stop} at every station that holds at least one of the ordered products.
+Each stop is a \emph{visit}, and visits cost time and money.
+
+Two intuitions drive everything:
+\begin{itemize}[nosep]
+  \item If two products are frequently ordered \emph{together}, storing them at
+  the \emph{same} station saves a visit. So a good layout keeps
+  ``correlated'' products together.
+  \item Each station has limits: a maximum number of slots, and a maximum amount
+  of picking \emph{work} it can do per planning period.
+\end{itemize}
+
+The \textbf{Correlated Storage Location Assignment Problem (CSLAP)} is: assign
+every product to exactly one station so that the total number of station visits
+over all orders is as small as possible, while respecting the slot and workload
+limits.
+
+\plain{Put popular-together products on the same station to cut visits, but do
+not stuff any one station beyond its slot count or its work capacity.}
+
+% ======================================================================
+\section{Notation (the symbols we will use)}
+% ======================================================================
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Symbol & Meaning \\
+\midrule
+$P$ & set of products (SKUs); a single product is $p$ \\
+$S$ & set of picking stations; a single station is $s$ \\
+$O$ & set of orders; a single order is $o$ \\
+$P_o \subseteq P$ & the products contained in order $o$ (its ``support'') \\
+$\zeta_s$ & slot capacity of station $s$ (how many products fit) \\
+$V_s$ & processing speed of station $s$ (lines per unit time) \\
+$T_s$ & time (workload) capacity of station $s$ \\
+$L_p$ & \emph{pick-line count} of product $p$: number of distinct orders that contain $p$ \\
+$x_{ps}$ & decision: $1$ if product $p$ is stored at station $s$, else $0$ \\
+$y_{os}$ & auxiliary: $1$ if order $o$ visits station $s$, else $0$ \\
+$\Phi_s$ & the set of products actually placed at station $s$, i.e. $\{p : x_{ps}=1\}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{definition}[Pick line]
+A \emph{pick line} for product $p$ is one order that asks for $p$. So $L_p$
+counts how many orders want product $p$. A ``heavy'' product has a large $L_p$.
+\end{definition}
+
+\begin{definition}[Workload of a station]
+The workload of station $s$ under a layout is the total pick-lines of the
+products stored there, divided by the station speed:
+$W_s = \sum_{p \in \Phi_s} L_p / V_s$. It measures how much picking work that
+station must do.
+\end{definition}
+
+% ======================================================================
+\section{The nominal placement model (the exact optimization problem)}
+% ======================================================================
+
+We now write CSLAP as a \emph{mixed-integer linear program} (MILP): a set of
+linear equations and inequalities with some yes/no ($0/1$) variables, plus one
+quantity to minimize.
+
+\begin{align}
+\min_{x,\,y}\quad & \sum_{o \in O}\sum_{s \in S} y_{os} \label{eq:obj}\\
+\text{s.t.}\quad
+& \sum_{s \in S} x_{ps} = 1 && \forall p \in P, \label{eq:assign}\\
+& \sum_{p \in P} x_{ps} \le \zeta_s && \forall s \in S, \label{eq:slot}\\
+& x_{ps} \le y_{os} && \forall o \in O,\; p \in P_o,\; s \in S, \label{eq:link}\\
+& \sum_{p \in P} \frac{L_p}{V_s}\, x_{ps} \le T_s && \forall s \in S, \label{eq:work}\\
+& x_{ps}\in\{0,1\},\quad y_{os}\in[0,1] && \forall p,o,s. \label{eq:dom}
+\end{align}
+
+Let us read each line.
+
+\begin{itemize}
+  \item \textbf{Objective \eqref{eq:obj}} counts total visits: for every order
+  $o$ and station $s$, $y_{os}=1$ adds one visit. Minimizing the sum minimizes
+  visits.
+  \item \textbf{Assignment \eqref{eq:assign}} says each product is stored at
+  exactly one station (not zero, not two).
+  \item \textbf{Slot capacity \eqref{eq:slot}} says a station holds at most
+  $\zeta_s$ products.
+  \item \textbf{Visit linking \eqref{eq:link}} says: if product $p$ of order $o$
+  sits at station $s$ ($x_{ps}=1$), then order $o$ must visit $s$
+  ($y_{os}\ge 1$). Because the objective \emph{pushes $y$ down}, at the optimum
+  $y_{os}$ equals $1$ exactly when \emph{some} product of $o$ is at $s$ --- this
+  is a logical OR, and no ``big-$M$'' trick is needed.
+  \item \textbf{Workload \eqref{eq:work}} keeps each station's work under its
+  capacity $T_s$.
+  \item \textbf{Domain \eqref{eq:dom}}: $x$ is yes/no; $y$ may be a fraction but
+  automatically comes out $0/1$ at the optimum, so we can leave it continuous
+  (this makes the model much easier to solve).
+\end{itemize}
+
+\plain{Equation \eqref{eq:obj} is the goal (fewest visits). Equations
+\eqref{eq:assign}--\eqref{eq:work} are the rules: place each product once, do not
+exceed slots, count a visit whenever a station holds an ordered product, and do
+not overload a station's work capacity.}
+
+\subsection{Where does the workload capacity $T_s$ come from?}
+
+The project sets $T_s$ from the \emph{training} demand with a $10\%$ safety
+margin, spread evenly over the stations:
+\begin{equation}
+T_s = \left\lceil \sigma \cdot \frac{\sum_{p\in P} L_p^{\mathrm{tr}}}{V_s\,|S|}\right\rceil,
+\qquad \sigma = 1.10. \label{eq:ceiling}
+\end{equation}
+Here $L_p^{\mathrm{tr}}$ is the pick-line count measured on the training window,
+$|S|$ is the number of stations, and $\lceil\cdot\rceil$ rounds up. In words:
+take the total training work, divide it fairly among stations, and allow each
+one $10\%$ slack.
+
+\plain{$T_s$ is a ``fair share plus $10\%$'' work budget, computed once from the
+data we planned on.}
+
+% ======================================================================
+\section{The research question: demand drift and workload feasibility}
+% ======================================================================
+
+We build the layout on \emph{training} demand. Later, the warehouse runs on
+\emph{new} demand. \emph{Demand drift} means the popularity of products changes:
+some products get heavier ($L_p$ grows), others lighter. A layout that respected
+\eqref{eq:work} on the training data might now overload a station.
+
+The question of this study is:
+\begin{quote}\itshape
+Does a layout that satisfies the (training) workload constraint remain
+workload-feasible on later demand? If not, how big are the deviations, and how
+much ``protection'' would we have needed to stay safe?
+\end{quote}
+
+This is different from the project's earlier hypothesis (called H1), which tried
+to make the \emph{visit} objective robust and was falsified. Here we protect the
+\emph{workload constraint} instead. The objective is left untouched.
+
+% ======================================================================
+\section{Part A --- An audit: the ``clean'' feasibility check can be an illusion}
+% ======================================================================
+
+Before proposing any fix, the study audits how the project \emph{measures}
+out-of-sample feasibility. This is a subtle but important point.
+
+The evaluation compares the \emph{test-window} workload of each station against
+the \emph{training-calibrated} ceiling $T_s$ from \eqref{eq:ceiling}, and counts
+how many stations exceed it (\texttt{wl\_broken}).
+
+\subsection{The volume artifact}
+
+The temporal experiment uses \emph{expanding} training windows: train on the
+first $50\%$ of orders and test on the last $50\%$; then $60/40$, $70/30$,
+$80/20$, $90/10$. As the split moves later:
+\begin{itemize}[nosep]
+  \item the training window grows, so $T_s$ (built from training volume)
+  \emph{grows};
+  \item the test window shrinks, so the test workload \emph{shrinks}.
+\end{itemize}
+We are then comparing a tiny test workload against a ceiling meant for a huge
+training volume. The ceiling becomes far too loose, and \texttt{wl\_broken}
+$=0$ ``by construction'', regardless of how unbalanced the layout is.
+
+The study captures this with a \emph{bindingness} number:
+\begin{equation}
+B \;=\; \frac{\sum_p L_p^{\mathrm{te}}}{\sum_s V_s\,T_s}
+\;=\; \frac{\text{total test volume}}{\text{total ceiling capacity}}. \label{eq:binding}
+\end{equation}
+If $B < 1/\sigma \approx 0.909$, the check essentially cannot fire on a balanced
+layout. In the data $B$ collapses from about $1.0$ down to $0.11$ across the
+cuts, so late-cut ``feasible'' verdicts are just \emph{volume slack}, not
+balance.
+
+\plain{On late cuts there is so little test demand that no station can look
+overloaded --- ``feasible'' there means ``not much happened'', not ``well
+balanced''.}
+
+\subsection{The fair fix: a volume-normalized ceiling}
+
+To compare fairly, re-scale the ceiling to the \emph{test} volume:
+\begin{equation}
+T^{\mathrm{n}}_s = \left\lceil \sigma \cdot \frac{\sum_{p} L_p^{\mathrm{te}}}{V_s\,|S|}\right\rceil.
+\label{eq:tnorm}
+\end{equation}
+This asks: \emph{if the test window carried a normal amount of demand, would a
+station be overloaded?} Under this fair ceiling the picture reverses: on the
+$480$-product instance every temporal cut has $2$--$4$ of $8$ stations over the
+line, with peak loads up to $2.5\times$ the fair share.
+
+\plain{Judged fairly (same volume basis), the trained layouts are \emph{not}
+balanced under drift --- some stations would be badly overloaded if demand
+returned to normal. This ``fragility'' is what the robust method targets. Note
+it is a \emph{what-if}: it is about latent fragility, not overload that
+literally happened in a low-volume test window.}
+
+% ======================================================================
+\section{Part B --- A robust-optimization primer}
+% ======================================================================
+
+\emph{Robust optimization} means: instead of trusting a single guess for
+uncertain numbers, we plan for a whole \emph{set} of possible values and require
+the plan to work for every value in that set.
+
+The uncertain numbers here are the pick-line counts $L_p$: tomorrow's demand may
+differ from today's estimate. Write the estimate as $\Lnom_p$ (the training
+value) and let $\Lhat_p \ge 0$ be a ``how much could it move'' amount. The
+uncertain value lives in an interval:
+\begin{equation}
+\tilde L_p \in \bigl[\,\Lnom_p - \Lhat_p,\; \Lnom_p + \Lhat_p\,\bigr]. \label{eq:interval}
+\end{equation}
+
+If we protect against \emph{every} product hitting its worst value at once, we
+get the extremely cautious \emph{box} (Soyster) model --- usually too
+conservative, because it is very unlikely that \emph{all} products spike
+simultaneously.
+
+\subsection{The Bertsimas--Sim ``budget of uncertainty''}
+
+Bertsimas and Sim proposed a dial. Choose a whole number $\Gamma$ (the
+\emph{budget}) and assume that \emph{at most $\Gamma$ products deviate at the
+same time}. Then:
+\begin{itemize}[nosep]
+  \item $\Gamma = 0$: nobody deviates $\Rightarrow$ the ordinary model.
+  \item $\Gamma$ large: everybody may deviate $\Rightarrow$ the full box.
+  \item $\Gamma$ in between: a tunable amount of caution.
+\end{itemize}
+
+Because the workload constraint is a ``$\le$'' with nonnegative coefficients,
+only \emph{upward} moves ($\Lnom_p + \Lhat_p$) can hurt us. So the worst case at
+station $s$ adds the sum of the $\Gamma$ \emph{largest} deviations among the
+products stored there. The robust workload constraint is:
+\begin{equation}
+\sum_{p\in\Phi_s}\frac{\Lnom_p}{V_s}\,x_{ps}
+\;+\;
+\underbrace{\max_{\substack{J\subseteq\Phi_s\\ |J|\le\Gamma}}\ \sum_{p\in J}\frac{\Lhat_p}{V_s}}_{\text{worst-case extra load}}
+\;\le\; T_s
+\qquad\forall s\in S. \label{eq:robustraw}
+\end{equation}
+
+\plain{``Keep the normal load \emph{plus} the biggest $\Gamma$ demand spikes
+under capacity.'' $\Gamma$ decides how many simultaneous spikes you insure
+against.}
+
+\subsection{Turning the worst case into linear algebra}
+
+The inner ``pick the $\Gamma$ largest'' is a small optimization by itself. We
+can write it as a linear program (LP): give each stored product a weight
+$z_p\in[0,1]$, choose weights summing to at most $\Gamma$, and maximize the
+weighted deviation:
+\begin{equation}
+\psi_s(x;\Gamma) \;=\; \max_{z}\ \sum_{p} \frac{\Lhat_p}{V_s}\,x_{ps}\,z_p
+\quad\text{s.t.}\quad \sum_p z_p \le \Gamma,\ \ 0\le z_p\le 1. \label{eq:innerLP}
+\end{equation}
+Because all coefficients are nonnegative, the best choice puts $z_p=1$ on the
+$\Gamma$ heaviest deviations --- exactly the ``sum of the $\Gamma$ largest''.
+(When $\Gamma$ is a whole number this LP gives the same value as the discrete
+problem, so nothing is lost.)
+
+% ======================================================================
+\section{The exact linear robust counterpart (Proposition 1)}
+% ======================================================================
+
+The constraint \eqref{eq:robustraw} contains a ``max inside'', which solvers do
+not like. Linear-programming \emph{duality} lets us replace that inner maximum
+with a few ordinary linear inequalities. This is the heart of the method.
+
+\begin{proposition}[Exact linear counterpart]\label{prop:1}
+Fix a station $s$, a whole-number budget $\Gamma\ge 0$, and an assignment
+$x_{\cdot s}\in\{0,1\}^{P}$. The robust constraint \eqref{eq:robustraw} holds
+\emph{if and only if} there exist numbers $\theta_s\ge 0$ and $\mu_{ps}\ge 0$
+(for every product $p$) such that
+\begin{align}
+\sum_{p\in P}\frac{\Lnom_p}{V_s}\,x_{ps} \;+\; \Gamma\,\theta_s \;+\; \sum_{p\in P}\mu_{ps} &\;\le\; T_s, \label{eq:dual1}\\
+\theta_s + \mu_{ps} &\;\ge\; \frac{\Lhat_p}{V_s}\,x_{ps} \qquad \forall p\in P. \label{eq:dual2}
+\end{align}
+Since $\Lhat_p/V_s$ and $\Lnom_p/V_s$ are data constants, both lines are
+\emph{linear} in the variables $(x,\theta,\mu)$.
+\end{proposition}
+
+\begin{proof}[Why it is true (sketch)]
+The inner LP \eqref{eq:innerLP} has a \emph{dual} LP. Give a price $\theta_s$ to
+the budget row ``$\sum z_p \le \Gamma$'' and a price $\mu_{ps}$ to each cap
+``$z_p \le 1$''. The dual says: choose the cheapest prices so that, for every
+product, $\theta_s + \mu_{ps}$ covers that product's deviation
+$\tfrac{\Lhat_p}{V_s}x_{ps}$; its cost is $\Gamma\theta_s + \sum_p \mu_{ps}$.
+\emph{Strong duality} guarantees this cheapest cost \emph{equals} the worst-case
+extra load $\psi_s(x;\Gamma)$. Substituting that equality into
+\eqref{eq:robustraw} gives exactly \eqref{eq:dual1}--\eqref{eq:dual2}.
+\end{proof}
+
+\plain{We replace ``the sum of the $\Gamma$ biggest spikes'' by a small pricing
+scheme: a price $\theta_s$ for the budget and a slack $\mu_{ps}$ per product.
+Duality proves the cheapest prices reproduce the true worst case \emph{exactly}
+--- so the robust rule becomes ordinary linear inequalities a solver can
+handle.}
+
+\begin{remark}[Why the ``at most $\Gamma$ of the stored products'' is not a problem]
+The set $\Phi_s$ of stored products is itself a decision. This normally makes
+robust models hard (``endogenous uncertainty''). Here it causes no trouble:
+because the factor $x_{ps}$ multiplies $\Lhat_p$ inside \eqref{eq:innerLP}, a
+product that is \emph{not} stored contributes $0$, so we may let the sums range
+over all products without changing anything. The dualization then applies
+verbatim.
+\end{remark}
+
+% ======================================================================
+\section{The full robust placement model}
+% ======================================================================
+
+Applying Proposition~\ref{prop:1} at every station and substituting for
+\eqref{eq:work} gives the complete robust MILP:
+\begin{align}
+\min_{x,y,\theta,\mu}\quad & \sum_{o\in O}\sum_{s\in S} y_{os} \label{eq:R-obj}\\
+\text{s.t.}\quad
+& \sum_{s} x_{ps}=1 && \forall p, \label{eq:R-assign}\\
+& \sum_{p} x_{ps}\le \zeta_s && \forall s, \label{eq:R-slot}\\
+& x_{ps}\le y_{os} && \forall o,\,p\in P_o,\,s, \label{eq:R-link}\\
+& \sum_{p}\frac{\Lnom_p}{V_s}x_{ps} + \Gamma_s\,\theta_s + \sum_{p}\mu_{ps} \le T_s && \forall s, \label{eq:R-work}\\
+& \theta_s + \mu_{ps} \ge \frac{\Lhat_p}{V_s}x_{ps} && \forall p,s, \label{eq:R-dual}\\
+& x_{ps}\in\{0,1\},\ y_{os}\in[0,1],\ \theta_s\ge0,\ \mu_{ps}\ge0. \label{eq:R-dom}
+\end{align}
+Only the workload block changed: lines \eqref{eq:R-obj}--\eqref{eq:R-link} are
+identical to the nominal model. The cost of robustness is one small
+\emph{continuous} block ($\theta_s,\mu_{ps}$), not new yes/no variables --- so
+the problem does not get combinatorially harder.
+
+\begin{proposition}[Properties of the dial]\label{prop:2}
+For whole-number $\Gamma$:
+\begin{enumerate}[label=(\roman*),nosep]
+  \item $\Gamma=0$ recovers the nominal model \eqref{eq:obj}--\eqref{eq:work}.
+  \item If $\Gamma\ge\zeta_s$ for every $s$, the constraint becomes the full box
+  (Soyster): $\sum_p \tfrac{\Lnom_p+\Lhat_p}{V_s}x_{ps}\le T_s$.
+  \item Increasing $\Gamma$ only \emph{removes} feasible layouts, so the best
+  achievable visit count can only rise. More protection is never cheaper.
+\end{enumerate}
+\end{proposition}
+
+\plain{Turning the dial $\Gamma$ up from $0$ smoothly moves from ``ignore
+uncertainty'' to ``guard against everything at once'', and always costs (weakly)
+more visits.}
+
+% ======================================================================
+\section{How large are the deviations? Choosing $\Lhat_p$ and $\Gamma$}
+% ======================================================================
+
+The model needs the deviation sizes $\Lhat_p$. This is the hardest, most honest
+part: we must estimate them \emph{before} seeing the future, using only training
+data. The study tries three recipes:
+\begin{equation}
+\text{M1: } \Lhat_p = c_1\,\Lnom_p,\qquad
+\text{M2: } \Lhat_p = c_2\sqrt{\Lnom_p},\qquad
+\text{M3: } \Lhat_p = \operatorname{std}_{b=1,\dots,B}\bigl(L_p^{(b)}\bigr).
+\label{eq:models}
+\end{equation}
+\begin{itemize}[nosep]
+  \item \textbf{M1} assumes deviations grow in proportion to demand
+  (multiplicative drift).
+  \item \textbf{M2} assumes ``counting noise'' ($\sqrt{\cdot}$ scaling, as for
+  Poisson counts).
+  \item \textbf{M3} splits the training window into $B$ time-blocks and takes the
+  per-product standard deviation of the block counts. \emph{M3 is the only recipe
+  a planner can actually compute ahead of time} --- M1/M2 constants are fit to
+  realized deviations and are used only as diagnostics.
+\end{itemize}
+
+\subsection{Three quantities you need first: \texorpdfstring{$\bar W_s$}{Wbar}, \texorpdfstring{$W^{\mathrm n}_s$}{Wn}, and \texorpdfstring{$n$}{n}}
+
+The two diagnostics below (and most of the results) use three quantities. All
+three are ordinary warehouse counts.
+
+\begin{description}
+  \item[\quad Nominal load $\bar W_s$ ---``the work we planned for''.]
+  Take the products placed at station $s$, add up their \emph{training}
+  pick-lines, divide by the speed: $\bar W_s = \sum_{p\in\Phi_s}\Lnom_p/V_s$.
+  This is the workload the layout was \emph{designed} around. Example: if station
+  $7$ holds $60$ products whose training pick-lines total $41{,}000$ (and
+  $V_s=1$), then $\bar W_7 = 41{,}000$ ``grab'' operations over the planning
+  window.
+
+  \item[\quad Realized normalized load $W^{\mathrm n}_s$ ---``the work that
+  actually showed up''.] The same sum, but with the \emph{future} (test)
+  pick-lines $L^{\mathrm n}_p$, rescaled to the same total volume so the
+  comparison is apples-to-apples: $W^{\mathrm n}_s=\sum_{p\in\Phi_s}L^{\mathrm
+  n}_p/V_s$. If the products at station $7$ became more popular, then
+  $W^{\mathrm n}_7 > \bar W_7$ --- say $W^{\mathrm n}_7 = 77{,}000$. That gap,
+  $77{,}000$ vs.\ the planned $41{,}000$, \emph{is} the demand drift, felt at one
+  station.
+
+  \item[\quad Station occupancy $n$ ---``how many products live here''.]
+  $n=|\Phi_s|$ is simply the number of products stored at station $s$, at most
+  $\zeta_s$. If all $60$ slots are used, $n=60$. It appears in some formulas
+  because a station's workload is a \emph{sum of $n$ product demands}, so how much
+  that sum can randomly wobble depends on $n$ (more on this in
+  Remark~\ref{rem:prob}).
+\end{description}
+
+\paragraph{A running warehouse example (reused throughout).}
+Eight stations, $60$ slots each (all full, so $n=60$), equal speed $V_s=1$.
+Training demand totals $8\times 41{,}000$ pick-lines, so the fair share is
+$41{,}000$ per station and the ceiling is $T_s=\lceil 1.10\times
+41{,}000\rceil\approx 45{,}000$. A balanced training layout puts each station at
+$\bar W_s\approx 41{,}000$, comfortably under $45{,}000$. Now the future demand
+\emph{drifts}: a handful of products at \textbf{station 7} become much more
+popular, pushing its realized load to $W^{\mathrm n}_7 = 77{,}000$. Suppose the
+per-product increases (``deviations'') at station 7, largest first, are
+\[
+\Lhat\text{-realized}: \quad +14{,}000,\ +10{,}000,\ +7{,}000,\ +4{,}000,\ +2{,}000,\ \text{then small}.
+\]
+We will read the diagnostics off this one station.
+
+\subsection{The two retrospective diagnostics: cover and bind}
+
+Both ask a ``what budget would we have needed?'' question, \emph{after} seeing the
+drift (hence \emph{retrospective}). Recall $\psi_s(x;\Gamma)$ from
+\eqref{eq:innerLP} is just ``the sum of the $\Gamma$ largest deviations at station
+$s$'' --- the extra load the budget-$\Gamma$ protection reserves room for.
+
+\medskip
+\noindent\textbf{$\Gamma_{\mathrm{cover}}(s)$ --- how many spikes to \emph{see} the overload.}
+\begin{equation}
+\Gamma_{\mathrm{cover}}(s) = \min\Bigl\{\Gamma :\ \underbrace{\bar W_s}_{\text{planned}} + \underbrace{\psi_s(x;\Gamma)}_{\text{$\Gamma$ biggest spikes}} \ \ge\ \underbrace{W^{\mathrm n}_s}_{\text{what happened}}\Bigr\}.
+\end{equation}
+It is the smallest budget whose reserved room reaches the load that actually
+occurred --- i.e.\ the number of product-spikes we would have had to insure for
+the robust constraint to have \emph{predicted} this overload.
+
+\emph{Worked out at station 7:} we need planned $41{,}000$ plus spikes to reach
+$77{,}000$, i.e.\ $+36{,}000$ of deviation.
+\[
+\Gamma{=}1:\,+14{,}000\ (55{,}000);\quad
+\Gamma{=}2:\,+24{,}000\ (65{,}000);\quad
+\Gamma{=}3:\,+31{,}000;\quad
+\Gamma{=}4:\,+35{,}000;\quad
+\Gamma{=}5:\,+37{,}000\ (78{,}000)\ \ge 77{,}000.
+\]
+So $\Gamma_{\mathrm{cover}}(7)=5$: insuring the \emph{five} biggest movers (out
+of $60$ products) would have covered this overload. A \emph{small}
+$\Gamma_{\mathrm{cover}}$ means the overload was caused by a few big movers, not
+by diffuse noise --- exactly the situation the budget model is good at.
+
+\medskip
+\noindent\textbf{$\Gamma_{\mathrm{bind}}(s)$ --- how much protection before the layout must change.}
+\begin{equation}
+\Gamma_{\mathrm{bind}}(s) = \min\{\Gamma :\ \bar W_s + \psi_s(x;\Gamma) > T_s\}.
+\end{equation}
+It is the smallest budget at which the protected left-hand side breaks the
+\emph{training} ceiling $T_s$ --- i.e.\ the point where adding protection would
+force the optimizer to \emph{rebalance the layout} at training time.
+
+\emph{Worked out at station 7:} planned $41{,}000$ plus spikes must exceed
+$T_s=45{,}000$, i.e.\ just $+4{,}000$. But the single largest spike is already
+$+14{,}000$, so $\Gamma{=}1$ already gives $55{,}000 > 45{,}000$. Hence
+$\Gamma_{\mathrm{bind}}(7)=1$: even insuring \emph{one} product blows the training
+ceiling here, so \emph{any} nonzero budget forces the layout to move products
+around. A \emph{small} $\Gamma_{\mathrm{bind}}$ means protection ``bites''
+immediately; a large one means the station has slack to absorb spikes for free.
+
+\plain{$\Gamma_{\mathrm{cover}}$ = ``how many product-spikes would we have had to
+insure to catch this overload'' (small = a few culprits). $\Gamma_{\mathrm{bind}}$
+= ``how little insurance already forces us to rebuild the layout'' (small =
+protection is expensive here). In the example, $\Gamma_{\mathrm{cover}}=5$ and
+$\Gamma_{\mathrm{bind}}=1$: cheap to detect, but it forces a rebuild at once.}
+
+\begin{remark}[A probabilistic reading --- why a small budget is usually enough]
+\label{rem:prob}
+Why not just protect against \emph{all} $n$ products spiking at once (the paranoid
+box)? Because that essentially never happens. Picture each of the $n$ products at
+a station as a coin: on any given future day its demand lands a bit \emph{above}
+or a bit \emph{below} its estimate, roughly at random. For the station to
+overload, an unusually large number of coins must come up ``high''
+\emph{simultaneously}. Just as flipping $60$ fair coins almost never gives $50$
+heads, many products spiking together is very unlikely --- the ups and downs
+mostly cancel. Formally, if the deviations are independent and symmetric,
+\begin{equation}
+\Pr\Bigl[\underbrace{\textstyle\sum_{p\in\Phi_s}\tilde L_p/V_s}_{\text{station's actual work}} > T_s\Bigr]
+\;\lesssim\; \exp\!\bigl(-\Gamma^2/(2n)\bigr),\qquad n=|\Phi_s|,
+\end{equation}
+so the risk of overload \emph{shrinks very fast} as the budget $\Gamma$ grows.
+Because random ups and downs partly cancel, the \emph{typical} net swing of a sum
+of $n$ items grows like $\sqrt n$, not like $n$ (the ``random-walk'' rule). So a
+budget of about $\sqrt n$ already covers the realistic worst case.
+
+\emph{Example.} With $n=60$ products at a station, $\sqrt{60}\approx 8$. Insuring
+the $8$ biggest possible spikes ($\Gamma=8$) already makes an overload very
+unlikely --- yet it is far cheaper than the paranoid box that guards all $60$.
+That ``$\Gamma\sim\sqrt n$ buys most of the safety'' is the whole appeal of the
+Bertsimas--Sim dial. (Real pick-line counts are not perfectly symmetric, so this
+is only a guide; the study leans on the data-driven diagnostics above instead.)
+\end{remark}
+
+% ======================================================================
+\section{How the model is actually solved}
+% ======================================================================
+
+Even though the model is ``only'' linear, the stations are identical, which
+creates \emph{symmetry} that stalls exact branch-and-bound. So the solver
+pipeline is:
+\begin{enumerate}[label=(\arabic*),nosep]
+  \item a \textbf{feasibility-first greedy} start (place heaviest products first,
+  then swap to repair any workload violation);
+  \item a \textbf{deterministic local search} that swaps products to reduce
+  visits, keeping the robust constraint as a hard filter;
+  \item a \textbf{MILP solver} (HiGHS or CPLEX) warm-started with that
+  incumbent, used mainly for bounds and for \emph{proofs of infeasibility}.
+\end{enumerate}
+The visit objective is measured on the \emph{real} orders; the training supports
+are only used to shape the placement. Two solver backends are available and give
+identical models --- this lets us check that conclusions are not a solver
+artifact (Section~\ref{sec:iscf10kt}).
+
+% ======================================================================
+\section{Results}
+% ======================================================================
+
+We report four things: the audit (Part A), the robust experiment on a small
+drifting instance, a stationary ``control'' benchmark, and a second drifting
+instance solved with two different solvers.
+
+\subsection{How to read every number (with the running example)}
+\label{sec:metrics}
+
+Before any table, here is what each column means, in warehouse terms, using the
+same eight-station example (fair ceiling $T^{\mathrm n}=45{,}000$; after drift,
+station 7 carries $77{,}000$, and say two other stations creep to $48{,}000$ and
+$46{,}000$, the rest sit at or below $45{,}000$).
+
+\begin{description}
+  \item[\quad Bindingness $B$ (Eq.\,\ref{eq:binding}) --- ``is the test even big
+  enough to judge?''] The ratio of total test work to total ceiling capacity.
+  $B\approx 1$ means the test window carries about as much work as the ceilings
+  assume, so an overload \emph{can} show up. $B\ll 1$ means the test window is
+  tiny (few orders), so \emph{no} station can look full --- any ``feasible''
+  verdict there is meaningless. It is a trust meter for the whole check, not a
+  property of the layout.
+
+  \item[\quad Peak $=\displaystyle\max_s \frac{W^{\mathrm n}_s}{T^{\mathrm n}_s}$
+  --- ``how bad is the worst station?''] Take the busiest station's realized
+  workload and divide by the fair ceiling. The ceiling already includes the
+  $10\%$ slack, so:
+  \begin{itemize}[nosep]
+    \item peak $=1.0$ $\Rightarrow$ the worst station is \emph{exactly} at its
+    allowed limit;
+    \item peak $=1.71$ $\Rightarrow$ it is carrying $71\%$ \emph{more} work than
+    allowed (our station 7: $77{,}000/45{,}000=1.71$);
+    \item peak $=2.5$ $\Rightarrow$ two-and-a-half times its fair ceiling --- a
+    serious bottleneck.
+  \end{itemize}
+  Lower is better; anything above $1.0$ is an overloaded station. Peak is a
+  \emph{severity} measure (how bad the worst case is), not a count.
+
+  \item[\quad Violation count (``viol.\ /8'') --- ``how many stations are over
+  the line?''] Simply the number of stations whose realized load exceeds the
+  ceiling. In our snapshot, three stations ($77{,}000$, $48{,}000$, $46{,}000$)
+  are above $45{,}000$, so the count is $3$ out of $8$.
+  \emph{Why do tables show a fraction like $2.6$?} Because each result is an
+  \emph{average over the five temporal cuts}. If the five cuts had counts
+  $3,3,3,2,2$, the mean is $2.6$ --- you cannot have $2.6$ overloaded stations in
+  a single warehouse; it just means ``about two-to-three of the eight, typically''.
+  Violation count is an \emph{incidence} measure (how many), complementary to
+  peak (how bad).
+
+  \item[\quad Excess fraction $X$ --- ``how much of the work spills over the
+  ceilings?''] Add up, over all stations, the workload sitting \emph{above} the
+  ceiling, and divide by the total workload:
+  $X=\sum_s (W^{\mathrm n}_s-T^{\mathrm n}_s)^+ / \sum_s W^{\mathrm n}_s$. In the
+  snapshot the overflow is $(77{-}45)+(48{-}45)+(46{-}45)=36$ (thousands) out of
+  $\approx 360$ total, so $X\approx 10\%$. It answers ``what share of all the
+  picking work is piled above where stations should cap out'' --- a volume view,
+  between peak (one station) and count (how many).
+
+  \item[\quad PoR (Price of Robustness) --- ``the insurance premium, paid in
+  visits''] The percent \emph{increase} in \emph{training} visits caused by
+  switching on the robust budget, versus the plain $\Gamma=0$ layout. Example
+  from the real data: the nominal layout needs $222{,}270$ visits on the training
+  orders; the $\Gamma=1$ robust layout needs $224{,}453$, so
+  $\mathrm{PoR}=(224{,}453-222{,}270)/222{,}270 = +0.98\%$. You pay about $1\%$
+  more stops to buy the protection.
+
+  \item[\quad $G$ (out-of-sample gain) --- ``did protection also help on real
+  future orders?''] The percent \emph{decrease} in \emph{test} visits versus
+  $\Gamma=0$. Positive $G$ = the robust layout also picks future orders with fewer
+  visits; negative $G$ = it costs \emph{more} visits out of sample too. Real
+  example: nominal needs $237{,}287$ test visits, robust needs $238{,}328$, so
+  $G=(237{,}287-238{,}328)/237{,}287=-0.44\%$. \emph{$G$ is negative throughout
+  this study}: the robust budget buys workload safety, never cheaper visits.
+\end{description}
+
+\plain{Three ways to look at overload: \textbf{peak} = how bad is the worst
+station; \textbf{violation count} = how many stations are over (a fraction like
+$2.6$ is just the average across the five cuts); \textbf{$X$} = what share of all
+the work spills over. And two prices: \textbf{PoR} = extra visits you pay to
+train the robust layout; \textbf{$G$} = whether it also helps on real future
+orders (here it never does --- it insures feasibility, not visits).}
+
+% ----------------------------------------------------------------------
+\subsection{The audit, on the 480-product instance}
+% ----------------------------------------------------------------------
+
+Table~\ref{tab:audit} shows the two ways of checking feasibility side by side,
+over the five expanding temporal cuts (metrics defined in
+Section~\ref{sec:metrics}). Read the columns as:
+\begin{itemize}[nosep]
+  \item \textbf{Cut} --- which train/test split. Cut 0 is $50/50$ (train on the
+  first half of orders, test on the second half); cut 4 is $90/10$ (train on
+  $90\%$, test on the last $10\%$). Later cuts have a \emph{smaller} test window.
+  \item \textbf{$B$} --- bindingness: is the test window big enough for the check
+  to mean anything? ($B$ near $1$ = yes; $B$ near $0$ = the test is too small to
+  overload anything.)
+  \item \textbf{as-run viol.} --- stations flagged using the \emph{training}
+  ceiling (the project's original check).
+  \item \textbf{norm.\ viol.} --- stations flagged using the \emph{fair}
+  (test-volume) ceiling $T^{\mathrm n}_s$ of Eq.\,\eqref{eq:tnorm}.
+  \item \textbf{norm.\ peak} and \textbf{$X$} --- severity and spill-over under
+  the fair ceiling.
+\end{itemize}
+
+\begin{table}[h]\centering
+\caption{iscf480, five temporal cuts. As-run vs. volume-normalized checks.}
+\label{tab:audit}
+\begin{tabular}{cccccc}
+\toprule
+Cut & $B$ & as-run viol.\ (/8) & norm.\ viol.\ (/8) & norm.\ peak & $X$ (\%) \\
+\midrule
+0 & 1.005 & 4 & 3 & 1.71 & 11.0 \\
+1 & 0.693 & 2 & 3 & 1.91 & 19.8 \\
+2 & 0.457 & 1 & 3 & 2.25 & 26.6 \\
+3 & 0.281 & 0 & 2 & 2.52 & 27.2 \\
+4 & 0.125 & 0 & 3 & 2.38 & 30.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Reading two rows.} \textbf{Cut 0} ($50/50$): $B=1.005$, so the test window
+is as heavy as the ceilings assume and the check is meaningful --- both views
+roughly agree ($4$ vs $3$ stations over). \textbf{Cut 4} ($90/10$): $B=0.125$, so
+the test window carries only about an eighth of the assumed work; the training
+ceiling is now hopelessly loose, and the as-run check reports $0$ stations over
+--- ``perfectly clean''. But fairly measured (fair ceiling), $3$ of $8$ stations
+are still overloaded, the worst at $2.38\times$ its ceiling, with $30.7\%$ of the
+(little) test work spilling over.
+
+Now look down the two violation columns. The \textbf{as-run} column marches
+$4,2,1,0,0$ --- it looks like feasibility keeps \emph{improving} as we move to
+later cuts. But that is an illusion: it is tracking $B$ falling
+$1.005\to 0.125$, i.e.\ the test window shrinking, \emph{not} the layout getting
+better. The \textbf{fair} column stays at $2$--$3$ overloaded stations while the
+peak actually \emph{worsens} ($1.71\to 2.52$). Same layouts, opposite stories.
+
+\plain{The ``all clean'' late cuts are a mirage created by a shrinking test
+window ($B\to0$). Judged on a fair, equal-volume basis, $2$--$3$ of the $8$
+stations are overloaded on \emph{every} cut, by up to $2.5\times$ --- and the
+picture gets worse, not better, exactly where the original check says
+``feasible''.}
+
+% ----------------------------------------------------------------------
+\subsection{The robust experiment, on the 480-product instance}
+% ----------------------------------------------------------------------
+
+Table~\ref{tab:iscf480} compares arms (means over the cuts). Here $\alpha$ is a
+partial-insurance factor: the model is built with $\alpha\,\Lhat_p$ instead of
+$\Lhat_p$, because full-size protection does not fit the $10\%$ slack.
+
+\begin{table}[h]\centering
+\caption{iscf480 robust arms (means over the five cuts).}
+\label{tab:iscf480}
+\begin{tabular}{lccccc}
+\toprule
+Arm & PoR (\%) & $G$ (\%) & viol.\ (/8) & peak & $X$ (\%) \\
+\midrule
+$\Gamma=0$ (nominal) & 0.00 & 0.00 & 2.6 & 1.77 & 17.4 \\
+$\Gamma=1,\ \alpha=0.5$ & 2.34 & $-4.44$ & 2.6 & \textbf{1.59} & \textbf{13.0} \\
+tighten $\beta=1.02$ (same price) & 2.26 & $-1.73$ & 2.8 & 1.75 & 16.9 \\
+Hexaly reference & $-3.88$ & $6.16$ & 2.8 & 2.15 & 23.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Findings:
+\begin{itemize}[nosep]
+  \item \textbf{Cheap partial insurance helps severity.} $\Gamma=1$ at half
+  strength cuts the peak $1.77\to1.59$ and $X$ from $17.4\%\to13.0\%$ for a
+  $2.3\%$ visit price --- and the peak falls on all five cuts.
+  \item \textbf{Blunt tightening does not.} Lowering the ceiling for everyone at
+  the \emph{same} price leaves the peak at $1.75$. The budget helps because it
+  specifically avoids co-locating two big ``spiky'' products; uniform tightening
+  only rescales the average.
+  \item \textbf{Full protection does not fit.} At full strength the solver
+  \emph{proves} infeasibility for $\Gamma\ge4$: the drift is simply bigger than
+  the $10\%$ headroom. Insuring it fully would require buying more capacity.
+  \item \textbf{No free visits.} Every robust arm has $G<0$: it costs visits out
+  of sample. The thing being insured is workload feasibility, not visits.
+  \item \textbf{Better visit optimizers concentrate load.} The strong Hexaly
+  layout wins visits but has the \emph{worst} peak ($2.15$): squeezing visits
+  packs correlated, drifting products together.
+\end{itemize}
+
+% ----------------------------------------------------------------------
+\subsection{A control: the stationary article benchmark (exp02a)}
+% ----------------------------------------------------------------------
+
+To isolate \emph{why} protection sometimes helps, the same solver was run on 29
+synthetic benchmark instances (50--2000 products) that are \emph{near-stationary}
+(little drift). Table~\ref{tab:exp02a} summarizes.
+
+\begin{table}[h]\centering
+\caption{exp02a benchmark (means; $\beta=1.02$ is uniform tightening).}
+\label{tab:exp02a}
+\begin{tabular}{lccccc}
+\toprule
+Size & arm & PoR (\%) & viol.\ /$|S|$ & peak (max) & infeasible \\
+\midrule
+50   & $\Gamma=0$ & 0.00 & 0.67/5  & 1.00 (1.05) & 0 \\
+50   & $\Gamma=4$ & 2.29 & 0.00    & 0.95 (0.98) & 0 \\
+500  & $\Gamma=4$ & 0.13 & 0.20    & 0.99 (1.00) & 0 \\
+1000 & $\Gamma=4$ & 0.94 & 0.50    & 1.00 (1.00) & 0 \\
+2000 & $\Gamma=4$ & 0.47 & 0.33    & 1.00 (1.02) & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Here the nominal layout is already essentially feasible out of sample
+(violations are hairline). Full protection is \emph{free} ($\text{PoR}<1\%$, no
+infeasibility) --- the \emph{opposite} of the drifting instance, where $\Gamma\ge
+4$ was impossible.
+
+\plain{On stationary data there is nothing to insure, so protection costs
+nothing and gains little. The value \emph{and} the cost of the robust workload
+constraint are both driven by demand drift. This is a clean ``negative
+control'': it confirms \emph{why} the method sometimes helps, without claiming it
+always does.}
+
+% ----------------------------------------------------------------------
+\subsection{A second drifting instance and two solvers (iscf10kt)}
+\label{sec:iscf10kt}
+% ----------------------------------------------------------------------
+
+The strongest positive claim above was ``targeted budget beats equal-price
+uniform tightening''. A single instance is weak evidence, so we re-ran the
+experiment on a larger drifting instance (4328 products, 8 stations, five
+temporal cuts), using the honest, leakage-free calibration (M3 at full strength,
+$\alpha=1$), \emph{and} solved it with \emph{both} the HiGHS and the CPLEX
+backends.
+
+\paragraph{The two solvers agree exactly.}
+Across all 25 arms, CPLEX and HiGHS returned \emph{identical} numbers (maximum
+difference $0.0$ on every metric). At this scale both solvers simply return the
+greedy+local-search warm start (they cannot close the large optimality gap in
+the time budget). So the solver choice does not change any conclusion --- but it
+also means the numbers rest on a metaheuristic incumbent, which is about $21.6\%$
+worse on visits than the strong Hexaly layout.
+
+\paragraph{The dominance claim does \emph{not} replicate.}
+Table~\ref{tab:iscf10kt} shows, per cut, the peak of the targeted budget
+($\Gamma=1$) versus equal-price uniform tightening ($\beta=1.02$).
+
+\begin{table}[h]\centering
+\caption{iscf10kt: targeted budget vs.\ uniform tightening, out-of-sample peak
+(identical under CPLEX and HiGHS). ``winner'' = lower peak.}
+\label{tab:iscf10kt}
+\begin{tabular}{ccccc}
+\toprule
+Cut & nominal peak & $\Gamma=1$ peak (PoR) & $\beta=1.02$ peak (PoR) & winner \\
+\midrule
+0 & 1.381 & \textbf{1.158} ($-1.1\%$) & 1.255 ($+1.0\%$) & $\Gamma=1$ \\
+1 & 1.488 & 1.404 ($-0.5\%$) & \textbf{1.346} ($+1.7\%$) & tighten \\
+2 & 1.495 & 1.426 ($+1.4\%$) & \textbf{1.405} ($+1.2\%$) & tighten \\
+3 & 1.893 & \textbf{1.534} ($-0.0\%$) & 1.658 ($-0.2\%$) & $\Gamma=1$ \\
+4 & 2.129 & 2.015 ($+1.4\%$) & \textbf{1.965} ($+0.1\%$) & tighten \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}[nosep]
+  \item \textbf{Mechanism survives:} $\Gamma=1$ lowers the peak versus nominal on
+  \emph{all five} cuts (e.g.\ $1.893\to1.534$).
+  \item \textbf{Competitive claim fails:} $\Gamma=1$ beats uniform tightening on
+  peak in only $2$ of $5$ cuts; tightening wins or ties in the other $3$. On the
+  small instance the budget won $5/5$; here it is a coin-flip.
+  \item \textbf{Full protection still does not fit:} $\Gamma=2$ was
+  undetermined/infeasible on $4$ of $5$ cuts. Where it did fit (cut 0) it nearly
+  restored feasibility (peak $1.03$) but at a heavy visit cost ($G=-8.9\%$).
+  \item \textbf{Still no free visits:} $G<0$ for $\Gamma=1$ on $4$ of $5$ cuts.
+  \item \textbf{A silver lining for M3:} unlike the small instance, honest
+  full-strength M3 was feasible at $\Gamma=1$ on all five cuts, so the planner's
+  own deviation estimate is usable on this larger stream.
+\end{itemize}
+
+\plain{On a second, independent drifting instance the robust budget still trims
+the worst station, but it is \emph{no longer clearly better} than simply
+tightening the ceiling. And an exact solver confirms, rather than fixes, the
+reliance on the heuristic. The paper's headline ``targeted protection dominates''
+looks instance-specific, not a general law.}
+
+% ======================================================================
+\section{What it all means (plain summary)}
+% ======================================================================
+
+\begin{enumerate}
+  \item \textbf{The audit is solid and important.} Reporting ``$0$ stations
+  overloaded'' on late temporal cuts is misleading; that verdict mostly measures
+  how little test demand there was. Feasibility should be judged on a common
+  volume basis \eqref{eq:tnorm}.
+  \item \textbf{The robust model is mathematically clean.} Bertsimas--Sim gives
+  an exact, linear, easy-to-add protection for the workload constraint
+  (Proposition~\ref{prop:1}), with a single intuitive dial $\Gamma$
+  (Proposition~\ref{prop:2}). This part is textbook-correct.
+  \item \textbf{But the practical case is narrow.}
+  \begin{itemize}[nosep]
+    \item It insures \emph{feasibility}, never visits ($G<0$ throughout).
+    \item The honest ex-ante deviation model (M3) often under-sizes real drift,
+    so on the small instance the ``win'' relied on a hand-tuned half-strength
+    factor.
+    \item Its strongest claim (targeted beats uniform tightening) did not
+    replicate on a second drifting instance.
+    \item Full protection does not fit the given capacity --- insuring big drift
+    is a capacity-investment decision, not just a modelling one.
+  \end{itemize}
+  \item \textbf{Solver honesty.} At realistic scale, exact (CPLEX) and
+  open-source (HiGHS) solvers agree exactly because both fall back on the
+  heuristic incumbent; the gap comes from the weak linear relaxation of the visit
+  objective, not the solver.
+\end{enumerate}
+
+\paragraph{One-sentence takeaway.}
+The study correctly exposes a hidden flaw in how workload feasibility was
+measured and offers a principled, correctly-implemented knob to protect against
+demand drift --- but that knob buys feasibility (not visits), works only
+partially inside the existing capacity, and is not universally better than the
+simplest alternative, so its benefits should be stated as conditional rather than
+general.
+
+% ======================================================================
+\section*{Reproducibility (where the code lives)}
+% ======================================================================
+\addcontentsline{toc}{section}{Reproducibility}
+
+\begin{itemize}[nosep]
+  \item Nominal/robust model \& solver (HiGHS): \texttt{src/milp\_highs\_robust.py}.
+  \item CPLEX backend (twin model): \texttt{src/milp\_cplex\_robust.py}.
+  \item Experiment harness (paired $\Gamma$-sweep, both backends via
+  \texttt{-{}-backend}): \texttt{src/run\_bs\_robust\_experiment.py}.
+  \item Stationary-benchmark adapter: \texttt{src/exp02a\_bs\_adapter.py}.
+  \item Feasibility evaluator (as-run + normalized): \texttt{src/evaluate\_layout\_robust.py}.
+  \item Results: \texttt{results/} (including
+  \texttt{experiment\_iscf10kt\_cplex/} and \texttt{experiment\_iscf10kt\_highs/}).
+\end{itemize}
+
+\end{document}

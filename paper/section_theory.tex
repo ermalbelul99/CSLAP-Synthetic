@@ -1,0 +1,533 @@
+% ======================================================================
+% section_theory.tex — Budget-of-uncertainty robust workload constraint
+% for the CSLAP placement model. THEORY ONLY (no implementation).
+%
+% Compilable inside a standard article-class document with
+% amsmath, amssymb, amsthm, natbib (authoryear), and cleveref
+% (\usepackage[capitalize,noabbrev,nameinlink]{cleveref}, as in the
+% project drafts) loaded, and with
+%   \newtheorem{proposition}{Proposition}
+%   \newtheorem{remark}{Remark}
+% defined in the preamble. Citations use \citet/\citep with the keys
+% bertsimas2004 (the robust draft's existing key for Bertsimas & Sim 2004;
+% do NOT introduce a duplicate bertsimas2004price entry on merge),
+% bertsimas2003robust (Bertsimas & Sim 2003, Math. Program.),
+% soyster1973convex, bental2009robust.
+% The label sec:empirical is wired by the assembler.
+% ======================================================================
+
+\section{A budget-of-uncertainty robust counterpart for the workload constraint}
+\label{sec:theory}
+
+The empirical companion (\Cref{sec:empirical}) documents a failure mode of
+trained CSLAP layouts under demand drift: layouts that satisfy the station
+workload constraint on the training window violate it out-of-sample on early
+temporal cuts. This section develops the exact robust counterpart of the
+workload constraint under budgeted pick-line uncertainty, targeting this
+failure mode; how much protection is actually delivered depends on the
+calibrated uncertainty set and is assessed in \Cref{sec:calibration}.
+Uncertainty is placed on the pick-line coefficients $L_p$ only; the visits
+objective is untouched. The construction is the budget-of-uncertainty model
+of \citet{bertsimas2004}, in the row-wise robust-optimization framework of
+\citet{bental2009robust}, specialized to the CSLAP placement MILP.
+Symbols follow the project notation: $P$, $O$, $S$ are the product, order, and
+station sets; $P_o$ the support of order $o$; $\zeta_s$, $V_s$, $T_s$ the slot
+capacity, processing speed, and time capacity of station $s$.
+
+\subsection{Nominal placement model}
+\label{sec:nominal}
+
+% --- removable block: restates the nominal model of the COR manuscript with
+% --- its canonical labels (obj, con14--con17) so this section compiles
+% --- standalone. Delete on merge into the manuscript and keep the \eqref's.
+The nominal placement model assigns every product to exactly one station and
+minimizes the total number of station visits over the training orders. The
+decision variables are $x_{ps} \in \{0,1\}$ (product $p \in P$ assigned to
+station $s \in S$) and the auxiliary visit variables $z_{os} \in [0,1]$ (order
+$o \in O$ visits station $s$, completely dependent on $x_{ps}$):
+\begin{equation}
+\min \sum_{o \in O} \sum_{s \in S} z_{os}
+\label{obj}
+\end{equation}
+subject to
+\begin{align}
+&\sum_{s \in S} x_{ps} = 1 \quad \forall p \in P, \label{con14}\\
+&\sum_{p \in P} x_{ps} \leq \zeta_s \quad \forall s \in S, \label{con15}\\
+&x_{ps} \leq z_{os} \quad \forall p \in P_o,\ \forall o \in O,\ \forall s \in S, \label{con16}\\
+&\sum_{p \in P} x_{ps} \cdot \frac{L_p}{V_s} \leq T_s \quad \forall s \in S, \label{con17}\\
+&x_{ps} \in \{0, 1\}, \quad z_{os} \in [0,1], \quad \forall p \in P,\ o \in O,\ s \in S. \nonumber
+\end{align}
+Constraint \eqref{con14} assigns each product to exactly one station,
+\eqref{con15} is the physical slot capacity, \eqref{con16} links assignments to
+visits (a logical OR; no big-$M$ is needed because the objective pushes
+$z_{os}$ down to $\max_{p \in P_o} x_{ps}$), and \eqref{con17} bounds the
+workload of each station over the planning window.\footnote{The manuscripts typeset the summation in
+\eqref{con17} as $\sum_{p \in P_o}$ with no quantifier on $o$; the column-generation
+pricing model and the implementation both sum over \emph{all} products assigned
+to the station, so we write $\sum_{p \in P}$ here.}
+
+The workload coefficient $L_p$ is a \emph{point estimate}: the training-window
+pick-line count of product $p$, computed as the number of distinct training
+orders containing $p$ (\texttt{REAL\_LINES}; on instances with duplicate
+order--product rows the raw-line and distinct-order conventions differ ---
+see the BERNER caveat in \Cref{sec:empirical}). The time capacity is
+calibrated on the same window by the
+project's $10\%$ operational-slack rule,
+\begin{equation}
+T_s \;=\; \Bigl\lceil\, 1.10 \cdot \frac{\sum_{p \in P} L_p}{V_s\,|S|} \,\Bigr\rceil,
+\label{eq:bs-slack}
+\end{equation}
+so a layout solving \eqref{obj}--\eqref{con17} is guaranteed workload-feasible
+\emph{only for the estimate $L_p$ of the training window}. When the realized
+pick-line vector of a later operating window drifts away from the estimate ---
+as the temporal experiments of \Cref{sec:empirical} show it does ---
+\eqref{con17} offers no protection: a single product whose demand doubles can
+push its station past $T_s$ while the model still certifies feasibility.
+
+\subsection{Budget-of-uncertainty model for pick-line workloads}
+\label{sec:budget}
+
+Let $L^0_p$ denote the nominal (training-window) estimate of the pick-line
+count --- the quantity written $L_p$ in \eqref{con17} --- and let
+$\hat L_p \ge 0$ be a deviation magnitude for product
+$p$.\footnote{The superscripted symbol $L^0_p$ is chosen deliberately: the
+accented $\bar L_p$ is reserved by the covering draft for the
+closure-inflated line count (and $\bar T_s$ for its recalibrated capacity),
+so no renaming rule is needed when the two studies are merged into one
+manuscript.} The uncertain coefficient is modeled as
+\begin{equation}
+\tilde L_p \in \bigl[L^0_p - \hat L_p,\ L^0_p + \hat L_p\bigr]
+\quad \forall p \in P,
+\label{eq:bs-uncset}
+\end{equation}
+with the budget restriction of \citet{bertsimas2004}: in any realization,
+\emph{at most $\Gamma$
+products deviate from their nominal value simultaneously}, where
+$\Gamma \in \{0, 1, \dots, |P|\}$ is the conservatism knob. Since the workload
+constraint is a $\le$ row with nonnegative coefficients, only upward
+deviations threaten it, so the worst case places every deviating coefficient
+at its upper endpoint $L^0_p + \hat L_p$.
+
+Write $\Phi_s = \{p \in P : x_{ps} = 1\}$ for the set of products assigned to
+station $s$ (the Hexaly set-variable of the project notation). Requiring
+\eqref{con17} to hold for every realization in the budgeted set gives the
+robust workload constraint
+\begin{equation}
+\sum_{p \in \Phi_s} \frac{L^0_p}{V_s}\, x_{ps}
+\;+\;
+\max_{\substack{J \subseteq \Phi_s \\ |J| \le \Gamma}}\;
+\sum_{p \in J} \frac{\hat L_p}{V_s}\, x_{ps}
+\;\le\; T_s
+\qquad \forall s \in S.
+\label{eq:bs-robust}
+\end{equation}
+On $\Phi_s$ the factors $x_{ps} = 1$ are redundant; they are retained to make
+the decision-dependence of the adversary's ground set explicit, and they let
+the sums range over all of $P$ without changing value (terms with
+$x_{ps} = 0$ vanish). The inner combinatorial maximization admits the
+equivalent continuous relaxation
+\begin{equation}
+\psi_s(x;\Gamma) \;=\; \max_{z} \;
+\sum_{p \in P} \frac{\hat L_p}{V_s}\, x_{ps}\, z_p
+\quad \text{s.t.} \quad
+\sum_{p \in P} z_p \le \Gamma, \qquad
+0 \le z_p \le 1 \ \ \forall p \in P.
+\label{eq:bs-inner}
+\end{equation}
+For fixed $x$, \eqref{eq:bs-inner} is a linear program in $z$ alone: the $x$
+enter only through the constant objective coefficients
+$d_{ps} := (\hat L_p / V_s)\, x_{ps} \ge 0$. Its constraint matrix --- one
+cardinality row plus the identity box --- is an interval matrix, hence totally
+unimodular; equivalently, by the greedy argument, since all $d_{ps} \ge 0$ an
+optimal $z$ sets $z_p = 1$ on the $\Gamma$ largest coefficients (on all
+positive ones if fewer than $\Gamma$) and $z_p = 0$ elsewhere. For integer
+$\Gamma$ integrality of the inner adversarial problem is therefore
+\emph{free}, and $\psi_s(x;\Gamma)$ equals the set-maximum in
+\eqref{eq:bs-robust}.\footnote{The adversary variable $z_p$ (single subscript)
+is unrelated to the visit variable $z_{os}$ and to the cover-pricing $z_p$ of
+the covering draft; it exists only inside \eqref{eq:bs-inner} and is dualized
+away in \Cref{prop:bs-counterpart}.}
+
+\begin{proposition}[Exact linear counterpart]
+\label{prop:bs-counterpart}
+Fix a station $s \in S$, an integer budget $\Gamma \in \mathbb Z_{\ge 0}$,
+and a binary assignment vector
+$x_{\cdot s} \in \{0,1\}^{P}$.\footnote{Integrality of $\Gamma$ is what makes
+the LP value $\psi_s(x;\Gamma)$ of \eqref{eq:bs-inner} coincide with the
+set-maximum in \eqref{eq:bs-robust}; for fractional $\Gamma$ the
+($\Rightarrow$) direction fails: one assigned product with
+$\hat L_p / V_s = 1$, zero nominal slack, and $\Gamma = 1/2$ satisfies
+\eqref{eq:bs-robust} (only $J = \emptyset$ is admissible), yet
+$\psi_s(x;1/2) = 1/2 > 0$, so no multipliers exist. Real-valued budgets can
+be recovered by adding the Bertsimas--Sim fractional deviation term
+($\lfloor \Gamma \rfloor$ full deviations plus one scaled by
+$\Gamma - \lfloor \Gamma \rfloor$) to \eqref{eq:bs-robust}; integer budgets
+suffice here, consistent with $\Gamma \in \{0, 1, \dots, |P|\}$ above.}
+The robust workload constraint
+\eqref{eq:bs-robust} holds if and only if there exist multipliers
+$\theta_s \ge 0$ and $\mu_{ps} \ge 0$, $p \in P$, such that
+\begin{align}
+&\sum_{p \in P} \frac{L^0_p}{V_s}\, x_{ps}
+\;+\; \Gamma\, \theta_s
+\;+\; \sum_{p \in P} \mu_{ps}
+\;\le\; T_s, \label{eq:bs-cpt-load}\\[2pt]
+&\theta_s + \mu_{ps} \;\ge\; \frac{\hat L_p}{V_s}\, x_{ps}
+\qquad \forall p \in P. \label{eq:bs-cpt-dualfeas}
+\end{align}
+Since $\hat L_p / V_s$ and $L^0_p / V_s$ are data constants, each right-hand
+side is a constant multiple of the decision variable $x_{ps}$, so
+\eqref{eq:bs-cpt-load} and \eqref{eq:bs-cpt-dualfeas} are linear in
+$(x, \theta, \mu)$; no integrality of $x$ is needed for linearity.
+\end{proposition}
+
+\begin{proof}
+By the discussion following \eqref{eq:bs-inner} --- the step in which
+integrality of $\Gamma$ is used --- constraint
+\eqref{eq:bs-robust} is equivalent to
+\begin{equation}
+\psi_s(x;\Gamma) \;\le\; T_s - \sum_{p \in P} \frac{L^0_p}{V_s}\, x_{ps}
+\;=:\; \rho_s(x),
+\label{eq:bs-slackform}
+\end{equation}
+where $\rho_s(x)$ is the nominal slack of station $s$. The inner LP
+\eqref{eq:bs-inner}, with coefficients
+$d_{ps} = (\hat L_p / V_s)\, x_{ps} \ge 0$, is \emph{feasible} ($z = 0$) and
+\emph{bounded above} ($\sum_p d_{ps} z_p \le \sum_p d_{ps} < \infty$ since
+$z_p \le 1$), so it attains a finite optimum $\psi_s(x;\Gamma)$. Associate
+the dual variable $\theta_s \ge 0$ with the budget row
+$\sum_p z_p \le \Gamma$ and $\mu_{ps} \ge 0$ with each upper bound
+$z_p \le 1$. The LP dual of \eqref{eq:bs-inner} is
+\begin{equation}
+\min_{\theta_s,\, \mu_{\cdot s}} \;\; \Gamma\,\theta_s + \sum_{p \in P} \mu_{ps}
+\quad \text{s.t.} \quad
+\theta_s + \mu_{ps} \ge d_{ps} \ \ \forall p \in P, \qquad
+\theta_s \ge 0,\ \mu_{ps} \ge 0.
+\label{eq:bs-dual}
+\end{equation}
+Because the primal is feasible and bounded, LP strong duality applies: the
+dual \eqref{eq:bs-dual} is solvable and its optimal value equals
+$\psi_s(x;\Gamma)$. We prove the two implications separately.
+
+($\Leftarrow$) Suppose $(\theta_s, \mu_{\cdot s}) \ge 0$ satisfies
+\eqref{eq:bs-cpt-load}--\eqref{eq:bs-cpt-dualfeas}. Constraint
+\eqref{eq:bs-cpt-dualfeas} says the point is feasible for the dual
+\eqref{eq:bs-dual}, so by \emph{weak} duality
+$\psi_s(x;\Gamma) \le \Gamma\,\theta_s + \sum_p \mu_{ps}$. Rearranging
+\eqref{eq:bs-cpt-load} gives
+$\Gamma\,\theta_s + \sum_p \mu_{ps} \le \rho_s(x)$. Chaining the two
+inequalities yields $\psi_s(x;\Gamma) \le \rho_s(x)$, which is
+\eqref{eq:bs-slackform}, i.e., the robust constraint \eqref{eq:bs-robust}
+holds.
+
+($\Rightarrow$) Conversely, suppose \eqref{eq:bs-robust} holds, i.e.,
+$\psi_s(x;\Gamma) \le \rho_s(x)$. By strong duality the dual
+\eqref{eq:bs-dual} attains its optimum at some
+$(\theta_s^\ast, \mu_{\cdot s}^\ast) \ge 0$ with
+\[
+\Gamma\,\theta_s^\ast + \sum_{p \in P} \mu_{ps}^\ast
+\;=\; \psi_s(x;\Gamma) \;\le\; \rho_s(x)
+\;=\; T_s - \sum_{p \in P} \frac{L^0_p}{V_s}\, x_{ps}.
+\]
+The optimal dual point is dual-feasible, so it satisfies
+\eqref{eq:bs-cpt-dualfeas}; the displayed inequality is exactly
+\eqref{eq:bs-cpt-load}. Hence the required multipliers exist.
+
+Finally, linearity: $\hat L_p/V_s$ and $L^0_p/V_s$ are constants, so
+\eqref{eq:bs-cpt-load} is linear in $(x,\theta,\mu)$ and the right-hand side
+of \eqref{eq:bs-cpt-dualfeas} is a constant multiple of the decision variable
+$x_{ps}$ --- no product of decision variables appears anywhere, whether or
+not $x$ is integral.
+\end{proof}
+
+\subsection{The robust placement MILP}
+\label{sec:robust-milp}
+
+Applying \Cref{prop:bs-counterpart} station by station --- with a per-station
+integer budget $\Gamma_s \in \mathbb Z_{\ge 0}$, the uniform choice
+$\Gamma_s = \Gamma$ being the default --- and substituting the counterpart
+for \eqref{con17} yields the full
+robust placement MILP:
+\begin{subequations}
+\label{eq:bs-milp}
+\begin{align}
+&\min_{x,\,z,\,\theta,\,\mu} \; \sum_{o \in O} \sum_{s \in S} z_{os}
+  \label{eq:bs-milp-obj}\\
+\text{s.t.}\;\;
+&\sum_{s \in S} x_{ps} = 1
+  \quad \forall p \in P, \label{eq:bs-milp-assign}\\
+&\sum_{p \in P} x_{ps} \le \zeta_s
+  \quad \forall s \in S, \label{eq:bs-milp-slot}\\
+&x_{ps} \le z_{os}
+  \quad \forall p \in P_o,\ \forall o \in O,\ \forall s \in S, \label{eq:bs-milp-link}\\
+&\sum_{p \in P} \frac{L^0_p}{V_s}\, x_{ps}
+  + \Gamma_s\, \theta_s
+  + \sum_{p \in P} \mu_{ps} \le T_s
+  \quad \forall s \in S, \label{eq:bs-milp-wl}\\
+&\theta_s + \mu_{ps} \ge \frac{\hat L_p}{V_s}\, x_{ps}
+  \quad \forall p \in P,\ \forall s \in S, \label{eq:bs-milp-dualfeas}\\
+&x_{ps} \in \{0,1\},\quad z_{os} \in [0,1],\quad
+  \theta_s \ge 0,\quad \mu_{ps} \ge 0
+  \quad \forall p,\ o,\ s. \label{eq:bs-milp-dom}
+\end{align}
+\end{subequations}
+The objective \eqref{eq:bs-milp-obj} and the combinatorial core
+\eqref{eq:bs-milp-assign}--\eqref{eq:bs-milp-link} are identical to the
+nominal model \eqref{obj}, \eqref{con14}--\eqref{con16}; only the workload
+block changes. The size overhead over the nominal MILP is exactly $+|S|$
+continuous variables $\theta_s$, $+|P|\,|S|$ continuous variables $\mu_{ps}$,
+and $+|P|\,|S|$ dual-feasibility constraints \eqref{eq:bs-milp-dualfeas};
+the workload rows stay at $|S|$, the binaries and the objective are
+unchanged. Robustness is bought with one continuous LP block, not with
+additional integer structure.
+
+\subsection{Properties}
+\label{sec:properties}
+
+\begin{proposition}[Budget limits and monotonicity]
+\label{prop:bs-limits}
+For an integer budget $\Gamma \in \mathbb Z_{\ge 0}$, let
+\[
+\mathcal A(\Gamma) \;=\; \bigl\{ x \in \{0,1\}^{P \times S} \;:\;
+\exists\, (z, \theta, \mu) \text{ such that } (x, z, \theta, \mu)
+\text{ is feasible for \eqref{eq:bs-milp} with } \Gamma_s = \Gamma \bigr\}
+\]
+denote the projection onto the assignment variables of the feasible set of
+\eqref{eq:bs-milp} with uniform budget $\Gamma$. Then:
+\begin{enumerate}
+\item[(i)] $\Gamma = 0$ recovers the nominal model: $\mathcal A(0)$ equals
+the projection onto $x$ of the feasible set of \eqref{con14}--\eqref{con17}
+with $L_p = L^0_p$.
+\item[(ii)] If $\Gamma \ge \zeta_s$ for every $s$, then \eqref{eq:bs-robust}
+reduces to the box (Soyster) counterpart
+$\sum_{p \in P} \frac{L^0_p + \hat L_p}{V_s}\, x_{ps} \le T_s$
+\citep{soyster1973convex}.
+\item[(iii)] $\Gamma \mapsto \mathcal A(\Gamma)$ is nonincreasing:
+$\Gamma' \ge \Gamma$ implies $\mathcal A(\Gamma') \subseteq \mathcal A(\Gamma)$,
+and the optimal visit count of \eqref{eq:bs-milp} is nondecreasing in $\Gamma$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(i) Both projections are cut out by the common core
+\eqref{con14}--\eqref{con16}; the visit variables never restrict $x$ further
+(setting $z_{os} = 1$ is always feasible), so it suffices to compare the
+workload blocks. With $\Gamma = 0$ the inner maximum in \eqref{eq:bs-robust}
+is over $J = \emptyset$ only and equals $0$, so \eqref{eq:bs-robust} is
+\eqref{con17}. In the counterpart, given $x$ satisfying \eqref{con17}, choose
+$\theta_s = \max_p \hat L_p / V_s$ and $\mu_{ps} = 0$:
+\eqref{eq:bs-cpt-dualfeas} holds and $\Gamma_s \theta_s$ vanishes, so
+\eqref{eq:bs-cpt-load} is exactly \eqref{con17}; conversely
+\eqref{eq:bs-cpt-load} with $\Gamma_s = 0$ and $\mu \ge 0$ implies
+\eqref{con17}.
+
+(ii) By the slot capacity \eqref{con15}, $|\Phi_s| = \sum_p x_{ps} \le
+\zeta_s \le \Gamma$, so the restriction $|J| \le \Gamma$ is vacuous and the
+adversary deviates \emph{every} assigned product upward: the inner maximum is
+$\sum_{p \in \Phi_s} \hat L_p / V_s$, the worst case of the full interval box
+\eqref{eq:bs-uncset}. Any $\Gamma \ge \max_s |\Phi_s|$ suffices; since
+$|\Phi_s|$ is decision-dependent, $\Gamma \ge \zeta_s$ is the natural
+data-level sufficient condition.
+
+(iii) $\psi_s(x;\Gamma)$ is nondecreasing in $\Gamma$ (the feasible set of
+\eqref{eq:bs-inner} grows with $\Gamma$), so the feasible sets
+$\mathcal A(\Gamma)$ are nested and minimizing the same objective over a
+smaller set cannot decrease the optimum.
+\end{proof}
+
+Thus $\Gamma$ interpolates monotonically between the nominal model and full
+box conservatism, exactly the Bertsimas--Sim design.
+
+\begin{remark}[Decision-dependent adversary support]
+\label{rem:bs-endogenous}
+The adversary's ground set $\Phi_s$ in \eqref{eq:bs-robust} is itself a
+decision, since $\Phi_s = \{p : x_{ps} = 1\}$. Endogenous uncertainty sets
+are in general a hard extension of robust optimization, but no extra
+machinery is needed here: because the factor $x_{ps}$ is kept inside the
+inner objective of \eqref{eq:bs-inner}, deviating a non-assigned product
+contributes zero, so the adversary restricted to $\Phi_s$ and the adversary
+ranging over all of $P$ attain the same value. The dualization of
+\Cref{prop:bs-counterpart} then applies verbatim. Linearity of the
+counterpart is automatic because $\hat L_p / V_s$ are data constants (no
+bilinear terms, no big-$M$); what binariness of $x_{ps}$ buys is this
+ground-set equivalence, not linearity. (Under merely nonnegative $x_{ps}$
+the equivalence holds with respect to the support $\{p : x_{ps} > 0\}$
+rather than $\Phi_s$: a fractional $0 < x_{ps} < 1$ lies outside $\Phi_s$
+yet contributes $(\hat L_p / V_s)\, x_{ps} > 0$ to \eqref{eq:bs-inner}.)
+\end{remark}
+
+\begin{remark}[Probabilistic guarantee]
+\label{rem:bs-prob}
+Suppose the realized deviations of the assigned products are independent and
+symmetrically distributed on the intervals \eqref{eq:bs-uncset}. Then, for
+any assignment $x$ satisfying the protected row \eqref{eq:bs-robust} with
+budget $\Gamma$ --- in particular, any $x$ feasible for \eqref{eq:bs-milp}
+--- \citet{bertsimas2004} bound the violation probability of that row by
+\begin{equation}
+\Pr\Bigl[\textstyle\sum_{p \in \Phi_s} \tilde L_p / V_s > T_s\Bigr]
+\;\le\; B(n, \Gamma) \;\le\; \exp\!\bigl(-\Gamma^2 / (2n)\bigr),
+\qquad n = |\Phi_s| \le \zeta_s,
+\label{eq:bs-probbound}
+\end{equation}
+where $B(n, \Gamma)$ is the exact binomial bound of Theorem~2 of
+\citet{bertsimas2004}, well approximated by
+$1 - \Phi_{\mathcal N}\bigl((\Gamma - 1)/\sqrt{n}\bigr)$ with
+$\Phi_{\mathcal N}$ the standard normal c.d.f.\ (not the assigned set
+$\Phi_s$); the closed-form exponential expression is the weaker
+Hoeffding-type bound of \citet{bertsimas2003robust}, derived for homogeneous
+deviation magnitudes across the row. A budget of order $\sqrt{n}$ already
+yields a strong guarantee at a small fraction of the box protection level.
+One caveat: daily pick-line counts are nonnegative and right-skewed, so the
+symmetric-deviation assumption behind \eqref{eq:bs-probbound} is an
+approximation here; the bound is indicative, and in practice it is replaced
+by the data-driven procedure of \Cref{sec:calibration}: deviation magnitudes
+fitted on train-internal blocks, a budget fixed ex ante on a grid, and
+retrospective diagnostics assessing adequacy.
+\end{remark}
+
+\begin{remark}[Constraint-side uncertainty only; relation to H1]
+\label{rem:bs-objective}
+Uncertainty enters model \eqref{eq:bs-milp} through the \emph{constraints}
+only; the visits objective \eqref{eq:bs-milp-obj} is identical to the nominal
+one. This is deliberately complementary to the falsified covering hypothesis
+H1, which perturbed the \emph{objective} by enlarging every order to its
+pattern-closure and paid a certified out-of-sample price ($G(\kappa) < 0$ at
+$\kappa = 2$ on the clean instance). Here nothing is insured about the visit
+count: the insured quantity is \emph{workload-feasibility risk} --- the
+out-of-sample violations $W^{\mathrm n}_s > T_s$ documented in
+\Cref{sec:empirical} ---
+which the nominal model cannot see by construction. The two mechanisms are
+orthogonal; the present study evaluates the workload channel alone.
+\end{remark}
+
+\begin{remark}[Volume basis and reporting convention]
+\label{rem:bs-basis}
+The counterpart is meaningful only if $L^0_p$, $\hat L_p$, and $T_s$ are
+expressed on the \emph{same volume basis}. In the project's adapters, $T_s$
+derives from the training-window totals by the $10\%$ slack rule
+\eqref{eq:bs-slack} ($\kappa$-invariant on the clean instance); accordingly,
+$L^0_p$ must be the training-window line count and $\hat L_p$ a deviation
+of volume-normalized counts on that basis (\Cref{sec:calibration}). Mixing
+bases --- e.g., a test-window $\hat L_p$ against a train-calibrated $T_s$ ---
+would re-introduce the recalibration confound the clean instance was built to
+remove. Since the protection level depends on $n = |\Phi_s| \le \zeta_s$, we
+recommend reporting budgets as the dimensionless fraction
+$\Gamma_s / \zeta_s$, comparable across stations and instances.
+\end{remark}
+
+\subsection{Data-driven calibration of $(\hat L_p, \Gamma)$}
+\label{sec:calibration}
+
+The counterpart of \Cref{sec:robust-milp} is fully specified once the
+deviation magnitudes $\hat L_p$ and the budget $\Gamma$ are chosen. We define
+the estimators the empirical section instantiates; no implementation is
+discussed.
+
+\paragraph{Deviation models.}
+Let $\delta_p^{(b)} = L_p^{(b)} - L^0_p$ denote the realized deviation of
+the volume-normalized line count $L_p^{(b)}$ of product $p$ on a
+train-internal temporal block $b \in \{1,\dots,B\}$ (contiguous segments of
+the training window by order rank; counts are rescaled so each block carries
+the training-window total volume, keeping everything on the basis of
+\Cref{rem:bs-basis}). The three deviation models are
+\begin{equation}
+\text{M1:}\ \ \hat L_p = c_1\, L^0_p,
+\qquad
+\text{M2:}\ \ \hat L_p = c_2\, \sqrt{L^0_p},
+\qquad
+\text{M3:}\ \ \hat L_p = \operatorname{std}_{b=1,\dots,B}\bigl(L_p^{(b)}\bigr).
+\label{eq:bs-devmodels}
+\end{equation}
+M1 assumes deviations proportional to demand (multiplicative drift), M2
+assumes the $\sqrt{L^0_p}$ scaling of count noise (Poisson-like), and M3
+is the nonparametric per-product standard deviation across the training
+blocks. M3 needs no fitted constant; M1 and M2 are calibrated as follows.
+
+\paragraph{Fitting $c$.}
+For a coverage target $q \in (0,1)$ (e.g.\ $q = 0.9$), the constant is the
+smallest value whose implied intervals cover a $L^0$-weighted fraction $q$
+of the realized deviations on the train-internal blocks:
+\begin{equation}
+c(q) \;=\; \min \Bigl\{ c \ge 0 \;:\;
+\sum_{p,\,b} L^0_p\, \mathbf 1\bigl[\,|\delta_p^{(b)}| \le c\, g(L^0_p)\bigr]
+\;\ge\; q \sum_{p,\,b} L^0_p \Bigr\},
+\label{eq:bs-cfit}
+\end{equation}
+with $g(L^0_p) = L^0_p$ for M1 and $g(L^0_p) = \sqrt{L^0_p}$ for
+M2; equivalently, $c(q)$ is the $L^0$-weighted $q$-quantile of the
+normalized deviations $|\delta_p^{(b)}| / g(L^0_p)$. Weighting by
+$L^0_p$ prioritizes high-volume products, whose deviations dominate
+station workloads; restricting to train-internal blocks keeps the calibration
+free of test leakage.
+
+\paragraph{Budget diagnostics.}
+Fix a trained layout $a$ (indicator $x^a$), a station $s$ with assigned set
+$\Phi_s$, nominal load $\bar W_s = \sum_{p \in \Phi_s} L^0_p / V_s$, and
+realized normalized load
+$W^{\mathrm n}_s = \sum_{p \in \Phi_s} L^{\mathrm n}_p / V_s$, where
+$L^{\mathrm n}_p$ is the volume-normalized realized line count of the
+evaluation window. By \eqref{eq:bs-inner},
+$\psi_s(x^a;\Gamma) = \frac{1}{V_s} \sum_{p \in J_\Gamma(s)} \hat L_p$ with
+$J_\Gamma(s) \subseteq \Phi_s$ the $\min(\Gamma, |\Phi_s|)$ largest
+deviations at station $s$. Two \emph{retrospective} diagnostics summarize
+how large a budget the data ask for and how large a budget the training
+instance tolerates:
+\begin{align}
+\Gamma^{\mathrm{cover}}(s) &\;=\;
+\min \Bigl\{ \Gamma \in \mathbb Z_{\ge 0} \;:\;
+\bar W_s + \psi_s(x^a;\Gamma) \;\ge\; W^{\mathrm n}_s \Bigr\},
+\label{eq:bs-gcover}\\
+\Gamma^{\mathrm{bind}}(s) &\;=\;
+\min \Bigl\{ \Gamma \in \mathbb Z_{\ge 0} \;:\;
+\bar W_s + \psi_s(x^a;\Gamma) \;>\; T_s \Bigr\}.
+\label{eq:bs-gbind}
+\end{align}
+$\Gamma^{\mathrm{cover}}(s)$ is the smallest budget whose protection level
+reaches the realized load of station $s$: the budget that would have been
+needed for the robust constraint to ``see'' the observed drift (it is $0$
+when $\bar W_s \ge W^{\mathrm n}_s$, and undefined --- reported as $\infty$
+--- when even $\Gamma = |\Phi_s|$ under-covers, i.e., when the deviation
+model itself is too small). $\Gamma^{\mathrm{bind}}(s)$ is the smallest
+budget at which the robust left-hand side exceeds $T_s$ on the training data,
+i.e., at which the counterpart starts to cut off the trained layout; budgets
+below it exert no retraining pressure at station $s$, budgets at or above it
+force the optimizer to rebalance. Symmetrically to
+$\Gamma^{\mathrm{cover}}$, the set in \eqref{eq:bs-gbind} may be empty: when
+even the full box load keeps the station within capacity,
+$\bar W_s + \sum_{p \in \Phi_s} \hat L_p / V_s \le T_s$, no finite budget
+makes the constraint bind ($\psi_s$ saturates at $\Gamma = |\Phi_s|$), and
+we set $\Gamma^{\mathrm{bind}}(s) = \infty$ --- such stations tolerate any
+budget.
+
+\paragraph{Use in the empirical study.}
+In a future implementation phase the operative budget would be fixed
+\emph{ex ante}: robust layouts would be trained on a predeclared grid of
+budgets (reported as fractions of $\zeta_s$ per \Cref{rem:bs-basis}), with
+the deviation magnitudes fitted on train-internal blocks only via
+\eqref{eq:bs-cfit}, so that no evaluation-window quantity would enter the
+choice of $\Gamma$ for any scored test cut. No robust layout is trained in
+this study: \Cref{sec:empirical} computes only the \emph{retrospective}
+diagnostics \eqref{eq:bs-gcover}--\eqref{eq:bs-gbind} on the existing
+nominal layouts --- for each temporal cut and deviation model in
+\eqref{eq:bs-devmodels}, the distributions of $\Gamma^{\mathrm{cover}}(s)$
+over the stations that actually violate $W^{\mathrm n}_s > T_s$
+out-of-sample and of $\Gamma^{\mathrm{bind}}(s)$ over \emph{all} stations
+(healthy and violated alike) --- answering ``what budget \emph{would have
+been} needed'' and ``what budget the training instance tolerates''. The
+empirical instantiation also departs from \eqref{eq:bs-cfit} on the
+magnitude side: the reported constants $c_1, c_2$ (\Cref{sec:gamma}) apply
+the same $L^0$-weighted quantile formula \emph{retrospectively} to the
+realized evaluation-window deviations
+$\delta_p = L^{\mathrm n}_p - L^0_p$ --- they are diagnostic, not
+planner-available --- and only M3 uses train-internal blocks as
+\eqref{eq:bs-cfit} prescribes. A budget $\Gamma$ would be judged
+\emph{adequate in retrospect} when it dominates the observed
+$\Gamma^{\mathrm{cover}}$ quantiles on drift-hit stations --- so the
+protected constraint would have flagged the realized violations, and the
+robust model is designed to rebalance them away at train time --- while
+staying below $\Gamma^{\mathrm{bind}}$ on most healthy stations, so
+protection is bought where drift occurs rather than by uniform slack. Once
+an ex-ante grid exists, these curves would audit it after the fact rather
+than select the budget: they replace the a priori appeal to the
+symmetric-noise bound \eqref{eq:bs-probbound} as the lens for \emph{judging}
+$\Gamma$, and they must not feed back into its choice on any window used
+for scoring.

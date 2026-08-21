@@ -1,0 +1,1077 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{hyperref}
+\usepackage[capitalize,noabbrev,nameinlink]{cleveref}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\graphicspath{{../figures/}}
+\setlength{\emergencystretch}{3em}
+
+% The verified theory section (section_theory.tex) uses natbib-style \citet/\citep.
+% natbib is not in the approved package list, so map both onto plain numeric \cite.
+\newcommand{\citet}[1]{\cite{#1}}
+\newcommand{\citep}[1]{\cite{#1}}
+
+\title{Out-of-Sample Workload Feasibility in CSLAP Layouts:\\
+an Empirical Study and a Budgeted-Uncertainty Robust Counterpart}
+\author{CSLAP research pipeline}
+\date{July 2, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We audit the workload-feasibility semantics of the CSLAP evaluation pipeline and re-analyze
+every stored layout of the project's instance families (iscf480, iscf10kt, iscfco,
+planted-affinity, BERNER). The as-run out-of-sample check compares realized test workload
+against a \emph{train-volume-calibrated} ceiling; its bindingness $B$ collapses from
+$\approx 1.0$ down to $0.11$--$0.13$ across expanding temporal cuts, so late-cut
+``\texttt{wl\_broken}=0'' verdicts are volume slack, not robustness. Under a
+volume-normalized ceiling the picture reverses: every temporal fold carries 1--3 of 8
+stations above the fair-share ceiling at $k{=}1$ (1--4 over the full closure grid), with
+peak load ratios up to 2.52 at $k{=}1$ (2.63 over the full grid; 3.45 in the sparse-train
+variants), while the cross-validation folds remain balanced to the exact 10\%-slack edge. A retrospective
+Bertsimas--Sim calibration shows the realized overloads sit in the budget-uncertainty sweet
+spot: median $\Gamma^{\mathrm{cover}}$ of 8/60 and 19/541 assigned products, deviations
+head-concentrated (median Gini 0.63/0.82), and $\Gamma^{\mathrm{bind}}=1$ at most stations.
+We derive the exact linear robust counterpart of the workload constraint and implement it
+(HiGHS plus a deterministic local search, paired over the temporal cuts). Full-magnitude
+protection provably does not fit the 10\%-slack capacity contract (infeasibility
+certificates at $\Gamma \ge 4$); ex-ante half-magnitude protection at $\Gamma = 1$ cuts the
+out-of-sample peak ratio from 1.77 to 1.59 and the excess workload from 17.4\% to 13.0\%
+for a 2.3\% visit price, while uniform ceiling-tightening at the same price buys no peak
+reduction at all --- targeted budgeted protection dominates its nominal competitor.
+\end{abstract}
+
+\section{Introduction and context}
+\label{sec:intro}
+
+The Correlated Storage Location Assignment Problem (CSLAP) assigns products
+$p \in P$ to picking stations $s \in S$ (binary $x_{ps}$) so as to minimize the total
+number of station visits over a set of orders, subject to a slot-capacity constraint
+$\sum_p x_{ps} \le \zeta_s$ and a workload constraint
+$\sum_p x_{ps} L_p / V_s \le T_s$ per station. The project's preceding research arc took
+the covering-enlargement hypothesis H1 --- replace each order by its pattern-closure and
+optimize placement on the enlarged instance to buy out-of-sample robustness \emph{for the
+visits objective} --- end-to-end through an exact CPLEX re-validation, and falsified it:
+the price of robustness is real and the out-of-sample gain is negative, with confidence
+intervals excluding zero.\footnote{Internal reports
+\texttt{docs/background/7\_scientific\_report\_iscf\_cplex.md} through
+\texttt{docs/background/11\_berner\_decomposition.md} in this repository.}
+
+The same arc, however, surfaced one instability in the data that is \emph{not} an artifact
+of the covering mechanism: \emph{demand drift}. The drift-characteristics and order-data
+diagnostics\footnote{\texttt{docs/background/8\_drift\_characteristics.md} and
+\texttt{docs/background/9\_order\_data\_diagnostics.md}.} showed that per-product line counts move
+substantially between a training window and a later operating window, while the placement
+pipeline calibrates its workload ceiling once, on the training window, and never revisits
+it. This study therefore opens a different channel from H1: not the visits objective, but
+\textbf{out-of-sample workload feasibility}. The research question is:
+
+\begin{quote}
+\emph{Does a CSLAP layout that satisfies the (hard, train-enforced) workload constraint
+remain workload-feasible on later demand, and if not, what deviation magnitudes and
+protection budgets would a budgeted-uncertainty robust workload constraint have needed?}
+\end{quote}
+
+Contributions:
+\begin{itemize}
+\item \textbf{Pipeline audit} (\cref{sec:pipeline}): precise semantics of the as-run
+feasibility check, and a \emph{bindingness} index $B$ showing the check degenerates into a
+volume-calibration test on expanding temporal cuts.
+\item \textbf{Volume-normalized reanalysis} (\cref{sec:empirical}): a counterfactual
+fair-share ceiling that removes the volume artifact, applied to all stored layouts across
+six ISCF-derived families plus the industrial BERNER cell; every recomputed as-run count
+reproduces the stored \texttt{wl\_broken} exactly (276 result cells checked across
+families), and the train-side constraint held in every one of the $>1{,}000$
+station-checks --- so all reported violations are genuinely out-of-sample.
+\item \textbf{Retrospective Bertsimas--Sim calibration} (\cref{sec:gamma}): three
+deviation-magnitude models (M1 proportional, M2 square-root, M3 train-internal empirical),
+fitted coverage constants, and the diagnostics $\Gamma^{\mathrm{cover}}$ /
+$\Gamma^{\mathrm{bind}}$ quantifying how large a budget the observed drift asks for and
+how small a budget already forces retraining.
+\item \textbf{Robust counterpart} (\cref{sec:theory}): the exact linear
+Bertsimas--Sim counterpart \cite{bertsimas2004} of the CSLAP workload constraint, in the
+row-wise framework of \cite{bental2009robust}, with the Soyster box model
+\cite{soyster1973convex} as its $\Gamma \to \zeta_s$ limit.
+\item \textbf{Implementation and paired temporal experiment} (\cref{sec:experiment}): the
+counterpart implemented on HiGHS with a deterministic local-search incumbent pipeline and
+evaluated, paired arm-by-arm, over the five temporal cuts --- yielding infeasibility
+certificates for full-magnitude protection under the 10\%-slack contract, a
+price--severity frontier for partial insurance, and the head-to-head result that
+budgeted protection dominates equal-price uniform ceiling-tightening on out-of-sample
+peak severity.
+\end{itemize}
+
+\section{The current evaluation pipeline}
+\label{sec:pipeline}
+
+\paragraph{Placement (train side).}
+Layouts are produced by the Hexaly placement model, which enforces the workload
+constraint \emph{hard} on training data:\footnote{\texttt{milp\_synthetic.py}, lines
+70--77; the line counts are passed by the harness at lines 427 and 441 of
+\texttt{run\_robustness\_iscf.py}.} for every station $s$,
+$\sum_{p} (L_p / V_s)\, x_{ps} \le T_s$, where $L_p$ is the product's training-window line
+count (\texttt{REAL\_LINES}, distinct orders containing $p$). Our recomputation confirms the
+constraint held on the training data for every stored layout of every family
+(\texttt{viol\_train}=0 in all 800 iscf10kt station-rows, all 160 gamma-family checks, and
+all 1{,}088 secondary station-rows).
+
+\paragraph{Ceiling calibration.}
+The time capacity is set once per fold from training volume by the 10\%-slack rule
+(\texttt{run\_robustness\_iscf.py}, line 211; same formula in
+\texttt{iscf\_adapter.py}, line 194):
+\begin{equation}
+T_s = \Bigl\lceil\, \sigma \cdot \frac{\sum_{p} L^{\mathrm{tr}}_p}{V_s\,|S|} \,\Bigr\rceil,
+\qquad \sigma = 1.10,
+\label{eq:slackrule}
+\end{equation}
+with $V_s$ the station speed ($V_s = 1$, uniform, on all ISCF families;
+$\sigma = 1.20$ and heterogeneous per-station ceilings on BERNER).
+
+\paragraph{Evaluation (test side).}
+The test instance re-uses the \emph{train} stations file
+verbatim.\footnote{\texttt{run\_robustness\_iscf.py}, lines 229--233.} The evaluator
+(\texttt{evaluate\_layout\_robust.py}, lines 129--142, driven at
+\texttt{run\_robustness\_iscf.py}, lines 490--504) computes the test demand
+$\ell^{\mathrm{te}}_p$ of each product as its raw test line count, i.e.\
+\texttt{groupby('PRODUCT').size()} over the test orders; the realized
+workload $W^{\mathrm{te}}_s = \sum_{p \in \Phi_s} \ell^{\mathrm{te}}_p / V_s$ over the
+assigned set $\Phi_s$ of the stored layout (a flat JSON dict
+\{\texttt{PROD\_<id>}: \texttt{GARE<n>}\}); and the count
+$\texttt{wl\_broken} = |\{s : W^{\mathrm{te}}_s > T_s\}|$ (strict inequality) and
+\texttt{cap\_broken} analogously against the slot count. Temporal cuts are 5 expanding-train
+splits at train fractions $0.5, 0.6, \dots, 0.9$ by \texttt{ORDER\_ID} rank
+(train-early/test-late); the cuts share train mass and are a dispersion proxy, not
+independent replicates.
+
+\paragraph{The volume artifact.}
+The as-run check thus compares \emph{test-window} workload against a
+\emph{train-volume-calibrated} ceiling. Define the \textbf{bindingness} of the check as
+\begin{equation}
+B \;=\; \frac{\sum_p \ell^{\mathrm{te}}_p}{\sum_{s} V_s\, T_s},
+\label{eq:bindingness}
+\end{equation}
+the ratio of total test volume to total ceiling capacity. With uniform speeds and a flat
+$T_s$, a layout balanced exactly to the slack edge (peak load $= \sigma \times$
+fair share) crosses $T_s$ if and only if $B > 1/\sigma \approx 0.909$; below that threshold
+the check cannot fire on any near-balanced layout, regardless of how unbalanced the demand
+mix has become. On the expanding temporal design the test window shrinks as the cut moves
+late, so $B$ decays mechanically (from $1.005$ to $0.125$ on iscf480) and the as-run
+verdict degenerates into a measurement of window length. Conversely, when the test window
+carries \emph{more} volume than the train window (sparse-train and affinity families,
+$B > 1$), even a perfectly balanced layout must violate, and the as-run count saturates at
+8/8 for reasons that have nothing to do with layout quality.
+
+\section{Empirical study}
+\label{sec:empirical}
+
+\subsection{Datasets and stored layouts}
+\label{sec:datasets}
+
+\begin{table}[htbp]
+\centering
+\caption{Instance families audited. All ISCF-derived families have 8 uniform stations
+(GARE4--GARE11, $V_s = 1$, $\sigma = 1.10$); BERNER has 24 heterogeneous stations
+($\sigma = 1.20$). $k$ is the pattern-closure order of the stored layout
+($k = 1$ = nominal).}
+\label{tab:datasets}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+Family & $|P|$ & $\zeta_s$ & Split design & $k$ grid & Scale (fold 0) \\
+\midrule
+iscf480 CV        & 480   & 60  & 5 random folds            & 1, 2          & 246.7k / 61.7k orders \\
+iscf480 temporal  & 480   & 60  & 5 expanding cuts          & 1, 2          & 154{,}207 / 154{,}208 orders \\
+iscf10kt temporal & 4{,}328 & 541 & 5 expanding cuts        & 1, 2, 3, 4, 6 & 5{,}000 / 5{,}000 orders \\
+iscf10kt t500/t1000/t2000 & 4{,}328 & 541 & train capped     & 1, 2, 3, 4, 6 & 500--2{,}000 / 1{,}000--5{,}000 \\
+iscfco mm/ms      & 1{,}600 & 200 & 5 expanding cuts        & 1, 10         & 7{,}500 / 7{,}500 orders \\
+planted affinity  & 800   & 100 & 18 arms (2 modes, 3 $\alpha$, 3 reps) & 1, 10 & 1{,}847 / 3{,}645--3{,}986 \\
+BERNER            & 2{,}000 & 9--207 & 1 temporal cut (10/13 wk) & 1--20 & 778{,}788 / 220{,}893 lines \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{tab:datasets} lists the families. The affinity scale cell quotes the rep-r0 arms
+(unique test orders 3{,}645--3{,}986; over all 18 arms the range is 3{,}645--4{,}000).
+The affinity replicate r1 is degenerate as-run
+(all 12 layout JSONs are empty, stored rows all-zero), leaving 24 informative arms; BERNER
+persisted no layouts, so its audit (\cref{sec:berner}) bounds bindingness through
+assignment assumptions rather than recomputing realized loads.
+
+\subsection{Metrics}
+\label{sec:metrics}
+
+Let $L^{\mathrm{tr}} = \sum_p L^{\mathrm{tr}}_p$ and
+$L^{\mathrm{te}} = \sum_p \ell^{\mathrm{te}}_p$ be total train and test lines, and
+$\lambda = L^{\mathrm{tr}} / L^{\mathrm{te}}$ the volume ratio. Consistent with the
+notation of \cref{sec:theory}:
+\begin{itemize}
+\item \textbf{As-run check}: $W^{\mathrm{te}}_s > T_s$; count
+$\texttt{viol\_asrun} = \texttt{wl\_broken}$.
+\item \textbf{Normalized check}: the volume-normalized load is
+$W^{\mathrm n}_s = \lambda\, W^{\mathrm{te}}_s$
+(equivalently, the raw load is compared against the counterfactual test-volume ceiling
+$T^{\mathrm n}_s = \lceil \sigma L^{\mathrm{te}} / (V_s |S|) \rceil$; the two violation
+sets coincide on every audited fold). We report
+$\texttt{viol\_norm} = |\{s : W^{\mathrm n}_s > T_s\}|$ and the peak ratio
+$\mathrm{ratio}^{\mathrm n} = \max_s W^{\mathrm{te}}_s / T^{\mathrm n}_s$.
+\item \textbf{Imbalance}: $\max_s W^{\mathrm{te}}_s \big/ \bigl(L^{\mathrm{te}} / (V_s |S|)\bigr)$,
+the peak-to-fair-share ratio; values $\le \sigma = 1.10$ are within the slack rule.
+\item \textbf{Bindingness} $B$ as in \cref{eq:bindingness}; volume-binding threshold
+$1/\sigma \approx 0.909$.
+\item \textbf{Excess fraction} $X = \sum_s (W^{\mathrm n}_s - T_s)_+ \big/ \sum_s W^{\mathrm n}_s$,
+the share of (normalized) test workload sitting above the ceiling.
+\end{itemize}
+
+\paragraph{Sanity.}
+The recomputation reproduces the stored \texttt{wl\_broken} in \emph{all} cells: 20
+(split, fold, $k$) cells on iscf480, 100 (variant, fold, $k$) rows on iscf10kt, 136
+secondary cells (20 iscfco base + 36 affinity + 80 iscfco demand-shift), and the 20 cells
+of the $\Gamma$-calibration re-run; recomputed peak workloads match the stored
+\texttt{max\_workload} to $<10^{-6}$ (e.g., iscf480 temporal fold 0, $k=1$:
+$86{,}019$ vs $T_s = 45{,}365$). \texttt{cap\_broken}=0 everywhere.
+
+\subsection{Primary instance: iscf480 (CV vs.\ temporal)}
+\label{sec:iscf480}
+
+\begin{table}[htbp]
+\centering
+\caption{iscf480, 5-fold random CV. The as-run anchor \texttt{wl\_broken}=0 everywhere is
+reproduced, but $B \approx 0.23$: the test window carries only $\sim$23\% of the volume the
+ceiling assumes. Normalized violations exist but are hair-thin (peak ratio $\le 1.016$,
+$X \le 0.40\%$). Source: \texttt{results/iscf480/per\_fold.csv}.}
+\label{tab:cv480}
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Fold & $B$ & as-run $k{=}1$ & as-run $k{=}2$ & norm $k{=}1$ & norm $k{=}2$ & ratio$^{\mathrm n}$ $k{=}1$ & $X$ (\%) $k{=}1$ \\
+\midrule
+r0f0 & 0.228 & 0 & 0 & \textbf{2} & \textbf{2} & 1.016 & 0.24 \\
+r0f1 & 0.227 & 0 & 0 & 0 & 0 & 0.999 & 0.00 \\
+r0f2 & 0.227 & 0 & 0 & \textbf{2} & \textbf{1} & 1.005 & 0.13 \\
+r0f3 & 0.227 & 0 & 0 & \textbf{3} & \textbf{1} & 1.012 & 0.40 \\
+r0f4 & 0.227 & 0 & 0 & \textbf{1} & 0 & 1.000 & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{iscf480, 5 expanding temporal cuts. As-run counts merely track the decaying
+bindingness $B$; the normalized check reveals 2--4 of 8 stations overloaded in
+\emph{every} cut, with peak ratios up to 2.52. Violated-station counts of 8 stations.
+Source: \texttt{results/iscf480/per\_fold.csv}.}
+\label{tab:temporal480}
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Cut & $B$ & \multicolumn{2}{c}{as-run ($k{=}1$ / $k{=}2$)} & \multicolumn{2}{c}{norm ($k{=}1$ / $k{=}2$)} & \multicolumn{2}{c}{ratio$^{\mathrm n}$ ($k{=}1$ / $k{=}2$)} \\
+\midrule
+r0f0 & 1.005 & \textbf{4} & \textbf{2} & \textbf{3} & \textbf{2} & 1.71 & 1.54 \\
+r0f1 & 0.693 & \textbf{2} & \textbf{1} & \textbf{3} & \textbf{4} & 1.91 & 1.71 \\
+r0f2 & 0.457 & \textbf{1} & 0 & \textbf{3} & \textbf{3} & 2.25 & 1.98 \\
+r0f3 & 0.281 & 0 & 0 & \textbf{2} & \textbf{3} & 2.52 & 2.19 \\
+r0f4 & 0.125 & 0 & 0 & \textbf{3} & \textbf{3} & 2.38 & 1.88 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The CV anchor is a volume artifact.} \Cref{tab:cv480} shows that the headline
+``\texttt{wl\_broken}=0 on all CV folds'' says nothing about balance: with
+$B \approx 0.227$--$0.228$ against a threshold of $0.909$ (\cref{fig:bindingness}), the
+train-calibrated ceiling is
+roughly $4\times$ too loose for the CV test volume. The normalized check does surface
+violations in 4 of 5 folds at $k{=}1$ --- because Hexaly balances the training workload to
+exactly the 10\%-slack edge (imbalance 1.09--1.12 across all (fold, $k$)), any drift tips
+the peak station over --- but they are \emph{marginal}: peak ratio at most 1.016, excess
+fraction at most $0.40\%$. The honest CV statement is ``balanced to the slack edge, no
+material overload.''
+
+\textbf{Temporal drift is severe.} Under the temporal design (\cref{tab:temporal480}),
+every cut has 2--3 of 8 stations above the normalized ceiling at $k{=}1$ (2--4 over both
+$k$), with peak load
+ratios 1.71--2.52 and $X = 11.0$--$30.7\%$ of total test workload above the ceiling;
+imbalance reaches 2.77 (cut r0f3, $k{=}1$). Meanwhile the as-run count decays
+$4, 2, 1, 0, 0$ in lockstep with $B$ ($1.005 \to 0.125$; \cref{fig:violations}): the late
+cuts look ``clean''
+as-run exactly where the true overloads are worst. Only cut r0f0 is volume-binding
+($B = 1.005$), and there the as-run and normalized checks agree (4 vs 3 stations). The
+identity of the peak station changes across cuts (GARE10, GARE4, GARE11, GARE11, GARE6 at
+$k{=}1$; \cref{fig:heatmap}; top-3 detail in
+\texttt{results/iscf480/top3\_overloaded\_temporal.csv}); every
+station holds exactly 60 products in every layout (slot capacity fully binding), so the
+overloads are pure demand-mix drift, not slot-count effects. The $k{=}2$ closure layouts
+are consistently \emph{less extreme} at the peak (mean peak ratio 1.86 vs 2.15; lower in
+all 5 cuts) but remain far infeasible, and do not reduce the violation \emph{count}
+(cuts r0f1, r0f3).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_violations.pdf}
+\caption{iscf480 temporal cuts: as-run vs volume-normalized violated-station counts
+(of 8). At $k{=}1$ the as-run count decays $4,2,1,0,0$ while the normalized count stays at
+$3,3,3,2,3$; at $k{=}2$: as-run $2,1,0,0,0$ vs normalized $2,4,3,3,3$. The as-run decay
+tracks test-window volume, not balance. Source: \texttt{results/iscf480/per\_fold.csv}.}
+\label{fig:violations}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_bindingness.pdf}
+\caption{Bindingness $B$ of the as-run check across iscf480 folds. Temporal $B$ falls
+$1.005 \to 0.125$ as the expanding cut shrinks the test window, while CV $B$ is flat at
+$\approx 0.227$; both are judged against the volume-binding threshold
+$1/1.10 \approx 0.909$. Only temporal cut 0 is volume-binding; everywhere else the as-run
+check is structurally unable to fire on a near-balanced layout.}
+\label{fig:bindingness}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_ratio_heatmap.pdf}
+\caption{Station-level normalized load ratios $W^{\mathrm{te}}_s / T^{\mathrm n}_s$ for
+iscf480 temporal, all 8 stations $\times$ 5 cuts, $k{=}1$ (top) and $k{=}2$ (bottom);
+diverging scale centered at 1.0 (ratio $>1$ = overloaded under fair-share volume), all 80
+cells annotated. Data range 0.20--2.52 at $k{=}1$; $k{=}2$ peaks at 2.19. The overloaded
+station moves across cuts. Source: \texttt{results/iscf480/heatmap\_temporal\_k1.csv} and \texttt{...\_k2.csv}.}
+\label{fig:heatmap}
+\end{figure}
+
+\subsection{Full-catalogue instance: iscf10kt temporal and sparse-train variants}
+\label{sec:iscf10kt}
+
+\begin{table}[htbp]
+\centering
+\caption{iscf10kt temporal ($k \in \{1,2\}$; full $k$ grid in \cref{tab:app10kt}). Same
+two-regime pattern as iscf480. Counts of 8 stations. Source:
+\texttt{results/iscf10kt/per\_fold.csv}.}
+\label{tab:temporal10kt}
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Cut & $B$ & \multicolumn{2}{c}{as-run ($k{=}1$ / $k{=}2$)} & \multicolumn{2}{c}{norm ($k{=}1$ / $k{=}2$)} & ratio$^{\mathrm n}$ $k{=}1$ & $X$ (\%) $k{=}1$ \\
+\midrule
+0 & 0.786 & \textbf{2} & \textbf{2} & \textbf{2} & \textbf{2} & 1.50 & 10.6 \\
+1 & 0.550 & \textbf{1} & 0 & \textbf{2} & \textbf{2} & 1.69 & 15.6 \\
+2 & 0.367 & 0 & 0 & \textbf{1} & \textbf{2} & 2.15 & 15.8 \\
+3 & 0.224 & 0 & 0 & \textbf{3} & \textbf{1} & 1.93 & 24.6 \\
+4 & 0.114 & 0 & 0 & \textbf{3} & \textbf{2} & 2.35 & 25.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the full 4{,}328-SKU catalogue over a coverage-guaranteed 10k-order subsample
+(\cref{tab:temporal10kt}), the stored as-run anchor ($k{=}1$: $2,1,0,0,0$) is reproduced
+exactly (fold 0 peak $2{,}464$ vs $T_s = 1{,}904$, as-run ratio 1.29), and again $B$ falls
+$0.79 \to 0.11$, all below the 0.909 threshold --- the fold-4 ceiling is $\approx 8.8\times$
+the fair-share test volume. Normalized, \emph{all 100} (variant, fold, $k$) stored layouts
+of the iscf10kt families violate on 1--3 of 8 stations; imbalance ranges 1.43--3.80
+(always above the 1.10 slack rule) and $X = 6.6$--$37.5\%$.
+
+\begin{table}[htbp]
+\centering
+\caption{Sparse-train effect (iscf10kt, means over 5 folds $\times$ $k \in \{1,2,3,4,6\}$
+unless marked $k{=}1$). The dramatic as-run violation counts at small train samples are a
+ceiling artifact ($B \gg 1$: with more test volume than total ceiling capacity even a
+perfectly balanced layout must violate); the volume-normalized violation count is flat, and
+genuine degradation shows only in the $k{=}1$ imbalance. Source:
+\texttt{results/iscf10kt/sparse\_train\_effect.csv}.}
+\label{tab:sparse}
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Variant & train orders & as-run viol. & $B$ & norm viol. & ratio$^{\mathrm n}$ & $X$ (\%) & imbalance ($k{=}1$) \\
+\midrule
+t500     & 500    & \textbf{7.56} & 5.06 & \textbf{2.24} & 2.06 & 17.7 & 2.55 \\
+t1000    & 1{,}000 & \textbf{6.48} & 2.53 & \textbf{2.16} & 1.94 & 17.0 & 2.34 \\
+t2000    & 2{,}000 & \textbf{4.52} & 1.27 & \textbf{2.44} & 1.92 & 18.9 & 2.08 \\
+temporal (full) & 7{,}000 & \textbf{0.40} & 0.41 & \textbf{2.16} & 1.86 & 17.1 & 2.12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{tab:sparse} makes the artifact direction explicit in reverse: at t500 the as-run
+check breaks a mean 7.56 of 8 stations ($k{=}1$ by fold: $8,8,8,8,4$), but
+$B = 2.07$--$8.18$ there, so those counts measure train-volume calibration, not placement
+quality. Normalized, the violation count is essentially flat across train sizes
+(2.24 / 2.16 / 2.44 / 2.16), and the genuine sparse-data cost appears only as $k{=}1$
+imbalance growing from 2.12 (full) to 2.55 (t500). The single worst layout overall is
+t500 fold 4 $k{=}1$: peak ratio$^{\mathrm n}$ 3.45, imbalance 3.80 --- one station carries
+47.5\% of test workload.
+
+\subsection{Effect of closure order $k$ on balance}
+\label{sec:keffect}
+
+\begin{table}[htbp]
+\centering
+\caption{$k$-effect on the iscf10kt temporal variant (means over 5 cuts). Closure
+enlargement smooths the peak slightly but never approaches feasibility, and the violation
+count does not improve monotonically. Source: \texttt{results/iscf10kt/k\_effect.csv}.}
+\label{tab:keffect}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & $k{=}1$ & $k{=}2$ & $k{=}3$ & $k{=}4$ & $k{=}6$ \\
+\midrule
+mean norm violations (of 8) & \textbf{2.2} & \textbf{1.8} & \textbf{1.8} & \textbf{2.4} & \textbf{2.6} \\
+mean imbalance              & 2.12 & 2.13 & 2.11 & 2.03 & 1.85 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Across all 20 (variant, fold) pairs of the iscf10kt families, \emph{some} $k > 1$ beats
+$k{=}1$ on imbalance in 17/20 pairs (mean best-$k$ gain 0.43 imbalance points over the 20
+pairs), but the best $k$ is unstable (2, 3, 4 and 6 all occur) and the normalized violation
+count never reaches 0 (\cref{tab:keffect}, \cref{fig:keffect}). On iscf480 temporal the
+same holds: $k{=}2$ lowers the peak ratio in all 5 cuts (mean 1.86 vs 2.15) without
+reducing the violation count. Closures \emph{spread} the overload rather than remove it ---
+consistent with the H1 falsification, enlargement is not a workload-feasibility mechanism.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_k_effect.pdf}
+\caption{$k$-effect panels, iscf10kt temporal variant, $k \in \{1,2,3,4,6\}$: mean
+normalized violations stay between 1.8 and 2.6 of 8 stations, and mean imbalance eases only
+from 2.12 to 1.85 --- never near the 1.10 slack rule. Source:
+\texttt{results/iscf10kt/k\_effect.csv}.}
+\label{fig:keffect}
+\end{figure}
+
+\subsection{Secondary families and planted shifts}
+\label{sec:secondary}
+
+\paragraph{iscfco base (co-occurrence-rich, 1{,}600 SKUs).}
+The as-run check reports \texttt{wl\_broken}=0 in 19 of 20 arms (the exception, ms fold 0
+$k{=}10$, has 1 station at as-run ratio 1.001), yet 1--3 of 8 stations breach the
+normalized ceiling in \emph{every} arm: imbalance 1.12--1.20 (always above 1.10), peak
+ratio$^{\mathrm n}$ 1.01--1.09, $X = 0.2$--$2.0\%$. Bindingness collapses $0.858 \to 0.099$
+across cuts, so the late-cut zeros are again volume slack. This is the mild edge of the
+same phenomenon: material but small overloads on an instance with denser co-occurrence
+structure.
+
+\paragraph{Planted demand shift (iscfco, the one mode that moves per-product volumes).}
+\Cref{tab:demand} summarizes the only shift family whose stations file carries a
+volume-recalibrated ceiling ($B = 0.907$--$0.909 \approx 1/1.10$, i.e., the as-run demand
+check is volume-binding by construction, and as-run $\approx$ normalized there). The
+nominal $k{=}1$ layout violates on 1--4 of 8 stations at \emph{every} shift intensity
+$\rho$, including $\rho = 0$; the violation count is flat in $\rho$ but the severity
+scales: mean peak ratio $1.07 \to 1.33$ and $X$ $1.8\% \to 6.9\%$ from $\rho = 0$ to
+$\rho = 2$. The $k{=}10$ closure layouts show the same gradient ($X$ $1.0\% \to 5.6\%$) ---
+covering enlargement does not repair demand-drift infeasibility.
+
+\begin{table}[htbp]
+\centering
+\caption{iscfco demand shift, means over 5 cuts (normalized metrics; $k{=}1$ layouts are
+identical across the mm/ms variants and deduplicated; $k{=}10$ pooled over mm and ms).
+Source: \texttt{results/secondary/per\_fold.csv}.}
+\label{tab:demand}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+$\rho$ & norm viol.\ $k{=}1$ (of 8) & ratio$^{\mathrm n}$ $k{=}1$ & $X$ (\%) $k{=}1$ & $X$ (\%) $k{=}10$ \\
+\midrule
+0.0 & \textbf{2.6} & 1.07 & 1.8 & 1.0 \\
+0.5 & \textbf{2.2} & 1.10 & 2.5 & 2.3 \\
+1.0 & \textbf{2.2} & 1.19 & 3.7 & 2.7 \\
+2.0 & \textbf{2.6} & 1.33 & 6.9 & 5.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Planted affinity drift.}
+The stored as-run verdicts (7--8 of 8 stations broken in all 24 informative arms, as-run
+ratio up to 5.25) are almost entirely volume artifact: test mass is $1.79$--$4.48\times$
+the train-calibrated ceiling ($B > 1$). Normalized, the genuine violations are 1--4 of 8
+(mean 2.29), imbalance 1.14--1.37, peak ratio$^{\mathrm n}$ up to 1.24 --- and they grow
+with planted drift: the reassign arms at $\alpha = 0.5$ / $1.0$ average imbalance
+1.318 / 1.285 and $X = 4.8\%$ / $3.6\%$ vs $\approx 1.21$--$1.22$ and $\approx 2\%$ at
+$\alpha = 0$. Full per-arm rows in \cref{tab:appaff}.
+
+\paragraph{As-run aggregate over all stored shift evaluations.}
+Pooling the 1{,}660 stored rows of the 18 \texttt{per\_fold\_shift\_*.csv} files
+(\cref{tab:aggregate}), \texttt{wl\_broken} $> 0$ in 969 rows (58.4\%) and
+\texttt{cap\_broken}=0 in all 1{,}660. The split by family confirms the diagnosis: the
+sparse-train families are broken in 100\% of rows (ceiling artifact, $B \gg 1$), the
+full-train iscf10kt families in $\sim$25--30\% (mean 0.40 of 8), the structured/unstructured
+iscfco shifts almost never (mm 0/80, ms 8/80 with max 1, i.e.\ 4/40 in each of the
+structured and unstructured modes) --- both shift modes preserve
+per-product volumes --- while the demand mode breaks 80/80 rows. As-run counts are
+essentially $\rho$-insensitive; only volume calibration and the demand mode matter.
+
+\begin{table}[htbp]
+\centering
+\caption{As-run aggregate of all stored shift evaluations (per results directory).
+``\% rows broken'' = share of rows with \texttt{wl\_broken} $> 0$. Source:
+\texttt{results/secondary/shift\_asrun\_aggregate.csv}.}
+\label{tab:aggregate}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Results dir & rows & \% rows broken & mean \texttt{wl\_broken} & max \\
+\midrule
+iscf10kt\_results\_mm    & 260 & 30.0  & 0.40 & \textbf{2} \\
+iscf10kt\_results\_ms    & 260 & 25.0  & 0.40 & \textbf{2} \\
+iscf10kt\_results\_shift & 225 & 28.0  & 0.40 & \textbf{2} \\
+iscf10kt\_results\_t500  & 225 & 100.0 & \textbf{7.56} & \textbf{8} \\
+iscf10kt\_results\_t1000 & 225 & 100.0 & \textbf{6.48} & \textbf{8} \\
+iscf10kt\_results\_t2000 & 225 & 100.0 & \textbf{4.52} & \textbf{8} \\
+iscfco\_results\_mm      & 120 & 33.3  & 0.82 & \textbf{4} \\
+iscfco\_results\_ms      & 120 & 40.0  & 0.82 & \textbf{4} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Industrial cell: BERNER audit}
+\label{sec:berner}
+
+BERNER is the one heterogeneous family: 24 stations with per-station
+$T_s \in \{1, \dots, 158\}$ (calibrated at 120\% of the pinned-assignment train workload,
+verified exactly for all 24 stations), speeds 332.6--11{,}885.7, and a single temporal cut
+(train quantile 0.7692, 10 of 13 weeks; 778{,}788 raw train lines, 220{,}893 raw test
+lines). No layouts were persisted, so realized per-station test loads cannot be
+recomputed; the audit instead bounds the check's informativeness four ways, all agreeing:
+
+\begin{itemize}
+\item \textbf{Aggregate bindingness}:
+$B_{\mathrm{agg}}^{\mathrm{te}} = 220{,}893 / 898{,}472 = 0.246$, far below the
+$1/1.20 = 0.833$ threshold (the 3-week test window carries 30.1\% of the distinct-line
+\texttt{REAL\_LINES} train volume of $734{,}229$ --- the basis that calibrates $T_s$ ---
+and 28.4\% of the 778{,}788 raw train lines). The stored test-demand
+\texttt{wl\_broken}=0 for the deployable arms A/B (all 16
+decompose rows, every $k$) is therefore \emph{volume-trivial}.
+\item \textbf{Assignment bounds}: under the pinned identity assignment the worst station
+reaches only ratio 0.286 on test demand (train-frequency-proportional split: 0.251) --- no
+train-like layout could plausibly have fired the as-run test check.
+\item \textbf{Train side, the contract is binding}:
+$B_{\mathrm{agg}}^{\mathrm{tr}} = 734{,}229 / 898{,}472 = 0.817 \approx 1/1.20$ (the
+train side of the aggregate bindingness uses the pinned-assignment
+\texttt{REAL\_LINES} workload, the quantity $T_s$ was calibrated on; the 778{,}788 raw
+train lines would give 0.867), pinned train ratios reach 0.8333
+at every large station, and the hard-constrained clean-comparison arms sit at
+\texttt{real\_wl\_max\_ratio} 0.998--1.000 --- placement is \emph{at} the ceiling.
+\item \textbf{Shape-bindingness}: a fluid equal-workload split of test demand
+($W^\ast = 5.674$ per station) would overload station 12 ($T_s = 1$) by $5.67\times$ and
+station 24 ($T_s = 2$) by $2.84\times$: equal balancing is incompatible with the
+heterogeneous per-station contract, so the constraint binds in shape as well as volume.
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{BERNER feasibility semantics by arm group. ``Test'' = TEST raw-line demand vs
+real train stations (volume-trivial, $B_{\mathrm{agg}}^{\mathrm{te}} = 0.246$);
+``train'' = TRAIN-demand (\texttt{REAL\_LINES}) deployability recheck vs the real
+per-station contract. Ranges over the $k$ grid of each source CSV. Source:
+\texttt{results/berner/berner\_feasibility\_audit.csv}.}
+\label{tab:berner}
+\small
+\begin{tabular}{@{}llllcc@{}}
+\toprule
+Arm group & Placement contract & Check & $k$ grid & \texttt{wl\_broken}/24 & max ratio \\
+\midrule
+A, B (decompose)        & real, hard              & test  & 1--10 & 0 & --- \\
+C, D (decompose, recal) & loosened flat            & test  & 2--10 & 0 & --- \\
+C$'$, D$'$ (cprime)     & loose recal + $\bar L$ signal & train & 2--10 & \textbf{6--9} & 6.326 \\
+B (clean, real regime)  & real, hard              & train & 1--20 & 0 & 1.000 \\
+C$''$, D$''$ (fair-inflated) & per-station fair $T^{\mathrm{fair}}_s$ & train & 2--20 & \textbf{4--8} & 1.793 \\
+oldD (loose flat cap)   & flat eq.-10 recal        & train & 2--20 & \textbf{7--10} & 2.810 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{tab:berner} separates the two check semantics. The loose-recalibrated C$'$/D$'$ arms
+are confirmed non-deployable: 6--9 of 24 stations breach the \emph{real} train-demand
+contract, with maximum ratio 5.488 for C$'$ at $k{=}2$ (matching the ``up to $5.5\times$''
+figure quoted in the decomposition report) and an overall maximum of 6.326 (D$'$, $k{=}4$).
+The hard-constrained A/B arms break 0 stations at every $k$. Note the caveat: BERNER order
+CSVs contain duplicate (ORDER, PRODUCT) rows (18{,}367 of 220{,}893 test rows); the as-run
+semantics counts raw lines, and this audit follows it. Switching to distinct-order test
+demand moves the headline quantities little --- the worst-station pinned test ratio falls
+from 0.286 to 0.260 ($-9.2\%$) and the aggregate test volume by 8.3\% --- so no
+conclusion changes, though individual small stations move more (the degenerate
+$T_s = 1$ station 12 falls from 0.274 to 0.131).
+
+\subsection{Retrospective $\Gamma$ calibration}
+\label{sec:gamma}
+
+We instantiate the estimators of \cref{sec:calibration} on the two temporal families
+(iscf480, iscf10kt; $k{=}1$ primary, $k{=}2$ secondary), with deviations
+$\delta_p = L^{\mathrm n}_p - L^0_p$ of volume-normalized test line counts against the
+train nominal ($\lambda$-normalization removes volume drift, so all findings isolate
+demand-\emph{mix} drift). The recomputation reproduces every as-run anchor and the
+normalized violation sets exactly (no rounding mismatches; 160 train-side checks all
+feasible).
+
+\begin{table}[htbp]
+\centering
+\caption{Fitted deviation constants at coverage $q = 0.90$ (train-line-weighted,
+\cref{sec:calibration}), and the as-is coverage of the planner-available M3 (5-block
+train-internal std). $c_1$: M1 proportional; $c_2$: M2 square-root. Source:
+\texttt{results/gamma/gamma\_fits.csv}.}
+\label{tab:fits}
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{iscf480 temporal} & \multicolumn{3}{c}{iscf10kt temporal} \\
+Cut & $c_1(0.9)$ & $c_2(0.9)$ & M3 cov.\ (\%) & $c_1(0.9)$ & $c_2(0.9)$ & M3 cov.\ (\%) \\
+\midrule
+r0f0 & 0.76 & 46.2  & 5.4 & 1.31 & 5.5  & 79.5 \\
+r0f1 & 0.94 & 66.3  & 3.4 & 1.42 & 6.6  & 76.1 \\
+r0f2 & 1.18 & 96.5  & 4.2 & 1.63 & 9.7  & 72.0 \\
+r0f3 & 1.55 & 146.9 & 1.5 & 2.45 & 13.5 & 58.0 \\
+r0f4 & 1.48 & 210.8 & 1.7 & 3.20 & 22.8 & 37.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Magnitudes (\cref{tab:fits}).}
+The fitted constants are large: median $c_1(0.9) = 1.18$ (iscf480) and 1.63 (iscf10kt),
+i.e., covering 90\% of train-line-weighted realized deviations requires a deviation
+allowance of roughly 118--163\% of a product's nominal line count, and $c_1$ grows with the
+cut horizon ($0.76 \to 1.48$ and $1.31 \to 3.20$) --- a single calibration is
+horizon-dependent. The train-internal M3, the only genuinely planner-available model,
+covers just 1.5--5.4\% of the weighted realized deviations on iscf480 (38--80\% on
+iscf10kt): within-train block variability drastically underestimates train$\to$test drift.
+These constants are fitted \emph{retrospectively} to realized deviations; they quantify
+what would have been needed, not what a planner could estimate ex ante.
+
+\begin{table}[htbp]
+\centering
+\caption{Budget diagnostics at the $q = 0.90$ fit, $k{=}1$.
+$\Gamma^{\mathrm{cover}}$ over the stations violating the normalized check
+(iscf480: $n = 14$ station-cells of 60 products each; iscf10kt: $n = 11$ of 541);
+$\Gamma^{\mathrm{bind}}$ over all 40 station-cells per family. ``$\infty$'' = uncoverable
+even at $\Gamma = |\Phi_s|$ (full box) under the model's magnitudes: for M1/M2 driven by
+train-unseen products ($\hat L_p = 0$), for M3 by under-sized block-std magnitudes.
+Source: \texttt{results/gamma/gamma\_station.csv}.}
+\label{tab:gamma}
+\small
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+ & & \multicolumn{3}{c}{$\Gamma^{\mathrm{cover}}$ (violated stations)} & \multicolumn{3}{c}{$\Gamma^{\mathrm{bind}}$ (all stations)} \\
+Family & Model & \#$\infty$ & median & median (finite) & median & \% $=1$ & \% $\le 2$ \\
+\midrule
+iscf480  & M1 prop.\      & 1  & 4.5      & 4    & 1 & 65.0 & 80.0 \\
+iscf480  & M2 sqrt        & 0  & 5        & 5    & 1 & 67.5 & 80.0 \\
+iscf480  & M3 empirical   & 10 & $\infty$ & 31   & 3 & 40.0 & 47.5 \\
+iscf10kt & M1 prop.\      & 0  & 8        & 8    & 1 & 67.5 & 75.0 \\
+iscf10kt & M2 sqrt        & 0  & 28       & 28   & 1 & 57.5 & 70.0 \\
+iscf10kt & M3 empirical   & 3  & 135      & 77.5 & 1 & 57.5 & 60.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Budgets (\cref{tab:gamma}, \cref{fig:gamma}).}
+On the stations that actually broke the as-run check, the best-fitting model needs
+remarkably small budgets: under M2 on iscf480 the seven as-run-broken stations need
+$\Gamma^{\mathrm{cover}} \in \{0,1,2,8,20,23,24\}$, median 8 of 60 assigned products
+(13.3\%; M2 is the best mean there, 11.1, with all covers finite, whereas M1 leaves 1/7
+uncoverable and M3 4/7); under M1 on iscf10kt they need $\{5, 19, 27\}$, median 19 of 541
+(3.5\%, range 0.9--5.0\%). Over all normalized-violated stations the medians remain small
+relative to $\zeta_s$ (\cref{tab:gamma}). At the same time $\Gamma^{\mathrm{bind}} = 1$
+for 58--68\% of $k{=}1$ stations under M1/M2 (median 1; $\le 2$ for 70--80\%): with these
+fitted magnitudes, protecting even the single largest deviation already exceeds the
+10\%-slack train ceiling at that majority of stations, so there \emph{any} nonzero budget
+forces the optimizer to rebalance at train time (at the remaining stations
+$\Gamma^{\mathrm{bind}}$ reaches 109 under M1, so small budgets exert no pressure).
+Under M1/M2 the robust constraint would be vacuous nowhere ($\Gamma^{\mathrm{bind}}$
+finite in all 80 $k{=}1$ station-cells each); under M3, 12 of 80 station-cells tolerate
+any budget ($\Gamma^{\mathrm{bind}} = \infty$).
+
+\paragraph{Concentration (\cref{fig:concentration}).}
+Overload is head-concentrated but not degenerate: across the 25 violating (fold, station)
+cells at $k{=}1$, the median Gini of positive deviations is 0.63 (iscf480) and 0.82
+(iscf10kt); the top-1 product covers 15--50\% (iscf480) and 16--53\% (iscf10kt) of a broken
+station's total positive deviation, and the top-10 covers 69--99\% and 61--89\%. A
+moderate head of products, not one or two outliers and not diffuse noise, drives the
+overloads --- exactly the small-$\Gamma$ regime in which the budget model of
+\cref{sec:theory} is designed to operate.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_gamma.pdf}
+\caption{$\Gamma^{\mathrm{cover}}$ at the $q = 0.90$ fit for $k{=}1$ stations violating
+the normalized check, as a fraction of assigned products: iscf480 medians $\approx 7\%$
+(M1), $8\%$ (M2), $52\%$ (M3) of $|\Phi_s| = 60$, with 1 (M1) and 10 (M3) infinite covers
+annotated; iscf10kt medians $\approx 1.5\%$ (M1), $5\%$ (M2), $14\%$ (M3) of 541, with 3
+M3 infinities. Source: \texttt{results/gamma/gamma\_station.csv}.}
+\label{fig:gamma}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_concentration.pdf}
+\caption{Cumulative share of a broken station's total positive deviation covered by its
+top-$m$ deviating products, for the 25 violating (fold, station) cells at $k{=}1$ (both
+temporal families). Median cumulative share $\approx 0.29$ at top-1, $\approx 0.61$ at
+top-5, $\approx 0.78$ at top-10. Source: \texttt{results/gamma/concentration.csv}.}
+\label{fig:concentration}
+\end{figure}
+
+% ======================================================================
+% Section 4: verified theory section (do not edit its math here)
+% ======================================================================
+\input{section_theory}
+
+% ======================================================================
+% Section 5: computational study (implementation + paired experiment)
+% ======================================================================
+\input{section_experiment}
+
+\section{Discussion and recommendations}
+\label{sec:discussion}
+
+\paragraph{When is the robust workload constraint worth it?}
+The evidence separates three regimes.
+(i) \emph{Stationary demand, matched volume} (iscf480 CV): the nominal constraint is
+adequate --- normalized violations exist only because placement sits at the exact slack
+edge, and they are immaterial (peak ratio $\le 1.016$, $X \le 0.40\%$). Robustness would
+buy little here.
+(ii) \emph{Temporal drift} (all temporal families, and the planted demand shift): the
+nominal constraint fails materially and systematically --- 1--4 of 8 stations, peak ratios
+up to 2.52 on iscf480 and 2.63 on the full-catalogue $k$ grid (3.45 in the sparse-train
+variants), 7--37\% of workload above the fair-share ceiling --- and the failure is invisible
+to the as-run check whenever $B < 1/\sigma$. This is the regime the counterpart of
+\cref{sec:theory} targets, and the calibration says protection is cheap in budget terms:
+the realized overloads are covered at median $\Gamma^{\mathrm{cover}}$ of 8/60 and 19/541
+products under the best-fitting magnitude model --- strikingly close to the
+$\Gamma \sim \sqrt{n}$ rule of thumb of \cref{rem:bs-prob}
+($\sqrt{60} \approx 7.7$, $\sqrt{541} \approx 23.3$) --- and deviations are
+head-concentrated (Gini 0.63/0.82), the Bertsimas--Sim sweet spot.
+(iii) \emph{Volume-artifact regimes} ($B \gg 1$ or $B \ll 1/\sigma$): fix the protocol
+first; no constraint reformulation can rescue a check that compares incommensurate volumes.
+
+\paragraph{What $\Gamma$ and what magnitudes the evidence suggests.}
+A per-station budget of order $\sqrt{\zeta_s}$ (reported as the fraction
+$\Gamma_s / \zeta_s \approx 13\%$ and $4\%$ on the two families) would have covered the
+median realized overload. Because $\Gamma^{\mathrm{bind}} = 1$ at 58--68\% of stations,
+even $\Gamma = 1$ already reshapes the training solution --- the practical risk is
+over-conservatism, not vacuity, which argues for starting at small budgets and the
+fractional-budget refinement rather than box protection. The harder open problem is the
+\emph{magnitude} side: the required $c_1(0.9) \approx 1.2$--$1.6$ (growing with horizon)
+is far beyond what train-internal variability (M3) predicts on iscf480, so an ex-ante
+deviation model needs longer demand history or an explicit drift model, not just
+within-window dispersion; on the full-catalogue instance M3 is a usable starting point
+(38--80\% coverage).
+
+\paragraph{What the implementation shows.}
+The computational study of \cref{sec:experiment} turns the counterpart from a proposal
+into three practical statements. (a) \emph{Partial ex-ante insurance is cheap and
+effective on severity}: $\Gamma = 1$ at half the M3 magnitude cuts the out-of-sample peak
+by ten percent of its value and the excess workload by a quarter, for a
+$2.3\%$ visit price, sign-consistently across all five cuts. (b) \emph{Uniform
+tightening is not a substitute}: at the same visit price it leaves the peak where it was,
+because it rebalances nominal loads without separating the large deviators that create
+the peak --- the budget constraint does that separation by construction. (c)
+\emph{Full-magnitude protection is a capacity decision, not a modeling one}: the top
+M3 deviations alone exceed the whole cell's slack headroom ($48.6$k vs.\ $33.0$k lines
+on the first cut), HiGHS certifies infeasibility from $\Gamma = 4$ up, and the one
+constructible step beyond the headroom ($\Gamma = 2$, $\alpha = 0.5$, one cut) costs
+$19\%$ of train visits. Insuring the drift this data actually exhibits requires growing
+the slack $\sigma$ --- a capacity investment that \cref{sec:exp-impl} prices.
+
+\paragraph{Threats to validity.}
+(i) The five temporal cuts share train mass (expanding windows): their spread is a
+dispersion proxy, not a confidence interval, and per-fold results are correlated.
+(ii) The volume-normalized ceiling is a \emph{counterfactual protocol choice}
+($T^{\mathrm n}$ re-solves nothing; it asks how the trained layout would fare if the
+ceiling had been calibrated on the test volume). Other normalizations are defensible; the
+$B$ diagnosis of the as-run check does not depend on this choice.
+(iii) Layouts are Hexaly (metaheuristic) placements: balancing exactly to the slack edge
+is a solver behavior, and better or different placements could shift the borderline CV
+findings (though hardly the 1.7--2.5$\times$ temporal overloads).
+(iv) Instance breadth: all synthetic families derive from one warehouse's catalogue, and
+the industrial evidence is a single BERNER cell with a single temporal cut and no persisted
+layouts (its bindingness verdict rests on assignment bounds).
+(v) The $\Gamma$ calibration is retrospective by design; only M3 is available ex ante, and
+it underestimates drift on iscf480 by an order of magnitude.
+(vi) The experiment's incumbents are metaheuristic, with a $\approx 30\%$ HiGHS dual-bound
+gap on the truncated support objective; paired within-cut deltas are reliable, absolute
+PoR magnitudes less so.
+(vii) The partial-insurance grid is coarse ($\alpha \in \{0.5, 0.25\}$), and the
+infeasible robust arms at $\alpha < 1$ are undetermined-within-budget rather than proven
+infeasible; only the full-magnitude certificates at $\Gamma \in \{4, 8, 16\}$ are proofs.
+
+\appendix
+
+\section{Full per-fold tables}
+\label{app:tables}
+
+\begin{table}[htbp]
+\centering
+\caption{iscf480, all stored (split, fold, $k$) cells. \texttt{asrun} = stored
+\texttt{wl\_broken} (reproduced exactly); ratio$^{\mathrm n}$ = peak
+$W^{\mathrm{te}}_s / T^{\mathrm n}_s$; imb.\ = imbalance. Source:
+\texttt{results/iscf480/per\_fold.csv}.}
+\label{tab:app480}
+\small
+\begin{tabular}{@{}llccccccc@{}}
+\toprule
+Split & Fold & $k$ & as-run & norm & ratio$^{\mathrm n}$ & imb. & $B$ & $X$ (\%) \\
+\midrule
+CV & r0f0 & 1 & 0 & \textbf{2} & 1.016 & 1.117 & 0.228 & 0.24 \\
+CV & r0f0 & 2 & 0 & \textbf{2} & 1.014 & 1.116 & 0.228 & 0.25 \\
+CV & r0f1 & 1 & 0 & 0 & 0.999 & 1.098 & 0.227 & 0.00 \\
+CV & r0f1 & 2 & 0 & 0 & 0.994 & 1.094 & 0.227 & 0.00 \\
+CV & r0f2 & 1 & 0 & \textbf{2} & 1.005 & 1.105 & 0.227 & 0.13 \\
+CV & r0f2 & 2 & 0 & \textbf{1} & 1.006 & 1.106 & 0.227 & 0.08 \\
+CV & r0f3 & 1 & 0 & \textbf{3} & 1.012 & 1.114 & 0.227 & 0.40 \\
+CV & r0f3 & 2 & 0 & \textbf{1} & 1.004 & 1.105 & 0.227 & 0.06 \\
+CV & r0f4 & 1 & 0 & \textbf{1} & 1.000 & 1.100 & 0.227 & 0.00 \\
+CV & r0f4 & 2 & 0 & 0 & 0.999 & 1.099 & 0.227 & 0.00 \\
+\midrule
+temp. & r0f0 & 1 & \textbf{4} & \textbf{3} & 1.714 & 1.886 & 1.005 & 11.02 \\
+temp. & r0f0 & 2 & \textbf{2} & \textbf{2} & 1.541 & 1.696 & 1.005 & 13.37 \\
+temp. & r0f1 & 1 & \textbf{2} & \textbf{3} & 1.906 & 2.097 & 0.693 & 19.81 \\
+temp. & r0f1 & 2 & \textbf{1} & \textbf{4} & 1.710 & 1.881 & 0.693 & 14.75 \\
+temp. & r0f2 & 1 & \textbf{1} & \textbf{3} & 2.255 & 2.480 & 0.457 & 26.61 \\
+temp. & r0f2 & 2 & 0 & \textbf{3} & 1.981 & 2.179 & 0.457 & 21.19 \\
+temp. & r0f3 & 1 & 0 & \textbf{2} & 2.519 & 2.771 & 0.281 & 27.23 \\
+temp. & r0f3 & 2 & 0 & \textbf{3} & 2.189 & 2.408 & 0.281 & 28.37 \\
+temp. & r0f4 & 1 & 0 & \textbf{3} & 2.376 & 2.614 & 0.125 & 30.72 \\
+temp. & r0f4 & 2 & 0 & \textbf{3} & 1.882 & 2.070 & 0.125 & 30.25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{iscf10kt temporal variant, full $k$ grid. Source:
+\texttt{results/iscf10kt/per\_fold.csv}.}
+\label{tab:app10kt}
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Cut & $k$ & as-run & norm & ratio$^{\mathrm n}$ & imb. & $B$ & $X$ (\%) \\
+\midrule
+0 & 1 & \textbf{2} & \textbf{2} & 1.50 & 1.65 & 0.79 & 10.6 \\
+0 & 2 & \textbf{2} & \textbf{2} & 1.47 & 1.61 & 0.79 & 11.8 \\
+0 & 3 & \textbf{1} & \textbf{2} & 1.56 & 1.71 & 0.79 & 8.6 \\
+0 & 4 & \textbf{2} & \textbf{2} & 1.32 & 1.46 & 0.79 & 8.3 \\
+0 & 6 & \textbf{1} & \textbf{1} & 1.49 & 1.64 & 0.79 & 6.8 \\
+1 & 1 & \textbf{1} & \textbf{2} & 1.69 & 1.86 & 0.55 & 15.6 \\
+1 & 2 & 0 & \textbf{2} & 1.53 & 1.69 & 0.55 & 11.8 \\
+1 & 3 & 0 & \textbf{1} & 1.56 & 1.72 & 0.55 & 7.7 \\
+1 & 4 & \textbf{1} & \textbf{2} & 1.65 & 1.82 & 0.55 & 9.9 \\
+1 & 6 & 0 & \textbf{3} & 1.44 & 1.58 & 0.55 & 10.5 \\
+2 & 1 & 0 & \textbf{1} & 2.15 & 2.36 & 0.37 & 15.8 \\
+2 & 2 & 0 & \textbf{2} & 1.66 & 1.83 & 0.37 & 14.2 \\
+2 & 3 & 0 & \textbf{2} & 2.06 & 2.27 & 0.37 & 19.2 \\
+2 & 4 & 0 & \textbf{2} & 1.90 & 2.09 & 0.37 & 13.0 \\
+2 & 6 & 0 & \textbf{3} & 1.75 & 1.92 & 0.37 & 13.0 \\
+3 & 1 & 0 & \textbf{3} & 1.93 & 2.12 & 0.22 & 24.6 \\
+3 & 2 & 0 & \textbf{1} & 2.36 & 2.60 & 0.22 & 18.8 \\
+3 & 3 & 0 & \textbf{2} & 2.16 & 2.38 & 0.22 & 24.5 \\
+3 & 4 & 0 & \textbf{3} & 1.78 & 1.96 & 0.22 & 22.6 \\
+3 & 6 & 0 & \textbf{3} & 1.68 & 1.85 & 0.22 & 20.0 \\
+4 & 1 & 0 & \textbf{3} & 2.35 & 2.59 & 0.11 & 25.4 \\
+4 & 2 & 0 & \textbf{2} & 2.63 & 2.90 & 0.11 & 36.8 \\
+4 & 3 & 0 & \textbf{2} & 2.26 & 2.49 & 0.11 & 28.1 \\
+4 & 4 & 0 & \textbf{3} & 2.55 & 2.81 & 0.11 & 28.2 \\
+4 & 6 & 0 & \textbf{3} & 2.03 & 2.23 & 0.11 & 22.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{iscf10kt sparse-train variants, $k{=}1$ rows (full grid, $k \in \{2,3,4,6\}$
+included, on disk). Source: \texttt{results/iscf10kt/per\_fold.csv}.}
+\label{tab:appsparse}
+\small
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+Variant & Fold & as-run & norm & ratio$^{\mathrm n}$ & imb. & $B$ & $X$ (\%) \\
+\midrule
+t500  & 0 & \textbf{8} & \textbf{1} & 1.78 & 1.96 & 8.18 & 10.8 \\
+t500  & 1 & \textbf{8} & \textbf{1} & 1.90 & 2.09 & 6.61 & 12.4 \\
+t500  & 2 & \textbf{8} & \textbf{1} & 2.30 & 2.53 & 4.91 & 17.8 \\
+t500  & 3 & \textbf{8} & \textbf{3} & 2.14 & 2.36 & 3.50 & 19.8 \\
+t500  & 4 & \textbf{4} & \textbf{2} & 3.45 & 3.80 & 2.07 & 35.5 \\
+t1000 & 0 & \textbf{8} & \textbf{2} & 1.56 & 1.72 & 4.03 & 11.1 \\
+t1000 & 1 & \textbf{8} & \textbf{1} & 1.84 & 2.02 & 3.28 & 11.5 \\
+t1000 & 2 & \textbf{8} & \textbf{2} & 2.09 & 2.30 & 2.53 & 15.2 \\
+t1000 & 3 & \textbf{6} & \textbf{3} & 1.71 & 1.89 & 1.77 & 18.4 \\
+t1000 & 4 & \textbf{2} & \textbf{2} & 3.44 & 3.79 & 1.06 & 35.4 \\
+t2000 & 0 & \textbf{7} & \textbf{2} & 1.54 & 1.70 & 1.97 & 9.2 \\
+t2000 & 1 & \textbf{7} & \textbf{3} & 1.49 & 1.63 & 1.68 & 13.2 \\
+t2000 & 2 & \textbf{4} & \textbf{3} & 1.68 & 1.85 & 1.27 & 15.6 \\
+t2000 & 3 & \textbf{3} & \textbf{3} & 2.08 & 2.29 & 0.90 & 22.5 \\
+t2000 & 4 & \textbf{1} & \textbf{2} & 2.69 & 2.96 & 0.52 & 31.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{iscfco base arms (unshifted $\rho = 0$ evaluation). $k{=}1$ metrics are
+identical across the mm/ms variants by construction. Per-fold $B$ = 0.858, 0.573, 0.374,
+0.221, 0.099 for cuts 0--4. Source: \texttt{results/secondary/per\_fold.csv}.}
+\label{tab:appco}
+\small
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+Variant & Cut & $k$ & as-run & norm & ratio$^{\mathrm n}$ & imb. & $X$ (\%) \\
+\midrule
+mm & 0 & 1  & 0 & \textbf{3} & 1.059 & 1.165 & 1.46 \\
+mm & 0 & 10 & 0 & \textbf{1} & 1.028 & 1.131 & 0.39 \\
+mm & 1 & 1  & 0 & \textbf{2} & 1.055 & 1.161 & 1.38 \\
+mm & 1 & 10 & 0 & \textbf{2} & 1.055 & 1.160 & 1.20 \\
+mm & 2 & 1  & 0 & \textbf{2} & 1.045 & 1.150 & 1.20 \\
+mm & 2 & 10 & 0 & \textbf{2} & 1.060 & 1.167 & 1.17 \\
+mm & 3 & 1  & 0 & \textbf{2} & 1.089 & 1.198 & 1.27 \\
+mm & 3 & 10 & 0 & \textbf{2} & 1.064 & 1.171 & 1.24 \\
+mm & 4 & 1  & 0 & \textbf{3} & 1.057 & 1.164 & 1.96 \\
+mm & 4 & 10 & 0 & \textbf{3} & 1.083 & 1.193 & 1.52 \\
+ms & 0 & 1  & 0 & \textbf{3} & 1.059 & 1.165 & 1.46 \\
+ms & 0 & 10 & \textbf{1} & \textbf{1} & 1.061 & 1.167 & 0.83 \\
+ms & 1 & 1  & 0 & \textbf{2} & 1.055 & 1.161 & 1.38 \\
+ms & 1 & 10 & 0 & \textbf{2} & 1.064 & 1.171 & 1.15 \\
+ms & 2 & 1  & 0 & \textbf{2} & 1.045 & 1.150 & 1.20 \\
+ms & 2 & 10 & 0 & \textbf{1} & 1.014 & 1.116 & 0.20 \\
+ms & 3 & 1  & 0 & \textbf{2} & 1.089 & 1.198 & 1.27 \\
+ms & 3 & 10 & 0 & \textbf{3} & 1.045 & 1.149 & 0.91 \\
+ms & 4 & 1  & 0 & \textbf{3} & 1.057 & 1.164 & 1.96 \\
+ms & 4 & 10 & 0 & \textbf{2} & 1.089 & 1.199 & 1.50 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Planted-affinity informative arms (reps r0, r2; rep r1 is degenerate as-run with
+empty layouts and is omitted). The as-run 7--8/8 counts are volume artifact ($B > 1$).
+Source: \texttt{results/secondary/per\_fold.csv}.}
+\label{tab:appaff}
+\small
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Arm & $k$ & as-run & norm & ratio$^{\mathrm n}$ & imb. & $B$ & $X$ (\%) \\
+\midrule
+combine\ $\alpha{=}0.0$\ r0 & 1  & \textbf{8} & \textbf{2} & 1.071 & 1.180 & 1.81 & 1.93 \\
+combine\ $\alpha{=}0.0$\ r0 & 10 & \textbf{8} & \textbf{1} & 1.065 & 1.173 & 1.81 & 0.89 \\
+combine\ $\alpha{=}0.5$\ r0 & 1  & \textbf{8} & \textbf{2} & 1.049 & 1.155 & 3.18 & 1.05 \\
+combine\ $\alpha{=}0.5$\ r0 & 10 & \textbf{8} & \textbf{2} & 1.052 & 1.158 & 3.18 & 0.88 \\
+combine\ $\alpha{=}1.0$\ r0 & 1  & \textbf{8} & \textbf{2} & 1.063 & 1.170 & 4.40 & 1.25 \\
+combine\ $\alpha{=}1.0$\ r0 & 10 & \textbf{8} & \textbf{3} & 1.055 & 1.161 & 4.40 & 1.83 \\
+reassign\ $\alpha{=}0.0$\ r0 & 1  & \textbf{8} & \textbf{2} & 1.092 & 1.202 & 1.82 & 2.42 \\
+reassign\ $\alpha{=}0.0$\ r0 & 10 & \textbf{8} & \textbf{3} & 1.093 & 1.203 & 1.82 & 1.89 \\
+reassign\ $\alpha{=}0.5$\ r0 & 1  & \textbf{8} & \textbf{2} & 1.170 & 1.288 & 1.93 & 3.43 \\
+reassign\ $\alpha{=}0.5$\ r0 & 10 & \textbf{8} & \textbf{2} & 1.180 & 1.298 & 1.93 & 4.51 \\
+reassign\ $\alpha{=}1.0$\ r0 & 1  & \textbf{8} & \textbf{1} & 1.165 & 1.282 & 1.79 & 2.27 \\
+reassign\ $\alpha{=}1.0$\ r0 & 10 & \textbf{8} & \textbf{2} & 1.196 & 1.317 & 1.79 & 3.68 \\
+combine\ $\alpha{=}0.0$\ r2 & 1  & \textbf{8} & \textbf{3} & 1.130 & 1.243 & 1.85 & 2.62 \\
+combine\ $\alpha{=}0.0$\ r2 & 10 & \textbf{7} & \textbf{2} & 1.129 & 1.242 & 1.85 & 2.03 \\
+combine\ $\alpha{=}0.5$\ r2 & 1  & \textbf{8} & \textbf{2} & 1.039 & 1.144 & 3.26 & 0.79 \\
+combine\ $\alpha{=}0.5$\ r2 & 10 & \textbf{8} & \textbf{3} & 1.071 & 1.179 & 3.26 & 1.68 \\
+combine\ $\alpha{=}1.0$\ r2 & 1  & \textbf{8} & \textbf{2} & 1.064 & 1.171 & 4.48 & 1.12 \\
+combine\ $\alpha{=}1.0$\ r2 & 10 & \textbf{8} & \textbf{3} & 1.035 & 1.139 & 4.48 & 1.13 \\
+reassign\ $\alpha{=}0.0$\ r2 & 1  & \textbf{8} & \textbf{2} & 1.128 & 1.243 & 1.84 & 2.04 \\
+reassign\ $\alpha{=}0.0$\ r2 & 10 & \textbf{8} & \textbf{2} & 1.124 & 1.237 & 1.84 & 2.00 \\
+reassign\ $\alpha{=}0.5$\ r2 & 1  & \textbf{8} & \textbf{2} & 1.196 & 1.317 & 1.88 & 3.84 \\
+reassign\ $\alpha{=}0.5$\ r2 & 10 & \textbf{7} & \textbf{4} & 1.244 & 1.370 & 1.88 & 7.40 \\
+reassign\ $\alpha{=}1.0$\ r2 & 1  & \textbf{8} & \textbf{3} & 1.150 & 1.265 & 1.90 & 2.78 \\
+reassign\ $\alpha{=}1.0$\ r2 & 10 & \textbf{8} & \textbf{3} & 1.158 & 1.274 & 1.90 & 5.54 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Computational study (\cref{sec:experiment}): all feasible (cut, arm)
+cells on iscf480 temporal. PoR and $G$ are paired against the cut's
+$\Gamma{=}0$ arm; viol.\ = stations above $T^{\mathrm n}$ (of 8); peak =
+$\max_s W^{\mathrm{te}}_s / T^{\mathrm n}$. Arms not shown are
+undetermined-within-budget ($\Gamma{=}2$, $\alpha{=}0.5$ on cuts 1--4;
+$\Gamma{=}4, 8$ at $\alpha{=}0.5$ and $\Gamma{=}8$ at $\alpha{=}0.25$ on all
+cuts; $\Gamma{=}1$ at $\alpha{=}1$ on cut 0) or proven infeasible
+($\alpha{=}1$, $\Gamma \in \{4,8,16\}$, cut 0).
+Source: \texttt{results/experiment/results.csv}.}
+\label{tab:app-exp}
+\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+Cut & Arm & PoR (\%) & $G$ (\%) & viol. & peak & $X$ (\%) \\
+\midrule
+0 & $\Gamma{=}0$ & 0.00 & 0.00 & 2 & 1.489 & 10.6 \\
+0 & $\Gamma{=}1$, $\alpha{=}0.5$ & 2.11 & $-$3.49 & 1 & 1.468 & 6.4 \\
+0 & $\Gamma{=}1$, $\alpha{=}0.25$ & 1.70 & $-$3.49 & 2 & 1.391 & 8.6 \\
+0 & $\Gamma{=}2$, $\alpha{=}0.5$ & 19.13 & $-$23.14 & 3 & 1.139 & 3.1 \\
+0 & $\Gamma{=}2$, $\alpha{=}0.25$ & 1.21 & $-$2.47 & 3 & 1.408 & 8.7 \\
+0 & $\Gamma{=}4$, $\alpha{=}0.25$ & 2.02 & $-$1.89 & 3 & 1.429 & 9.4 \\
+0 & tight $\beta{=}1.05$ & 0.64 & $-$0.60 & 2 & 1.519 & 9.2 \\
+0 & tight $\beta{=}1.02$ & 3.10 & $-$3.72 & 2 & 1.498 & 8.3 \\
+0 & Hexaly $k{=}1$ & $-$3.45 & 3.41 & 3 & 1.714 & 11.0 \\
+\addlinespace
+1 & $\Gamma{=}0$ & 0.00 & 0.00 & 3 & 1.482 & 14.0 \\
+1 & $\Gamma{=}1$, $\alpha{=}0.5$ & 2.39 & $-$4.06 & 3 & 1.342 & 10.7 \\
+1 & $\Gamma{=}1$, $\alpha{=}0.25$ & 1.39 & $-$2.53 & 3 & 1.517 & 10.9 \\
+1 & $\Gamma{=}2$, $\alpha{=}0.25$ & 1.66 & $-$1.44 & 2 & 1.710 & 11.5 \\
+1 & $\Gamma{=}4$, $\alpha{=}0.25$ & 0.14 & $-$1.78 & 3 & 1.540 & 9.4 \\
+1 & tight $\beta{=}1.05$ & 0.32 & 0.25 & 2 & 1.533 & 12.4 \\
+1 & tight $\beta{=}1.02$ & 0.91 & $-$1.87 & 2 & 1.427 & 11.0 \\
+1 & Hexaly $k{=}1$ & $-$5.05 & 7.09 & 3 & 1.906 & 19.8 \\
+\addlinespace
+2 & $\Gamma{=}0$ & 0.00 & 0.00 & 3 & 1.814 & 17.4 \\
+2 & $\Gamma{=}1$, $\alpha{=}0.5$ & 1.63 & $-$3.02 & 3 & 1.613 & 15.4 \\
+2 & $\Gamma{=}1$, $\alpha{=}0.25$ & 0.47 & 0.29 & 3 & 1.793 & 17.3 \\
+2 & $\Gamma{=}2$, $\alpha{=}0.25$ & 1.53 & $-$1.91 & 2 & 1.724 & 15.8 \\
+2 & $\Gamma{=}4$, $\alpha{=}0.25$ & 1.32 & $-$1.31 & 3 & 1.876 & 15.4 \\
+2 & tight $\beta{=}1.05$ & 0.35 & $-$1.05 & 3 & 1.903 & 15.4 \\
+2 & tight $\beta{=}1.02$ & 2.28 & $-$0.40 & 3 & 1.935 & 17.2 \\
+2 & Hexaly $k{=}1$ & $-$4.18 & 7.22 & 3 & 2.255 & 26.6 \\
+\addlinespace
+3 & $\Gamma{=}0$ & 0.00 & 0.00 & 2 & 1.948 & 21.4 \\
+3 & $\Gamma{=}1$, $\alpha{=}0.5$ & 2.17 & $-$2.69 & 4 & 1.867 & 18.5 \\
+3 & $\Gamma{=}1$, $\alpha{=}0.25$ & 1.82 & $-$4.35 & 2 & 1.899 & 19.6 \\
+3 & $\Gamma{=}2$, $\alpha{=}0.25$ & 0.90 & $-$0.19 & 2 & 1.868 & 22.1 \\
+3 & $\Gamma{=}4$, $\alpha{=}0.25$ & 2.73 & $-$0.21 & 2 & 2.110 & 23.0 \\
+3 & tight $\beta{=}1.05$ & $-$0.42 & 2.69 & 3 & 2.034 & 25.2 \\
+3 & tight $\beta{=}1.02$ & 1.88 & 1.87 & 3 & 1.901 & 25.2 \\
+3 & Hexaly $k{=}1$ & $-$3.30 & 6.27 & 2 & 2.519 & 27.2 \\
+\addlinespace
+4 & $\Gamma{=}0$ & 0.00 & 0.00 & 3 & 2.112 & 23.5 \\
+4 & $\Gamma{=}1$, $\alpha{=}0.5$ & 3.43 & $-$8.94 & 2 & 1.643 & 14.0 \\
+4 & $\Gamma{=}1$, $\alpha{=}0.25$ & 1.83 & $-$2.35 & 3 & 1.746 & 20.5 \\
+4 & $\Gamma{=}2$, $\alpha{=}0.25$ & 1.76 & $-$2.19 & 2 & 1.940 & 19.6 \\
+4 & $\Gamma{=}4$, $\alpha{=}0.25$ & 2.62 & $-$6.87 & 3 & 1.770 & 18.5 \\
+4 & tight $\beta{=}1.05$ & 1.17 & $-$2.68 & 4 & 1.818 & 22.0 \\
+4 & tight $\beta{=}1.02$ & 3.11 & $-$4.52 & 4 & 2.014 & 23.1 \\
+4 & Hexaly $k{=}1$ & $-$3.41 & 6.81 & 3 & 2.376 & 30.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{thebibliography}{9}
+\bibitem{bertsimas2004}
+D.~Bertsimas and M.~Sim.
+The price of robustness.
+\emph{Operations Research}, 52(1):35--53, 2004.
+
+\bibitem{bertsimas2003robust}
+D.~Bertsimas and M.~Sim.
+Robust discrete optimization and network flows.
+\emph{Mathematical Programming}, 98(1--3):49--71, 2003.
+
+\bibitem{soyster1973convex}
+A.~L. Soyster.
+Convex programming with set-inclusive constraints and applications to inexact linear
+programming.
+\emph{Operations Research}, 21(5):1154--1157, 1973.
+
+\bibitem{bental2009robust}
+A.~Ben-Tal, L.~El~Ghaoui, and A.~Nemirovski.
+\emph{Robust Optimization}.
+Princeton University Press, Princeton, NJ, 2009.
+\end{thebibliography}
+
+\end{document}

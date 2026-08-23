@@ -1,0 +1,24 @@
+[run_bs_robust_experiment] backend=cplex
+[fold 1] T_s re-derived at q=max (A2): median 4.9
+[fold 1] warm start: 2000 products seeded
+[fold 1] lhat mode=daily
+[fold 1] c_q90=4.343 T_s=5 lhat_max=100.2
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=18671 start_feasible=True warm=181.6s build=5.5s
+[milp_cplex_robust] gamma=0 obj=18671 bound=13423.0 gap=28.11% status='time limit exceeded' elapsed=788.0s cap_broken=0 wl_broken=0
+[fold 1 gamma=0] V_tr=448130 V_te=32096 PoR=0.00% G=0.00% viol_norm=24 max_ratio=43.36 robust_ok=True (789s)
+[milp_cplex_robust] gamma=1 vars~120000 start_obj=18677 start_feasible=True warm=183.1s build=7.6s
+[milp_cplex_robust] gamma=1 obj=18677 bound=13423.0 gap=28.13% status='time limit exceeded' elapsed=791.8s cap_broken=0 wl_broken=0
+[fold 1 gamma=1] V_tr=448203 V_te=32098 PoR=0.02% G=-0.01% viol_norm=24 max_ratio=42.06 robust_ok=True (792s)
+[milp_cplex_robust] gamma=2 vars~120000 start_obj=18671 start_feasible=True warm=183.3s build=7.9s
+[milp_cplex_robust] gamma=2 obj=18671 bound=13423.0 gap=28.11% status='time limit exceeded' elapsed=792.3s cap_broken=0 wl_broken=0
+[fold 1 gamma=2] V_tr=447544 V_te=32075 PoR=-0.13% G=0.07% viol_norm=24 max_ratio=40.56 robust_ok=True (793s)
+[milp_cplex_robust] gamma=4 vars~120000 start_obj=18686 start_feasible=True warm=183.7s build=7.8s
+[milp_cplex_robust] gamma=4 obj=18686 bound=13423.0 gap=28.17% status='time limit exceeded' elapsed=792.6s cap_broken=0 wl_broken=0
+[fold 1 gamma=4] V_tr=447183 V_te=32014 PoR=-0.21% G=0.26% viol_norm=24 max_ratio=40.77 robust_ok=True (793s)
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=inf start_feasible=False warm=97.5s build=5.6s
+[milp_cplex_robust] gamma=0 MODEL INFEASIBLE (proven) status='integer infeasible' elapsed=316.0s
+[fold 1 beta=1.02] INFEASIBLE
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=inf start_feasible=False warm=97.1s build=5.7s
+[milp_cplex_robust] gamma=0 MODEL INFEASIBLE (proven) status='integer infeasible' elapsed=323.4s
+[fold 1 beta=1.05] INFEASIBLE
+[run_bs_robust_experiment] DONE: 6 rows -> results/berner_daily_qmax

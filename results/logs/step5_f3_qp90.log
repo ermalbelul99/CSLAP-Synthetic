@@ -1,0 +1,24 @@
+[run_bs_robust_experiment] backend=cplex
+[fold 3] T_s re-derived at q=p90 (A2): median 3.6
+[fold 3] warm start: 2000 products seeded
+[fold 3] lhat mode=daily
+[fold 3] c_q90=4.387 T_s=4 lhat_max=106.3
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=20726 start_feasible=True warm=180.4s build=5.6s
+[milp_cplex_robust] gamma=0 obj=20726 bound=14802.7 gap=28.58% status='time limit exceeded' elapsed=787.1s cap_broken=0 wl_broken=0
+[fold 3 gamma=0] V_tr=512457 V_te=54465 PoR=0.00% G=0.00% viol_norm=24 max_ratio=56.59 robust_ok=True (788s)
+[milp_cplex_robust] gamma=1 vars~120000 start_obj=21115 start_feasible=True warm=187.3s build=8.0s
+[milp_cplex_robust] gamma=1 obj=21115 bound=14807.2 gap=29.87% status='time limit exceeded' elapsed=796.6s cap_broken=0 wl_broken=0
+[fold 3 gamma=1] V_tr=519526 V_te=55307 PoR=1.38% G=-1.55% viol_norm=24 max_ratio=54.50 robust_ok=True (797s)
+[milp_cplex_robust] gamma=2 vars~120000 start_obj=20969 start_feasible=True warm=183.3s build=8.1s
+[milp_cplex_robust] gamma=2 obj=20969 bound=14810.1 gap=29.37% status='time limit exceeded' elapsed=792.5s cap_broken=0 wl_broken=0
+[fold 3 gamma=2] V_tr=514045 V_te=54517 PoR=0.31% G=-0.10% viol_norm=24 max_ratio=53.87 robust_ok=True (793s)
+[milp_cplex_robust] gamma=4 vars~120000 start_obj=inf start_feasible=False warm=23.3s build=8.1s
+[milp_cplex_robust] gamma=4 NO incumbent and greedy infeasible (status='time limit exceeded, no integer solution') elapsed=632.5s
+[fold 3 gamma=4] UNDETERMINED (no incumbent in limit)
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=inf start_feasible=False warm=99.8s build=6.0s
+[milp_cplex_robust] gamma=0 MODEL INFEASIBLE (proven) status='integer infeasible' elapsed=379.6s
+[fold 3 beta=1.02] INFEASIBLE
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=inf start_feasible=False warm=99.4s build=5.6s
+[milp_cplex_robust] gamma=0 MODEL INFEASIBLE (proven) status='integer infeasible' elapsed=377.7s
+[fold 3 beta=1.05] INFEASIBLE
+[run_bs_robust_experiment] DONE: 6 rows -> results/berner_daily_qp90

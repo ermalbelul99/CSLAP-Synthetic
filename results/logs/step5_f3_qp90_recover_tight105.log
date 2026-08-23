@@ -1,0 +1,12 @@
+[run_bs_robust_experiment] backend=cplex
+[fold 3] T_s re-derived at q=p90 (A2): median 3.6
+[fold 3] warm start: 2000 products seeded
+[fold 3] lhat mode=daily
+[fold 3] c_q90=4.387 T_s=4 lhat_max=106.3
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=20726 start_feasible=True warm=179.9s build=6.0s
+[milp_cplex_robust] gamma=0 obj=20726 bound=14802.7 gap=28.58% status='time limit exceeded' elapsed=794.0s cap_broken=0 wl_broken=0
+[fold 3 gamma=0] V_tr=512457 V_te=54465 PoR=0.00% G=0.00% viol_norm=24 max_ratio=56.59 robust_ok=True (795s)
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=inf start_feasible=False warm=101.0s build=6.5s
+[milp_cplex_robust] gamma=0 MODEL INFEASIBLE (proven) status='integer infeasible' elapsed=411.4s
+[fold 3 beta=1.05] INFEASIBLE
+[run_bs_robust_experiment] DONE: 2 rows -> C:/Users/ebelul/AppData/Local/Temp/2/claude/c--ermal-CSLAP-Full-Project-CSLAP-Synthetic/6f5eb64b-99e3-4daa-9b47-d254dae08cd2/scratchpad/recover_f3_p90

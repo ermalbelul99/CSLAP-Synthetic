@@ -1,0 +1,72 @@
+[exp02a_daily_adapter] 14 instances | drift=0 | q=max
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 24044 | Itemsets: 111 | Days: 63 (2021-09-01+) | T_s/day: 1265 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1001_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 3714 te 4805
+[daily_folds] syn_500sku_seed1001_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 3841 te 3452
+[daily_folds] syn_500sku_seed1001_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 3800 te 3882
+[daily_folds] syn_500sku_seed1001_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 3808 te 3855
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 20913 | Itemsets: 75 | Days: 63 (2021-09-01+) | T_s/day: 1348 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1002_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 3330 te 3434
+[daily_folds] syn_500sku_seed1002_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 3342 te 2878
+[daily_folds] syn_500sku_seed1002_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 3294 te 3201
+[daily_folds] syn_500sku_seed1002_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 3285 te 3023
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 18431 | Itemsets: 169 | Days: 63 (2021-09-01+) | T_s/day: 908 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1003_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 2914 te 3512
+[daily_folds] syn_500sku_seed1003_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 2983 te 2508
+[daily_folds] syn_500sku_seed1003_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 2934 te 2605
+[daily_folds] syn_500sku_seed1003_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 2903 te 2697
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 23792 | Itemsets: 57 | Days: 63 (2021-09-01+) | T_s/day: 1477 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1004_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 3740 te 4482
+[daily_folds] syn_500sku_seed1004_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 3826 te 3259
+[daily_folds] syn_500sku_seed1004_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 3767 te 3654
+[daily_folds] syn_500sku_seed1004_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 3757 te 3576
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 21311 | Itemsets: 181 | Days: 63 (2021-09-01+) | T_s/day: 1057 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1005_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 3361 te 3332
+[daily_folds] syn_500sku_seed1005_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 3358 te 2852
+[daily_folds] syn_500sku_seed1005_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 3305 te 3292
+[daily_folds] syn_500sku_seed1005_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 3304 te 3552
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 16524 | Itemsets: 198 | Days: 63 (2021-09-01+) | T_s/day: 814 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1006_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 2614 te 3043
+[daily_folds] syn_500sku_seed1006_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 2664 te 2155
+[daily_folds] syn_500sku_seed1006_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 2611 te 2547
+[daily_folds] syn_500sku_seed1006_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 2605 te 2615
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 22332 | Itemsets: 159 | Days: 63 (2021-09-01+) | T_s/day: 1187 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1007_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 3301 te 4605
+[daily_folds] syn_500sku_seed1007_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 3453 te 3169
+[daily_folds] syn_500sku_seed1007_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 3423 te 3015
+[daily_folds] syn_500sku_seed1007_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 3384 te 4949
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 24865 | Itemsets: 172 | Days: 63 (2021-09-01+) | T_s/day: 1250 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1008_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 3927 te 4235
+[daily_folds] syn_500sku_seed1008_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 3963 te 3240
+[daily_folds] syn_500sku_seed1008_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 3887 te 3824
+[daily_folds] syn_500sku_seed1008_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 3881 te 4265
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 20491 | Itemsets: 172 | Days: 63 (2021-09-01+) | T_s/day: 1162 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1009_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 3241 te 3995
+[daily_folds] syn_500sku_seed1009_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 3328 te 2346
+[daily_folds] syn_500sku_seed1009_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 3226 te 2968
+[daily_folds] syn_500sku_seed1009_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 3202 te 3414
+[Zhang Generator] N=500 | Stations: 5 | Zeta: 100 | Orders: 15621 | Itemsets: 128 | Days: 63 (2021-09-01+) | T_s/day: 717 | drift=0 cospike_cv=0.35
+[daily_folds] syn_500sku_seed1010_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 2426 te 2893
+[daily_folds] syn_500sku_seed1010_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 2480 te 1882
+[daily_folds] syn_500sku_seed1010_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 2418 te 2423
+[daily_folds] syn_500sku_seed1010_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 2418 te 2766
+[Zhang Generator] N=1000 | Stations: 10 | Zeta: 100 | Orders: 45116 | Itemsets: 222 | Days: 63 (2021-09-01+) | T_s/day: 1274 | drift=0 cospike_cv=0.35
+[daily_folds] syn_1000sku_seed1001_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 6947 te 9169
+[daily_folds] syn_1000sku_seed1001_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 7205 te 6634
+[daily_folds] syn_1000sku_seed1001_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 7146 te 7288
+[daily_folds] syn_1000sku_seed1001_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 7159 te 7213
+[Zhang Generator] N=1000 | Stations: 10 | Zeta: 100 | Orders: 38741 | Itemsets: 151 | Days: 63 (2021-09-01+) | T_s/day: 1164 | drift=0 cospike_cv=0.35
+[daily_folds] syn_1000sku_seed1002_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 6165 te 6223
+[daily_folds] syn_1000sku_seed1002_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 6172 te 5410
+[daily_folds] syn_1000sku_seed1002_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 6092 te 5962
+[daily_folds] syn_1000sku_seed1002_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 6080 te 5539
+[Zhang Generator] N=1000 | Stations: 10 | Zeta: 100 | Orders: 37635 | Itemsets: 339 | Days: 63 (2021-09-01+) | T_s/day: 955 | drift=0 cospike_cv=0.35
+[daily_folds] syn_1000sku_seed1003_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 5969 te 6765
+[daily_folds] syn_1000sku_seed1003_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 6061 te 5225
+[daily_folds] syn_1000sku_seed1003_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 5974 te 5374
+[daily_folds] syn_1000sku_seed1003_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 5918 te 5597
+[Zhang Generator] N=1000 | Stations: 10 | Zeta: 100 | Orders: 33481 | Itemsets: 115 | Days: 63 (2021-09-01+) | T_s/day: 941 | drift=0 cospike_cv=0.35
+[daily_folds] syn_1000sku_seed1004_d00_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 5244 te 6236
+[daily_folds] syn_1000sku_seed1004_d00_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-01..2021-11-05 (5d) | lines/day tr 5359 te 4792
+[daily_folds] syn_1000sku_seed1004_d00_r0f2: train 2021-09-01..2021-11-05 (48d) -> test 2021-11-08..2021-11-12 (5d) | lines/day tr 5300 te 4961
+[daily_folds] syn_1000sku_seed1004_d00_r0f3: train 2021-09-01..2021-11-12 (53d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 5268 te 5134
+[exp02a_daily_adapter] wrote 56 folds -> data/derived/exp02a_daily_folds

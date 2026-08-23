@@ -1,0 +1,8 @@
+[berner_daily_adapter] reading C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic-robustness\Heuristic_Connex_Set_Project\data\BERNER_ORDER_LINES_DATE_ASSIGNED_21.csv
+[berner_daily_adapter] 1486618 lines | 284862 orders | 21874 SKUs | 24 stations | 2000 free, 19874 frozen
+[daily_folds] berner_daily_r0f0: train 2021-09-01..2021-10-22 (38d) -> test 2021-10-25..2021-10-29 (5d) | lines/day tr 14494 te 19483
+[daily_folds] berner_daily_r0f1: train 2021-09-01..2021-10-29 (43d) -> test 2021-11-02..2021-11-05 (4d) | lines/day tr 15074 te 11592
+[daily_folds] berner_daily_r0f2: train 2021-09-01..2021-11-05 (47d) -> test 2021-11-08..2021-11-12 (4d) | lines/day tr 14778 te 10876
+[daily_folds] berner_daily_r0f3: train 2021-09-01..2021-11-12 (51d) -> test 2021-11-15..2021-11-19 (5d) | lines/day tr 14472 te 15739
+[berner_daily_adapter] wrote 4 folds -> data/derived/berner_daily_folds
+[berner_daily_adapter] wrote incumbent layout -> data/derived/berner_daily_folds\berner_daily_incumbent_layout.json

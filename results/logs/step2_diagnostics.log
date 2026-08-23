@@ -1,0 +1,12 @@
+[demand_diagnostics] berner: reading Heuristic_Connex_Set_Project/data/BERNER_ORDER_LINES_DATE_ASSIGNED_21.csv
+  horizon            : 2021-09-01 -> 2021-11-30  (63 active days, 21877 SKUs)
+  lines/day          : mean 23597  cv 0.21  peak/mean 1.69
+  station peak/mean  : median 1.73  p90 1.83  (24 stations)
+  variance dow       : 0.066
+  variance calendar  : 0.376   residual 0.624 (cv 0.167)
+  common share       : 0.403   idiosyncratic 0.597
+  SKU Fano           : median 1.15   top500 2.57
+  co-spike Pearson   : +0.1749   top-decile +0.0966   never -0.0072
+  co-spike by LIFT   : pearson +0.2030   top-decile +0.0977   (head n=300)
+[demand_diagnostics] wrote C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic-robustness\results\diagnostics\diagnostics_berner.json
+[demand_diagnostics] wrote C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic-robustness\results\diagnostics\diagnostics_berner.csv

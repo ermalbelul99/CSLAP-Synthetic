@@ -1,0 +1,7 @@
+fold,arm,gamma,alpha,solver_obj,solver_bound,solver_gap,solve_time,feasible_model,c_fit_q90,proven_infeasible,beta,T_s_train
+0,gamma0,0.0,1.0,inf,,,623.5853090286255,False,4.552088079646643,False,,
+0,gamma1,1.0,1.0,inf,,,629.8476300239563,False,4.552088079646643,False,,
+0,gamma2,2.0,1.0,inf,,,629.9172608852386,False,4.552088079646643,False,,
+0,gamma4,4.0,1.0,inf,,,629.8853850364685,False,4.552088079646643,False,,
+0,tight1.02,,,inf,,,621.7627170085907,False,4.552088079646643,,1.02,13.0
+0,tight1.05,,,inf,,,621.7888462543488,False,4.552088079646643,,1.05,13.0

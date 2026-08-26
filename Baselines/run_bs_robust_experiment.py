@@ -46,6 +46,7 @@ Outputs: ``results.csv``, ``calibration.csv``, ``per_station.csv``, layout and
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import os
@@ -441,10 +442,14 @@ def main() -> None:
                         help="HiGHS feasibility-probe seconds when the "
                              "constructive pipeline finds no layout")
     parser.add_argument("--backend", type=str, default="cplex",
-                        choices=["highs", "cplex"],
+                        choices=["highs", "cplex", "hexaly"],
                         help="MILP backend for the placement solve/polish. "
                              "'cplex' (docplex) is exact -> removes the HiGHS "
-                             "symmetry-stall gap; everything else is identical.")
+                             "symmetry-stall gap; everything else is identical. "
+                             "'hexaly' additionally re-encodes the workload as "
+                             "one row per (station, training day) using that "
+                             "day's actual lines (A1), instead of the mean-day "
+                             "row the other two backends use.")
     parser.add_argument("--out", type=str,
                         default=os.path.join(RESULTS, "experiment"))
     parser.add_argument("--lhat-mode", type=str, default="auto",
@@ -452,6 +457,16 @@ def main() -> None:
                         help="Deviation calibration. 'auto' reads "
                              "fold_meta.json and uses real days on daily "
                              "folds, order-rank blocks otherwise.")
+    parser.add_argument("--day-coverage", type=str, default=None,
+                        choices=["p90", "p95", "max"],
+                        help="Hexaly backend only: share of TRAINING DAYS the "
+                             "layout must keep under the ceiling. 'max' "
+                             "requires every day; 'p95'/'p90' admit the worst "
+                             "5%%/10%% of days. Use with --tcap-quantile max: "
+                             "holding T_s at a sub-max quantile while "
+                             "requiring every day to fit is provably "
+                             "infeasible (sum_s T_s*V_s < busiest day), so the "
+                             "A2 sweep is expressed as coverage instead.")
     parser.add_argument("--tcap-quantile", type=str, default=None,
                         choices=["p90", "p95", "max"],
                         help="Daily folds only: re-derive T_s from "
@@ -467,6 +482,10 @@ def main() -> None:
     if args.backend == "cplex":
         from milp_cplex_robust import run_milp_cplex
         run_milp_highs = run_milp_cplex
+    elif args.backend == "hexaly":
+        from milp_hexaly_robust import run_milp_hexaly
+        run_milp_highs = run_milp_hexaly
+    base_solver = run_milp_highs
     print(f"[run_bs_robust_experiment] backend={args.backend}", flush=True)
 
     folds = [int(f) for f in args.folds.split(",")]
@@ -567,6 +586,34 @@ def main() -> None:
         })
         print(f"[fold {f}] c_q90={c_fit:.3f} T_s={t_s:.0f} "
               f"lhat_max={lhat_v[0]:.1f}", flush=True)
+
+        # A1: the Hexaly backend constrains every observed training day, so it
+        # needs that day's realised lines per product. Built here because only
+        # the driver holds the dated train orders.
+        if args.backend == "hexaly":
+            date_col = next((c for c in ("DELIVERY_DATE", "DATE")
+                             if c in tr_orders.columns), None)
+            if date_col is None:
+                raise SystemExit(
+                    f"[fold {f}] hexaly backend needs a date column on "
+                    f"{tr_prefix}_orders.csv; found {list(tr_orders.columns)}")
+            piv = (tr_orders.assign(_P=tr_orders["PRODUCT"].astype(str))
+                   .groupby([date_col, "_P"]).size().unstack(fill_value=0))
+            piv = piv.reindex(columns=[str(p) for p in products], fill_value=0)
+            daily = piv.to_numpy(dtype=float)
+            cov = {"max": 1.0, "p95": 0.95, "p90": 0.90}.get(
+                args.day_coverage or "max", 1.0)
+            allowance = int(math.floor((1.0 - cov) * daily.shape[0] + 1e-9))
+            print(f"[fold {f}] per-day rows: {daily.shape[0]} days x "
+                  f"{len(stations)} stations = "
+                  f"{daily.shape[0] * len(stations)} workload rows; "
+                  f"matrix lines={daily.sum():.0f}; coverage="
+                  f"{args.day_coverage or 'max'} -> at most {allowance} of "
+                  f"{daily.shape[0]} days may breach", flush=True)
+            run_milp_highs = functools.partial(
+                base_solver, daily_lines=daily, day_allowance=allowance)
+        else:
+            run_milp_highs = base_solver
 
         base_v_tr: Optional[float] = None
         base_v_te: Optional[float] = None

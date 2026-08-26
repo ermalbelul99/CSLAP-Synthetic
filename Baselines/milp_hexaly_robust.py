@@ -161,9 +161,23 @@ def run_milp_hexaly(
             model.constraint(
                 model.sum(x[p][s] for p in range(n_p)) <= float(caps[s]))
 
-        th = [model.float(0.0, 1e9) for _s in range(n_s)] if use_dual else None
-        mu = ([[model.float(0.0, 1e9) for _s in range(n_s)]
-               for _p in range(n_p)] if use_dual else None)
+        # Bertsimas-Sim duals. The bounds are the tight analytic ones, not a
+        # nominal 1e9: at optimality theta_s never exceeds the largest per-unit
+        # deviation on station s (beyond that every mu is zero and raising
+        # theta only inflates the row), and mu_ps never exceeds a_ps. A 1e9 box
+        # hands a local-search solver 48,000 continuous decisions with a range
+        # ~6.4e7 times wider than needed; tightening cuts nothing off the
+        # optimum and is the difference between finding a feasible point and
+        # not.
+        a = (lhat_v[:, None] / np.maximum(speeds, 1e-12)[None, :]
+             if use_dual else None)                       # a[p, s]
+        if use_dual:
+            a_max = a.max(axis=0)                         # per station
+            th = [model.float(0.0, float(a_max[s])) for s in range(n_s)]
+            mu = [[model.float(0.0, float(a[p, s])) for s in range(n_s)]
+                  for p in range(n_p)]
+        else:
+            th = mu = None
 
         # Coverage indicators: z[d] = 1 lets day d breach at any station.
         # Bounding sum(z) is what makes q a coverage level rather than a
@@ -227,7 +241,20 @@ def run_milp_hexaly(
         model.close()
 
         # Warm start: injected after close, as Hexaly requires.
+        #
+        # The duals MUST be seeded alongside x. Seeding x alone leaves
+        # theta = mu = 0, which violates the dual-feasibility row
+        # theta_s + mu_ps >= a_ps * x_ps for every seeded product with
+        # lhat_p > 0 -- roughly 2,000 violated rows per fold. The solver then
+        # starts from an infeasible point at every Gamma >= 1 and has to
+        # repair it before it can improve anything, which is why Gamma >= 2
+        # previously returned "no feasible solution found" at full coverage.
+        # The closed form below is the Bertsimas-Sim optimum for a FIXED
+        # assignment (identical to the CPLEX twin): theta_s is the Gamma-th
+        # largest per-unit deviation on the station, and each mu absorbs only
+        # the excess above it.
         seeded = 0
+        assign0 = np.full(n_p, -1, dtype=int)
         if start_assignment:
             s_idx = {sid: i for i, sid in enumerate(station_ids)}
             for prod, sid in start_assignment.items():
@@ -236,7 +263,20 @@ def run_milp_hexaly(
                     continue
                 for s in range(n_s):
                     x[i][s].value = 1 if s == j else 0
+                assign0[i] = j
                 seeded += 1
+
+            if use_dual and seeded:
+                for s in range(n_s):
+                    own = np.flatnonzero(assign0 == s)
+                    vals = np.sort(a[own, s])[::-1] if own.size else np.empty(0)
+                    theta = float(vals[gamma_i - 1]) if vals.size >= gamma_i \
+                        else 0.0
+                    theta = min(theta, float(a_max[s]))
+                    th[s].value = theta
+                    for p in own:
+                        mu[p][s].value = float(
+                            min(max(0.0, a[p, s] - theta), a[p, s]))
 
         opt.param.time_limit = int(max(1, time_limit))
         opt.param.verbosity = 0
@@ -245,8 +285,11 @@ def run_milp_hexaly(
         t_build = time.time() - t_build0
 
         if verbose:
+            duals = ("duals seeded" if (use_dual and seeded)
+                     else ("duals N/A (gamma=0)" if not use_dual
+                           else "duals NOT seeded"))
             print(f"[milp_hexaly_robust] gamma={gamma_i} vars~{n_p * n_s} "
-                  f"rows={mode} days={n_d} coverage_allowance={allow} "
+                  f"{duals} rows={mode} days={n_d} coverage_allowance={allow} "
                   f"seeded={seeded} build={t_build:.1f}s (ls_time={ls_time:g} "
                   f"ignored: the mean-day repair is what this backend "
                   f"replaces)", flush=True)

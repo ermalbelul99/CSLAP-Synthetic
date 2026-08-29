@@ -164,7 +164,7 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
   EXPECT: Z11 PASS grid-complete
   EVIDENCE: UNMET exit=1 expect_matched=False sha256:95d999cbf084
 
-- [ ] Z12: every solved layout satisfies its own contract on the training days it was optimised against
+- [ ] Z12: every solved layout satisfies its own contract on the training days it was optimised against, AND the set of scored layouts matches exactly the set of arms recorded feasible (an arm that returns no layout writes no file, so without this the gate would pass vacuously on whatever did solve - the same defect class as the all-zero demand matrix that made an earlier gate vacuous)
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z12
   EXPECT: Z12 PASS layouts-honour-contract
   EVIDENCE: UNMET exit=1 expect_matched=False sha256:2152d1589920

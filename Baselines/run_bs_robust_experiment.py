@@ -746,28 +746,44 @@ def main() -> None:
         # Tightened-nominal competitor arms: uniform slack reduction instead of
         # targeted budgeted protection; trained with T_s(beta), evaluated on the
         # SAME 1.10-rule contract as every other arm.
-        if args.share_z is not None and betas:
-            raise SystemExit(
-                f"[fold {f}] --share-z with --betas is not wired yet "
-                f"(Phase 3). rhs_lines overrides the tightened TIME_CAPACITY, "
-                f"so the beta arm would silently solve the UNCHANGED share "
-                f"band and duplicate gamma=0. Measured on a probe: beta=1.02 "
-                f"and beta=1.05 moved train visits by -0.01% and -0.19% "
-                f"against gamma=0 -- noise, when a real tightening must COST "
-                f"visits. Run without --betas until the beta arm rebuilds the "
-                f"band as (mu + z*sigma)/beta.")
-
         total_lbar = float(sum(lbar.values()))
         speed0 = float(stations[0]["SPEED"])
         n_st = len(stations)
         for beta in betas:
-            t_beta = math.ceil(beta * total_lbar / (speed0 * n_st))
-            stations_beta = [dict(s, TIME_CAPACITY=t_beta) for s in stations]
+            # Under the share band, beta tightens exactly the object Gamma
+            # protects: the allowance becomes (mu_s + z*sigma_s)/beta. Gamma
+            # and beta then act on the same quantity, which is what makes A4
+            # ("complements, not rivals") answerable at all.
+            #
+            # The legacy formula below is kept only for the non-share path. It
+            # rebuilt ONE flat ceiling from stations[0]["SPEED"] for every
+            # station -- a homogeneous-speed formula on a site whose speeds
+            # span 1677x -- giving a flat 13 against revealed ceilings spanning
+            # 0.015 to 87, and it ignored --tcap-quantile entirely.
+            beta_kw = {}
+            if args.share_z is not None:
+                mu_s, sd_s = share_band
+                rhs_b = allowance_lines(mu_s, sd_s, args.share_z,
+                                        daily.sum(axis=1), beta=beta)
+                beta_kw["rhs_lines"] = rhs_b
+                stations_beta = stations
+                t_beta = float((mu_s + args.share_z * sd_s).sum() / beta)
+                inc_b = int(((daily @ oh0) > rhs_b + 1e-9).any(axis=1).sum())
+                print(f"[fold {f}] beta={beta}: band tightened to "
+                      f"{t_beta:.4f}x total permission "
+                      f"(vs {1 + args.share_z * sd_s.sum():.4f}x at beta=1); "
+                      f"INCUMBENT breaches {inc_b}/{daily.shape[0]} train days",
+                      flush=True)
+            else:
+                t_beta = math.ceil(beta * total_lbar / (speed0 * n_st))
+                stations_beta = [dict(s, TIME_CAPACITY=t_beta)
+                                 for s in stations]
             assignment, obj, elapsed, _uv, _mu, cb, wb, bound = run_milp_highs(
                 tr_op, stations_beta, products, lbar,
                 lhat=None, gamma=0.0,
                 time_limit=args.time, top_n=args.topn, mip_rel_gap=0.005,
                 ls_time=args.ls_time, start_assignment=warm_start, verbose=True,
+                **beta_kw,
             )
             if assignment is None and args.time <= 0:
                 print(f"[fold {f} beta={beta}] greedy failed -> HiGHS "
@@ -776,7 +792,7 @@ def main() -> None:
                     tr_op, stations_beta, products, lbar,
                     lhat=None, gamma=0.0,
                     time_limit=180, top_n=args.topn, mip_rel_gap=0.005,
-                    ls_time=0.0, verbose=True,
+                    ls_time=0.0, verbose=True, **beta_kw,
                 )
             row = {
                 "fold": f, "arm": f"tight{beta}", "gamma": np.nan,

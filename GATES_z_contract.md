@@ -97,37 +97,37 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
 - [x] Z1: the declared z window is bounded by measured anchors, not chosen - the incumbent needs z=6.07 in-sample and the median station needs ~2.7
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z1
   EXPECT: Z1 PASS z-window-anchored
-  EVIDENCE: exit=0 expect-matched sha256:6a5a33b7e95c 31.2s
+  EVIDENCE: exit=0 expect-matched sha256:6a5a33b7e95c 30.8s
 
 - [x] Z2: station shares form a complete carve-up of each day - they sum to exactly 1.000 on every training day of every fold
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z2
   EXPECT: Z2 PASS shares-sum-to-one
-  EVIDENCE: exit=0 expect-matched sha256:2faf76c0e76e 31.3s
+  EVIDENCE: exit=0 expect-matched sha256:2faf76c0e76e 30.8s
 
 - [x] Z3: the allowance identity holds exactly - total permission is 1 + z*sum(sigma), so it always exceeds 100% of the day and aggregate infeasibility is impossible by construction
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z3
   EXPECT: Z3 PASS allowance-identity
-  EVIDENCE: exit=0 expect-matched sha256:89a86a5330b0 36.9s
+  EVIDENCE: exit=0 expect-matched sha256:89a86a5330b0 36.8s
 
 - [x] Z4: no leakage - mu and sigma computed from training days reproduce exactly when test data is withheld entirely
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z4
   EXPECT: Z4 PASS no-leakage
-  EVIDENCE: exit=0 expect-matched sha256:ae6dbcb44086 31.1s
+  EVIDENCE: exit=0 expect-matched sha256:ae6dbcb44086 30.6s
 
 - [x] Z5: the contract discriminates in BOTH directions - the incumbent passes at z=6.07 and FAILS at z=2, so the oracle is not vacuous
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z5
   EXPECT: Z5 PASS discriminates-both-ways
-  EVIDENCE: exit=0 expect-matched sha256:4e0ac593f8fc 31.6s
+  EVIDENCE: exit=0 expect-matched sha256:4e0ac593f8fc 30.8s
 
 - [x] Z6: NEGATIVE CONTROL - a deliberately concentrated layout (highest-volume products piled onto the largest station) is rejected at every declared z, proving the constraint still prevents the pathology it exists for
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z6
   EXPECT: Z6 PASS concentration-rejected
-  EVIDENCE: exit=0 expect-matched sha256:b78fcff425ff 61.5s
+  EVIDENCE: exit=0 expect-matched sha256:b78fcff425ff 60.7s
 
 - [x] Z7: the budget arithmetic leaves room for the declared Gamma range - protection at Gamma=4 fits inside the slack at every declared z
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z7
   EXPECT: Z7 PASS gamma-range-affordable
-  EVIDENCE: exit=0 expect-matched sha256:75839ea59934 31.2s
+  EVIDENCE: exit=0 expect-matched sha256:75839ea59934 30.7s
 
 - [x] Z8: PHASE 2 - the backend receives a per-(day, station) right-hand side derived from the share band, never a frozen per-station scalar
   EVIDENCE: milp_hexaly_robust gained rhs_lines (n_days x n_stations, in LINES) and logs contract=share-band(lines); the workload row, the Bertsimas-Sim per-unit deviations a[p,s], the big-M and the as-run verdict all switch units together, and the legacy revealed-peak path is retained for reproducibility. Probe on fold 0 at z=6, 90 s: gamma=0 obj 17479 and gamma=2 obj 23193, BOTH with days_breached=0/38 -- the first time any Gamma>=2 has produced a feasible layout in this study (under the revealed-peak ceiling it never did, because protection at Gamma=1 already needed ~110% of the available slack).
@@ -141,13 +141,17 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
   EVIDENCE: pending
 
 - [ ] Z11: PHASE 7 - all twelve grid cells complete and write six arms each
-  EVIDENCE: pending
+  CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z11
+  EXPECT: Z11 PASS grid-complete
+  EVIDENCE: UNMET exit=1 expect_matched=False sha256:95d999cbf084
 
 - [ ] Z12: every solved layout satisfies its own contract on the training days it was optimised against
-  EVIDENCE: pending
+  CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z12
+  EXPECT: Z12 PASS layouts-honour-contract
+  EVIDENCE: UNMET exit=1 expect_matched=False sha256:2152d1589920
 
 - [ ] Z13: manual - Gamma arms are compared only within a fixed z; no reported comparison varies z and Gamma together
-  EVIDENCE: pending
+  EVIDENCE: pending. Satisfied only when EVERY reported table and every claim about what Gamma buys is read down a single z column. Concretely: gamma0 vs gamma4 at z=3 is a valid comparison; gamma4 at z=6 against gamma0 at z=3 is not, because it changes the contract and the treatment at once and would attribute the loosened contract to the robust budget. The evaluator writes one metrics file per z (metrics_z3/z4/z6.csv) precisely so a cross-z comparison requires deliberately joining two files.
 
 - [x] Z14: Gamma_bind and Gamma_cover are reported per station, so the paper states WHERE protection is useful rather than only whether an arm won
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z14
@@ -155,15 +159,21 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
   EVIDENCE: exit=0 expect-matched sha256:17ee6439c2ac 1.2s
 
 - [ ] Z15: the incumbent arm still reproduces its known-good reference, confirming the evaluation path is intact
-  EVIDENCE: pending
+  CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z15
+  EXPECT: Z15 PASS incumbent-matches-preregistration
+  EVIDENCE: UNMET exit=1 expect_matched=False sha256:2152d1589920
 
-- [ ] Z16: manual - no row claims a proven infeasibility, since Hexaly is a local-search solver and cannot certify one
-  EVIDENCE: pending
+- [ ] Z16: no row claims a proven infeasibility, since Hexaly is a local-search solver and cannot certify one
+  CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z16
+  EXPECT: Z16 PASS no-false-proof
+  EVIDENCE: UNMET exit=1 expect_matched=False sha256:95d999cbf084
 
 - [ ] Z17: every cell writes a complete six-arm results row set with no fold missing
-  EVIDENCE: pending
+  CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z17
+  EXPECT: Z17 PASS per-fold-outputs-complete
+  EVIDENCE: UNMET exit=1 expect_matched=False sha256:1a5f85e5ec3a
 
 - [x] Z18: scoring is scoped per z so the daily_metrics layout-collision defect cannot recur
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z18
   EXPECT: Z18 PASS no-layout-collision
-  EVIDENCE: exit=0 expect-matched sha256:b80cdd06ea88 31.9s
+  EVIDENCE: exit=0 expect-matched sha256:b80cdd06ea88 32.0s

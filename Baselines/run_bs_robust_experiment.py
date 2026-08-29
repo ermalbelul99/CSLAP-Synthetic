@@ -457,6 +457,17 @@ def main() -> None:
                         help="Deviation calibration. 'auto' reads "
                              "fold_meta.json and uses real days on daily "
                              "folds, order-rank blocks otherwise.")
+    parser.add_argument("--share-z", type=float, default=None,
+                        help="Hexaly backend only: use the volume-normalised "
+                             "share band W_s(d) <= (mu_s + z*sigma_s)*L(d) "
+                             "instead of a frozen per-station ceiling. mu_s "
+                             "and sigma_s are the mean and sd of station s's "
+                             "SHARE of daily lines, fitted on TRAINING days "
+                             "under the incumbent. Both sides scale with the "
+                             "day's volume, so warehouse-wide drift is "
+                             "absorbed and Gamma insures only the "
+                             "idiosyncratic part. Defensible window on this "
+                             "site is z in [2.7, 6.07]; see GATES_z_contract.md.")
     parser.add_argument("--day-coverage", type=str, default=None,
                         choices=["p90", "p95", "max"],
                         help="Hexaly backend only: share of TRAINING DAYS the "
@@ -610,8 +621,39 @@ def main() -> None:
                   f"matrix lines={daily.sum():.0f}; coverage="
                   f"{args.day_coverage or 'max'} -> at most {allowance} of "
                   f"{daily.shape[0]} days may breach", flush=True)
-            run_milp_highs = functools.partial(
-                base_solver, daily_lines=daily, day_allowance=allowance)
+            solver_kw = {"daily_lines": daily, "day_allowance": allowance}
+
+            # Volume-normalised share band (A2 restated). mu and sigma are
+            # fitted on TRAINING days under the INCUMBENT and then frozen; only
+            # L(d) varies. Both sides of the row scale with L(d), so
+            # warehouse-wide drift is absorbed and Gamma is left insuring the
+            # idiosyncratic part -- the only form under which A4 can hold.
+            if args.share_z is not None:
+                from share_contract import (allowance_lines, check_identities,
+                                            fit_share_band,
+                                            onehot_from_assignment)
+                if not warm_start:
+                    raise SystemExit(
+                        f"[fold {f}] --share-z needs the incumbent layout to "
+                        f"fit mu and sigma, but no warm start was built")
+                oh0 = onehot_from_assignment(
+                    warm_start, products, [str(s["STATION_ID"])
+                                           for s in stations])
+                mu_s, sd_s, shares = fit_share_band(daily, oh0)
+                check_identities(mu_s, sd_s, args.share_z, shares)
+                rhs = allowance_lines(mu_s, sd_s, args.share_z,
+                                      daily.sum(axis=1), beta=1.0)
+                inc_over = int(((daily @ oh0) > rhs + 1e-9).any(axis=1).sum())
+                print(f"[fold {f}] share band z={args.share_z:g}: "
+                      f"sum(mu)={mu_s.sum():.6f} sum(sigma)={sd_s.sum():.4f} "
+                      f"total permission={1 + args.share_z * sd_s.sum():.3f}x; "
+                      f"INCUMBENT breaches {inc_over}/{daily.shape[0]} train "
+                      f"days at this z (reference line, not a target)",
+                      flush=True)
+                solver_kw["rhs_lines"] = rhs
+                share_band = (mu_s, sd_s)   # kept for the beta arm (Phase 3)
+
+            run_milp_highs = functools.partial(base_solver, **solver_kw)
         else:
             run_milp_highs = base_solver
 
@@ -704,6 +746,17 @@ def main() -> None:
         # Tightened-nominal competitor arms: uniform slack reduction instead of
         # targeted budgeted protection; trained with T_s(beta), evaluated on the
         # SAME 1.10-rule contract as every other arm.
+        if args.share_z is not None and betas:
+            raise SystemExit(
+                f"[fold {f}] --share-z with --betas is not wired yet "
+                f"(Phase 3). rhs_lines overrides the tightened TIME_CAPACITY, "
+                f"so the beta arm would silently solve the UNCHANGED share "
+                f"band and duplicate gamma=0. Measured on a probe: beta=1.02 "
+                f"and beta=1.05 moved train visits by -0.01% and -0.19% "
+                f"against gamma=0 -- noise, when a real tightening must COST "
+                f"visits. Run without --betas until the beta arm rebuilds the "
+                f"band as (mu + z*sigma)/beta.")
+
         total_lbar = float(sum(lbar.values()))
         speed0 = float(stations[0]["SPEED"])
         n_st = len(stations)

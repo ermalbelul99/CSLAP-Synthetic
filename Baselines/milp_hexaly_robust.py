@@ -84,6 +84,7 @@ def run_milp_hexaly(
     threads: int = 0,
     daily_lines: Optional[np.ndarray] = None,
     day_allowance: int = 0,
+    rhs_lines: Optional[np.ndarray] = None,
 ) -> Tuple[Optional[Dict[str, str]], float, float, float, float, int, int, float]:
     r"""Solve the (robust) placement model with Hexaly, scenario-exact per day.
 
@@ -143,6 +144,29 @@ def run_milp_hexaly(
         mode = "per-day"
     n_d = rows.shape[0]
 
+    # Which contract is on the right-hand side?
+    #
+    #   share band  -- rhs_lines[d, s] = (mu_s + z*sigma_s) * L(d), in LINES.
+    #                  The row is written in lines and V_s never appears: the
+    #                  old ceiling was itself (observed lines)/V_s while the
+    #                  load was divided by the same V_s, so speed cancelled
+    #                  anyway. Dropping it removes a 1677x spread from the
+    #                  coefficients.
+    #   revealed peak -- the legacy frozen per-station TIME_CAPACITY. Kept so
+    #                  the earlier runs remain reproducible.
+    share_mode = rhs_lines is not None
+    if share_mode:
+        rhs = np.asarray(rhs_lines, dtype=float)
+        if rhs.shape != (n_d, n_s):
+            raise ValueError(
+                f"rhs_lines must be ({n_d}, {n_s}); got {rhs.shape}")
+        if not np.all(rhs > 0):
+            raise ValueError("rhs_lines has a non-positive allowance")
+        contract = "share-band(lines)"
+    else:
+        rhs = np.repeat(time_caps.reshape(1, n_s), n_d, axis=0)
+        contract = "revealed-peak(time)"
+
     # Only products that actually appear on a day contribute to its row; the
     # matrix is sparse in practice and this keeps the model buildable.
     nz = [np.nonzero(rows[d])[0] for d in range(n_d)]
@@ -169,8 +193,15 @@ def run_milp_hexaly(
         # ~6.4e7 times wider than needed; tightening cuts nothing off the
         # optimum and is the difference between finding a feasible point and
         # not.
-        a = (lhat_v[:, None] / np.maximum(speeds, 1e-12)[None, :]
-             if use_dual else None)                       # a[p, s]
+        # Per-unit deviation of product p as seen by station s. In share mode
+        # the row is in lines, so it is simply lhat_p and does not depend on
+        # s; in legacy time mode it is lhat_p / V_s.
+        if not use_dual:
+            a = None
+        elif share_mode:
+            a = np.repeat(lhat_v[:, None], n_s, axis=1)    # a[p, s] = lhat_p
+        else:
+            a = lhat_v[:, None] / np.maximum(speeds, 1e-12)[None, :]
         if use_dual:
             a_max = a.max(axis=0)                         # per station
             th = [model.float(0.0, float(a_max[s])) for s in range(n_s)]
@@ -191,13 +222,16 @@ def run_milp_hexaly(
         # day, so an admitted day is genuinely unconstrained and never a
         # silently tighter bound.
         day_tot = rows.sum(axis=1)
-        big_m = float(day_tot.max()) / np.maximum(speeds, 1e-12)
+        if share_mode:
+            big_m = np.full(n_s, float(day_tot.max()))
+        else:
+            big_m = float(day_tot.max()) / np.maximum(speeds, 1e-12)
 
         # (3) workload, one row per (station, day) -- the whole point of this
         #     module. Protection is day-independent, so this is equivalent to
         #     bounding the worst admitted day plus the budgeted deviation.
         for s in range(n_s):
-            inv_v = 1.0 / max(float(speeds[s]), 1e-12)
+            inv_v = 1.0 if share_mode else 1.0 / max(float(speeds[s]), 1e-12)
             prot = None
             if use_dual:
                 prot = gamma_i * th[s] + model.sum(mu[p][s] for p in range(n_p))
@@ -209,7 +243,7 @@ def run_milp_hexaly(
                     float(rows[d, p] * inv_v) * x[p][s] for p in idx)
                 if prot is not None:
                     load = load + prot
-                cap = float(time_caps[s])
+                cap = float(rhs[d, s])
                 if z is not None:
                     model.constraint(load <= cap + float(big_m[s]) * z[d])
                 else:
@@ -221,7 +255,7 @@ def run_milp_hexaly(
                 if lhat_v[p] <= 0.0:
                     continue
                 for s in range(n_s):
-                    coef = float(lhat_v[p] / max(float(speeds[s]), 1e-12))
+                    coef = float(a[p, s])
                     model.constraint(th[s] + mu[p][s] >= coef * x[p][s])
 
         # (5) visit objective: a station is visited for an order when it holds
@@ -289,7 +323,8 @@ def run_milp_hexaly(
                      else ("duals N/A (gamma=0)" if not use_dual
                            else "duals NOT seeded"))
             print(f"[milp_hexaly_robust] gamma={gamma_i} vars~{n_p * n_s} "
-                  f"{duals} rows={mode} days={n_d} coverage_allowance={allow} "
+                  f"{duals} contract={contract} rows={mode} days={n_d} "
+                  f"coverage_allowance={allow} "
                   f"seeded={seeded} build={t_build:.1f}s (ls_time={ls_time:g} "
                   f"ignored: the mean-day repair is what this backend "
                   f"replaces)", flush=True)
@@ -341,11 +376,13 @@ def run_milp_hexaly(
         # (station, day) pairs that exceed the ceiling under this layout.
         onehot = np.zeros((n_p, n_s))
         onehot[np.arange(n_p), assign_vec] = 1.0
+        # As-run per-day verdict, measured against the SAME right-hand side the
+        # model was given, in the same units.
         day_station = rows @ onehot                     # (n_d, n_s) in lines
-        day_station = day_station / np.maximum(speeds, 1e-12)
-        wb = int(np.sum(day_station > time_caps[None, :] + 1e-6))
-        days_over = int(np.sum(
-            (day_station > time_caps[None, :] + 1e-6).any(axis=1)))
+        if not share_mode:
+            day_station = day_station / np.maximum(speeds, 1e-12)
+        wb = int(np.sum(day_station > rhs + 1e-6))
+        days_over = int(np.sum((day_station > rhs + 1e-6).any(axis=1)))
 
         if verbose:
             gap_txt = "n/a" if not np.isfinite(bound) else f"{bound:.1f}"

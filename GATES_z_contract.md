@@ -129,8 +129,8 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
   EXPECT: Z7 PASS gamma-range-affordable
   EVIDENCE: exit=0 expect-matched sha256:75839ea59934 31.2s
 
-- [ ] Z8: PHASE 2 - the backend receives a per-(day, station) right-hand side derived from the share band, never a frozen per-station scalar
-  EVIDENCE: pending
+- [x] Z8: PHASE 2 - the backend receives a per-(day, station) right-hand side derived from the share band, never a frozen per-station scalar
+  EVIDENCE: milp_hexaly_robust gained rhs_lines (n_days x n_stations, in LINES) and logs contract=share-band(lines); the workload row, the Bertsimas-Sim per-unit deviations a[p,s], the big-M and the as-run verdict all switch units together, and the legacy revealed-peak path is retained for reproducibility. Probe on fold 0 at z=6, 90 s: gamma=0 obj 17479 and gamma=2 obj 23193, BOTH with days_breached=0/38 -- the first time any Gamma>=2 has produced a feasible layout in this study (under the revealed-peak ceiling it never did, because protection at Gamma=1 already needed ~110% of the available slack).
 
 - [ ] Z9: PHASE 3 - beta tightens the share allowance and no longer uses the homogeneous-speed formula that produced a flat ceiling of 13 against revealed ceilings spanning 0.015 to 87
   EVIDENCE: pending

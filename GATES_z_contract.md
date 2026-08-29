@@ -97,37 +97,37 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
 - [x] Z1: the declared z window is bounded by measured anchors, not chosen - the incumbent needs z=6.07 in-sample and the median station needs ~2.7
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z1
   EXPECT: Z1 PASS z-window-anchored
-  EVIDENCE: exit=0 expect-matched sha256:6a5a33b7e95c 30.6s
+  EVIDENCE: exit=0 expect-matched sha256:6a5a33b7e95c 31.2s
 
 - [x] Z2: station shares form a complete carve-up of each day - they sum to exactly 1.000 on every training day of every fold
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z2
   EXPECT: Z2 PASS shares-sum-to-one
-  EVIDENCE: exit=0 expect-matched sha256:2faf76c0e76e 30.9s
+  EVIDENCE: exit=0 expect-matched sha256:2faf76c0e76e 31.3s
 
 - [x] Z3: the allowance identity holds exactly - total permission is 1 + z*sum(sigma), so it always exceeds 100% of the day and aggregate infeasibility is impossible by construction
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z3
   EXPECT: Z3 PASS allowance-identity
-  EVIDENCE: exit=0 expect-matched sha256:89a86a5330b0 30.9s
+  EVIDENCE: exit=0 expect-matched sha256:89a86a5330b0 36.9s
 
 - [x] Z4: no leakage - mu and sigma computed from training days reproduce exactly when test data is withheld entirely
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z4
   EXPECT: Z4 PASS no-leakage
-  EVIDENCE: exit=0 expect-matched sha256:ae6dbcb44086 31.3s
+  EVIDENCE: exit=0 expect-matched sha256:ae6dbcb44086 31.1s
 
 - [x] Z5: the contract discriminates in BOTH directions - the incumbent passes at z=6.07 and FAILS at z=2, so the oracle is not vacuous
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z5
   EXPECT: Z5 PASS discriminates-both-ways
-  EVIDENCE: exit=0 expect-matched sha256:4e0ac593f8fc 31.1s
+  EVIDENCE: exit=0 expect-matched sha256:4e0ac593f8fc 31.6s
 
 - [x] Z6: NEGATIVE CONTROL - a deliberately concentrated layout (highest-volume products piled onto the largest station) is rejected at every declared z, proving the constraint still prevents the pathology it exists for
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z6
   EXPECT: Z6 PASS concentration-rejected
-  EVIDENCE: exit=0 expect-matched sha256:b78fcff425ff 61.4s
+  EVIDENCE: exit=0 expect-matched sha256:b78fcff425ff 61.5s
 
 - [x] Z7: the budget arithmetic leaves room for the declared Gamma range - protection at Gamma=4 fits inside the slack at every declared z
   CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z7
   EXPECT: Z7 PASS gamma-range-affordable
-  EVIDENCE: exit=0 expect-matched sha256:75839ea59934 30.5s
+  EVIDENCE: exit=0 expect-matched sha256:75839ea59934 31.2s
 
 - [ ] Z8: PHASE 2 - the backend receives a per-(day, station) right-hand side derived from the share band, never a frozen per-station scalar
   EVIDENCE: pending

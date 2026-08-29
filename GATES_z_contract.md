@@ -149,8 +149,10 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
 - [ ] Z13: manual - Gamma arms are compared only within a fixed z; no reported comparison varies z and Gamma together
   EVIDENCE: pending
 
-- [ ] Z14: Gamma_bind and Gamma_cover are reported per station, so the paper states WHERE protection is useful rather than only whether an arm won
-  EVIDENCE: pending
+- [x] Z14: Gamma_bind and Gamma_cover are reported per station, so the paper states WHERE protection is useful rather than only whether an arm won
+  CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z14
+  EXPECT: Z14 PASS gamma-bind-cover-correct
+  EVIDENCE: exit=0 expect-matched sha256:17ee6439c2ac 1.2s
 
 - [ ] Z15: the incumbent arm still reproduces its known-good reference, confirming the evaluation path is intact
   EVIDENCE: pending
@@ -161,5 +163,7 @@ Runner enforces exit 0 AND the EXPECT token, and writes evidence back.
 - [ ] Z17: every cell writes a complete six-arm results row set with no fold missing
   EVIDENCE: pending
 
-- [ ] Z18: scoring is scoped per z so the daily_metrics layout-collision defect cannot recur
-  EVIDENCE: pending
+- [x] Z18: scoring is scoped per z so the daily_metrics layout-collision defect cannot recur
+  CHECK: C:\ermal\Virtual_Environment_LocalSolver_3\Scripts\python.exe C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\checks_z.py z18
+  EXPECT: Z18 PASS no-layout-collision
+  EVIDENCE: exit=0 expect-matched sha256:b80cdd06ea88 31.9s

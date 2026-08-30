@@ -1,0 +1,28 @@
+[zgrid] START z=3 fold=0 2026-08-29T23:16:38Z
+[zgrid] END   z=3 fold=0 rc=0 2026-08-30T00:19:35Z
+[zgrid] START z=3 fold=1 2026-08-30T00:19:35Z
+[zgrid] END   z=3 fold=1 rc=0 2026-08-30T01:22:50Z
+[zgrid] START z=3 fold=2 2026-08-30T01:22:50Z
+[zgrid] END   z=3 fold=2 rc=0 2026-08-30T02:26:18Z
+[zgrid] START z=3 fold=3 2026-08-30T02:26:18Z
+[zgrid] END   z=3 fold=3 rc=0 2026-08-30T03:29:59Z
+[zgrid] merged 4 snapshots -> 24 rows in results/z_contract/z3
+[zgrid] START z=4 fold=0 2026-08-30T03:30:00Z
+[zgrid] END   z=4 fold=0 rc=0 2026-08-30T04:32:59Z
+[zgrid] START z=4 fold=1 2026-08-30T04:32:59Z
+[zgrid] END   z=4 fold=1 rc=0 2026-08-30T05:36:12Z
+[zgrid] START z=4 fold=2 2026-08-30T05:36:12Z
+[zgrid] END   z=4 fold=2 rc=0 2026-08-30T06:39:40Z
+[zgrid] START z=4 fold=3 2026-08-30T06:39:40Z
+[zgrid] END   z=4 fold=3 rc=0 2026-08-30T07:43:24Z
+[zgrid] merged 4 snapshots -> 24 rows in results/z_contract/z4
+[zgrid] START z=6 fold=0 2026-08-30T07:43:25Z
+[zgrid] END   z=6 fold=0 rc=0 2026-08-30T08:46:25Z
+[zgrid] START z=6 fold=1 2026-08-30T08:46:25Z
+[zgrid] END   z=6 fold=1 rc=0 2026-08-30T09:49:41Z
+[zgrid] START z=6 fold=2 2026-08-30T09:49:41Z
+[zgrid] END   z=6 fold=2 rc=0 2026-08-30T10:53:10Z
+[zgrid] START z=6 fold=3 2026-08-30T10:53:10Z
+[zgrid] END   z=6 fold=3 rc=0 2026-08-30T11:56:53Z
+[zgrid] merged 4 snapshots -> 24 rows in results/z_contract/z6
+[zgrid] ALL 12 CELLS COMPLETE 2026-08-30T11:56:54Z

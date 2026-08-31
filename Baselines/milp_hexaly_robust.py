@@ -85,6 +85,7 @@ def run_milp_hexaly(
     daily_lines: Optional[np.ndarray] = None,
     day_allowance: int = 0,
     rhs_lines: Optional[np.ndarray] = None,
+    seed: Optional[int] = None,
 ) -> Tuple[Optional[Dict[str, str]], float, float, float, float, int, int, float]:
     r"""Solve the (robust) placement model with Hexaly, scenario-exact per day.
 
@@ -316,6 +317,12 @@ def run_milp_hexaly(
         opt.param.verbosity = 0
         if threads:
             opt.param.nb_threads = int(threads)
+        # Local search is stochastic. Fixing the seed makes a cell reproducible;
+        # VARYING it is how the run-to-run spread of a single arm is measured,
+        # which is the only way to tell a model effect from where the search
+        # happened to stop. Left unset the solver keeps its own default.
+        if seed is not None:
+            opt.param.seed = int(seed)
         t_build = time.time() - t_build0
 
         if verbose:

@@ -1,0 +1,21 @@
+=== mutate_z_gates ===
+  PASS  z12 rejects a feasible arm that was never scored
+  PASS  z12 rejects an arm scored without a feasible record
+  PASS  z17 rejects a lost per-fold snapshot
+
+fixture removed; ZDIR exists = False
+ALL GATE MUTATIONS BEHAVED
+=== mutate_z10 ===
+         -> Z10 PASS pilot-honours-contract (6 optimised arms, 0 of 38 training days breached; incumbent reference 8/38 reproduced)
+  BROKEN  z10 rejects a false proven-infeasibility claim
+         -> Z10 PASS pilot-honours-contract (6 optimised arms, 0 of 38 training days breached; incumbent reference 8/38 reproduced)
+
+fixture removed; pilot dir exists = False
+Z10 DOES NOT DISCRIMINATE
+=== mutate_z9 ===
+Mutating with each defect Z9 exists to catch...
+  PASS  z9 rejects a beta layout identical to gamma0
+  PASS  z9 rejects a beta layout that breaches the tightened band
+
+sandbox removed = True; real grid intact = True
+Z9 DISCRIMINATES

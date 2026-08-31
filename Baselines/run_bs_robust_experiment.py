@@ -478,6 +478,12 @@ def main() -> None:
                              "requiring every day to fit is provably "
                              "infeasible (sum_s T_s*V_s < busiest day), so the "
                              "A2 sweep is expressed as coverage instead.")
+    parser.add_argument("--solver-seed", type=int, default=None,
+                        help="Hexaly backend only: fix the local-search seed. "
+                             "Varying it across otherwise identical runs "
+                             "measures the run-to-run spread of a single arm, "
+                             "which is what separates a model effect from "
+                             "where the search happened to stop.")
     parser.add_argument("--tcap-quantile", type=str, default=None,
                         choices=["p90", "p95", "max"],
                         help="Daily folds only: re-derive T_s from "
@@ -485,6 +491,19 @@ def main() -> None:
                              "Omit to keep the ceiling the fold was built "
                              "with.")
     args = parser.parse_args()
+
+    # --share-z only reaches the model through the Hexaly per-day path. On any
+    # other backend the gamma arms would silently solve the LEGACY
+    # revealed-peak ceiling, persist rows that look identical to share-contract
+    # rows (results.csv records neither z nor the contract), and only then fail
+    # on the beta arm. Refuse the combination outright.
+    if args.share_z is not None and args.backend != "hexaly":
+        raise SystemExit(
+            f"--share-z is implemented only for --backend hexaly; got "
+            f"--backend {args.backend}. Other backends would silently solve "
+            f"the legacy revealed-peak contract instead.")
+    if args.solver_seed is not None and args.backend != "hexaly":
+        raise SystemExit("--solver-seed applies only to --backend hexaly")
 
     # Backend dispatch: rebinding the solver name routes ALL four solve sites
     # (gamma main/probe, beta main/probe) to CPLEX with zero other changes, so
@@ -517,7 +536,19 @@ def main() -> None:
 
     def persist() -> None:
         """Crash-safe incremental persistence (after every arm)."""
-        pd.DataFrame(rows).to_csv(os.path.join(args.out, "results.csv"), index=False)
+        df = pd.DataFrame(rows)
+        # Stamp the contract onto every row. Without this, results.csv records
+        # neither the contract nor its z, so a z=3 layout scored at z=4 (or a
+        # revealed-peak row sitting beside a share-band row) is undetectable.
+        if len(df):
+            df["contract"] = ("share-band(lines)" if args.share_z is not None
+                              else "revealed-peak(time)")
+            df["share_z"] = (float(args.share_z) if args.share_z is not None
+                             else np.nan)
+            df["solver_seed"] = (int(args.solver_seed)
+                                 if args.solver_seed is not None else np.nan)
+            df["backend"] = args.backend
+        df.to_csv(os.path.join(args.out, "results.csv"), index=False)
         pd.DataFrame(cal_rows).to_csv(
             os.path.join(args.out, "calibration.csv"), index=False
         )
@@ -622,6 +653,8 @@ def main() -> None:
                   f"{args.day_coverage or 'max'} -> at most {allowance} of "
                   f"{daily.shape[0]} days may breach", flush=True)
             solver_kw = {"daily_lines": daily, "day_allowance": allowance}
+            if args.solver_seed is not None:
+                solver_kw["seed"] = int(args.solver_seed)
 
             # Volume-normalised share band (A2 restated). mu and sigma are
             # fitted on TRAINING days under the INCUMBENT and then frozen; only

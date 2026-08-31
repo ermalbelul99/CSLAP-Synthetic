@@ -1,9 +1,9 @@
 [run_bs_robust_experiment] backend=hexaly
-[fold 0] warm start: 2000 products seeded
-[fold 0] lhat mode=daily
-[fold 0] c_q90=4.552 T_s=4 lhat_max=96.4
-[fold 0] per-day rows: 38 days x 24 stations = 912 workload rows; matrix lines=550777; coverage=max -> at most 0 of 38 days may breach
-[fold 0] share band z=4: sum(mu)=1.000000 sum(sigma)=0.1209 total permission=1.483x; INCUMBENT breaches 2/38 train days at this z (reference line, not a target)
+[fold 2] warm start: 2000 products seeded
+[fold 2] lhat mode=daily
+[fold 2] c_q90=4.259 T_s=5 lhat_max=104.1
+[fold 2] per-day rows: 47 days x 24 stations = 1128 workload rows; matrix lines=694557; coverage=max -> at most 0 of 47 days may breach
+[fold 2] share band z=4: sum(mu)=1.000000 sum(sigma)=0.1186 total permission=1.474x; INCUMBENT breaches 3/47 train days at this z (reference line, not a target)
 Preprocess model 0%
 Preprocess model 1%
 Preprocess model 1%
@@ -73,9 +73,9 @@ Preprocess model 99%
 Preprocess model 100%
 Preprocess model 100%
 Preprocess model 100%
-[milp_hexaly_robust] gamma=0 vars~48000 duals N/A (gamma=0) contract=share-band(lines) rows=per-day days=38 coverage_allowance=0 seeded=2000 build=17.1s (ls_time=45 ignored: the mean-day repair is what this backend replaces)
-[milp_hexaly_robust] gamma=0 obj=17542 bound=2509.0 status='HxSolutionStatus.FEASIBLE' elapsed=622.1s cap_broken=0 station_days_over=0 days_breached=0/38 (allowed 0)
-[fold 0 gamma=0] V_tr=382560 V_te=67183 PoR=0.00% G=0.00% viol_norm=24 max_ratio=39.73 robust_ok=True (623s)
+[milp_hexaly_robust] gamma=0 vars~48000 duals N/A (gamma=0) contract=share-band(lines) rows=per-day days=47 coverage_allowance=0 seeded=2000 build=20.8s (ls_time=45 ignored: the mean-day repair is what this backend replaces)
+[milp_hexaly_robust] gamma=0 obj=20184 bound=2381.0 status='HxSolutionStatus.FEASIBLE' elapsed=627.4s cap_broken=0 station_days_over=0 days_breached=0/47 (allowed 0)
+[fold 2 gamma=0] V_tr=483280 V_te=30720 PoR=0.00% G=0.00% viol_norm=24 max_ratio=43.99 robust_ok=True (628s)
 Preprocess model 0%
 Preprocess model 1%
 Preprocess model 1%
@@ -145,7 +145,7 @@ Preprocess model 99%
 Preprocess model 100%
 Preprocess model 100%
 Preprocess model 100%
-[milp_hexaly_robust] gamma=2 vars~48000 duals seeded contract=share-band(lines) rows=per-day days=38 coverage_allowance=0 seeded=2000 build=24.5s (ls_time=45 ignored: the mean-day repair is what this backend replaces)
-[milp_hexaly_robust] gamma=2 obj=23728 bound=732.0 status='HxSolutionStatus.FEASIBLE' elapsed=632.0s cap_broken=0 station_days_over=0 days_breached=0/38 (allowed 0)
-[fold 0 gamma=2] V_tr=418301 V_te=73813 PoR=9.34% G=-9.87% viol_norm=24 max_ratio=32.55 robust_ok=True (633s)
-[run_bs_robust_experiment] DONE: 2 rows -> results/z_contract/_seed_rep/z4_f0_s11
+[milp_hexaly_robust] gamma=2 vars~48000 duals seeded contract=share-band(lines) rows=per-day days=47 coverage_allowance=0 seeded=2000 build=28.8s (ls_time=45 ignored: the mean-day repair is what this backend replaces)
+[milp_hexaly_robust] gamma=2 obj=28099 bound=1393.0 status='HxSolutionStatus.FEASIBLE' elapsed=636.7s cap_broken=0 station_days_over=0 days_breached=0/47 (allowed 0)
+[fold 2 gamma=2] V_tr=535149 V_te=33656 PoR=10.73% G=-9.56% viol_norm=24 max_ratio=37.61 robust_ok=True (638s)
+[run_bs_robust_experiment] DONE: 2 rows -> results/z_contract/_seed_rep/z4_f2_s11

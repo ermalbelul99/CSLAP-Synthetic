@@ -1,1 +1,17 @@
 [seed] START fold=0 seed=11 14:13:06
+[seed] END   fold=0 seed=11 rc=0 14:34:11
+[seed] START fold=1 seed=11 14:34:11
+[seed] END   fold=1 seed=11 rc=0 14:55:23
+[seed] START fold=2 seed=11 14:55:23
+[seed] END   fold=2 seed=11 rc=0 15:16:39
+[seed] START fold=3 seed=11 15:16:39
+[seed] END   fold=3 seed=11 rc=0 15:38:04
+[seed] START fold=0 seed=22 15:38:04
+[seed] END   fold=0 seed=22 rc=0 15:59:10
+[seed] START fold=1 seed=22 15:59:10
+[seed] END   fold=1 seed=22 rc=0 16:20:23
+[seed] START fold=2 seed=22 16:20:23
+[seed] END   fold=2 seed=22 rc=0 16:41:40
+[seed] START fold=3 seed=22 16:41:40
+[seed] END   fold=3 seed=22 rc=0 17:03:01
+[seed] SEED REPLICATION COMPLETE 17:03:01

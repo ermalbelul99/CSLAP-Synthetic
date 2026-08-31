@@ -797,10 +797,60 @@ def z19():
           f"not the pre-registered 80.4/94.4/99.4%)")
 
 
+# ---------------------------------------------------------------- Z20
+def z20():
+    """The Gamma effect must exceed the solver's own run-to-run spread.
+
+    The grid ran ONE local-search seed per cell, so a between-arm difference
+    could not be separated from where the search happened to stop -- the
+    sharpest objection the scientific review raised. z=4 was re-run for
+    Gamma 0 and 2 on all four folds at two further seeds; with the grid run
+    that is three independent samples per cell.
+
+    This gate asserts the separation is real: the worst Gamma=2 run must still
+    beat the best Gamma=0 run, i.e. the two distributions do not overlap. It
+    also publishes the seed-only visit spread, which is the honest empirical
+    noise floor for any visit comparison in this study.
+    """
+    p = os.path.join(REPO, "results", "z_contract", "seed_replication_z4.csv")
+    if not os.path.isfile(p):
+        fail(f"no seed replication at {p}")
+    r = pd.read_csv(p)
+    runs = sorted(r.run.unique())
+    if len(runs) != 3:
+        fail(f"{len(runs)} runs, expected 3 (grid seed + two more)")
+    if sorted(r.fold.unique()) != [0, 1, 2, 3]:
+        fail("seed replication does not cover all four folds")
+    g = r.groupby(["run", "arm"]).agg(days=("days_viol", "sum"),
+                                      V=("V_te", "sum")).reset_index()
+    d0 = g[g.arm == "g0"].days.tolist()
+    d2 = g[g.arm == "g2"].days.tolist()
+    if len(d0) != 3 or len(d2) != 3:
+        fail("expected three runs of each arm")
+    if min(d0) <= max(d2):
+        fail(f"the arms OVERLAP across seeds: gamma0 {sorted(d0)} vs gamma2 "
+             f"{sorted(d2)} - the difference is not separable from local-search "
+             f"variability, and no claim about what Gamma buys can stand")
+    w = r.pivot_table(index=["fold", "run"], columns="arm",
+                      values="st_days_over")
+    if int((w.g2 > w.g0).sum()):
+        fail(f"gamma2 is WORSE than gamma0 in "
+             f"{int((w.g2 > w.g0).sum())} of 12 fold-run pairs")
+    v0 = g[g.arm == "g0"].V
+    spread = 100.0 * (v0.max() - v0.min()) / v0.mean()
+    if spread > 5.0:
+        fail(f"seed-only visit spread is {spread:.2f}%, too large for any "
+             f"visit comparison in this study to mean anything")
+    print(f"Z20 PASS gamma-effect-exceeds-seed-noise (gamma0 {sorted(d0)} vs "
+          f"gamma2 {sorted(d2)} violated days over 3 seeds -- disjoint; gamma2 "
+          f"never worse in 12 fold-run pairs; seed-only visit spread "
+          f"{spread:.2f}%)")
+
+
 if __name__ == "__main__":
     fn = {"z1": z1, "z2": z2, "z3": z3, "z4": z4, "z5": z5, "z6": z6, "z7": z7,
           "z9": z9, "z10": z10, "z11": z11, "z12": z12, "z14": z14, "z15": z15,
-          "z16": z16, "z17": z17, "z18": z18, "z19": z19}
+          "z16": z16, "z17": z17, "z18": z18, "z19": z19, "z20": z20}
     if len(sys.argv) != 2 or sys.argv[1] not in fn:
         print(f"usage: checks_z.py <{'|'.join(fn)}>")
         sys.exit(2)

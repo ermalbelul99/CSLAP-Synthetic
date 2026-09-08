@@ -1,7 +1,0 @@
-fold,arm,gamma,alpha,solver_obj,solver_bound,solver_gap,solve_time,feasible_model,c_fit_q90,V_tr,V_te,cap_broken,wl_broken_asrun,max_workload_te,Tn,viol_norm,max_ratio_norm,imbalance,X,robust_lhs_max,robust_ok,PoR_pct,G_pct,proven_infeasible,beta,T_s_train
-1,gamma0,0.0,1.0,19344.0,1021.0,0.9472187758478081,625.7669847011566,True,4.343134005462523,457667.0,32889.0,0.0,23.0,82.82517482517483,0.35127872549274386,24.0,30.808787250879682,33.88966597596765,0.9535342552498037,28.95670834825178,True,0.0,0.0,,,
-1,gamma1,1.0,1.0,inf,,,632.6119797229767,False,4.343134005462523,,,,,,,,,,,,,,,False,,
-1,gamma2,2.0,1.0,inf,,,632.8230338096619,False,4.343134005462523,,,,,,,,,,,,,,,False,,
-1,gamma4,4.0,1.0,inf,,,633.725860118866,False,4.343134005462523,,,,,,,,,,,,,,,False,,
-1,tight1.02,,,inf,,,624.6086027622223,False,4.343134005462523,,,,,,,,,,,,,,,,1.02,13.0
-1,tight1.05,,,inf,,,623.7707748413086,False,4.343134005462523,,,,,,,,,,,,,,,,1.05,14.0

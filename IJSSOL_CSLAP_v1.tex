@@ -1,26 +1,12 @@
 ﻿﻿%% =====================================================================
 %%  International Journal of Systems Science: Operations & Logistics
-%%  -- version 1 (transfer submission)
 %%  Taylor & Francis "Interact" layout, APA reference style.
 %%
-%%  Branched from IJPR_CSLAP_v4.tex, which remains the ground truth for
-%%  every experimental value. Changes in this version: the contribution is
-%%  reframed around the problem reformulation and the industrial
-%%  validation (the three solution methods become supporting evidence);
-%%  the body is compressed to the journal's 12,000-word ceiling; the
-%%  community-bound calibration table moves to the supplement, where the
-%%  full eight-cell sweep already lives. No experimental value changed.
+%%  interact.cls must sit in the working folder alongside this file and
+%%  IJSSOL_CSLAP_v1.bib.
 %%
-%%  Compile with the official "Taylor & Francis Interact (APA)" bundle:
-%%  keep interact.cls in the working folder (it ships with the template),
-%%  together with this file and IJSSOL_CSLAP_v1.bib. On Overleaf, start
-%%  from the "Taylor & Francis Interact (APA reference style)" template
-%%  and replace its main.tex and .bib with these two files.
-%%
-%%  References use BibTeX via apacite (natbibapa), exactly as documented
-%%  in the template's main.tex; bibliographystyle = apacite (set below).
-%%  Do NOT also load natbib: apacite's natbibapa option provides
-%%  \citep / \citet.
+%%  References use BibTeX via apacite (natbibapa); bibliographystyle is
+%%  set to apacite below. Do not also load natbib.
 %% =====================================================================
 % Ensure the "table" option reaches xcolor no matter which package pulls it in
 % first (tikz also loads xcolor); this avoids an option clash.
@@ -64,7 +50,7 @@
 \title{Minimising station visits in automated pick-and-pass warehouses: a correlated storage assignment model validated at industrial scale}
 
 \author{
-\name{Ermal Belul\textsuperscript{a,b}\thanks{CONTACT Ermal Belul. Email: ermal.belul@hds.utc.fr. ORCID: Ermal Belul 0009-0006-3589-6267, Marwane Bouznif 0000-0002-5138-1582, Dritan Nace 0000-0003-3914-2463, Antoine Jouglet 0000-0001-9251-249X.},
+\name{Ermal Belul\textsuperscript{a,b}\thanks{CONTACT Ermal Belul. Email: ermal.belul@hds.utc.fr. Co-author emails: Marwane Bouznif marwane.bouznif@savoye.com, Dritan Nace dritan.nace@hds.utc.fr, Antoine Jouglet antoine.jouglet@hds.utc.fr. ORCID: Ermal Belul 0009-0006-3589-6267, Marwane Bouznif 0000-0002-5138-1582, Dritan Nace 0000-0003-3914-2463, Antoine Jouglet 0000-0001-9251-249X.},
 Marwane Bouznif\textsuperscript{b},
 Dritan Nace\textsuperscript{a} and
 Antoine Jouglet\textsuperscript{a}}
@@ -209,7 +195,7 @@ Three solution strategies address the model, and the binary encoding of Section~
 \subsection{Fast feasible layouts: greedy clustering heuristic}\label{sec:heuristic}
 For catalogues of this size we use a fast heuristic that groups strongly co-ordered products into communities and places them on stations under both capacity constraints, extending the agglomerative idea of \citet{chuang2016} but building disjoint communities by greedy graph connectivity. Three thresholds filter the correlation graph and a fourth bounds the communities built on it. The filters are indexed on catalogue volume $N=|P|$, so a pair count that signals affinity at 50 products is noise at 20,000, whereas the bound is indexed on the slot capacity of a station, because a community must fit inside one. That fourth rule therefore presumes the stations are alike; where capacities differ widely no single number describes the room any of them has, and Section~\ref{sec:industrial} reports what it costs on such a site.
 The frequency floor $\phi=\max(2,\lfloor N/100\rfloor)$ admits a product only if it appears in at least $\phi$ orders, anchoring the noise floor at 1\% of catalogue volume; the co-occurrence floor $\gamma=\max(2,\lfloor N/50\rfloor)$ admits a pair only if its products are ordered together at least $\gamma$ times; and the kept-edge ratio $r=0.1$ keeps a pair only if its co-occurrence reaches a tenth of the more frequent endpoint's own demand, removing edges inflated by one ubiquitous endpoint. The community size bound $\beta=\max\!\left(5,\big\lfloor 0.4\,\zeta+\tfrac12 \big\rfloor\right)$, with $\zeta=|P|/|S|$ the slot capacity of a station, prevents clusters no station can hold.
-The coefficient $0.4$ is calibrated on a separate family of 80 instances built so the same $\zeta$ occurs at two catalogue sizes, which the benchmark of Section~\ref{sec:experiments} cannot do because its generator ties the station count to the catalogue. Across its eight geometry cells the visit-minimising bound $\beta^\ast$ is identical at both catalogue sizes for a fixed slot capacity and moves with $\zeta$ across the whole range for a fixed catalogue, the Spearman rank correlation between $\beta^\ast$ and $\zeta$ being $1.000$ against $0.000$ between $\beta^\ast$ and $N$ (Supplementary Section~S1). The dependence is monotone but not proportional, the minimising ratio being $0.60$ at $\zeta\le 50$ and $0.40$ at $\zeta=100$, the capacity of every benchmark instance of 500 SKUs and above; we adopt $0.4$ because it minimises at the sizes the method is intended for and errs low elsewhere, where larger communities are harder to place within the workload constraint. It is deliberately not optimal at the smallest size, where $\zeta=10$ puts the bound on its floor of 5 and the coefficient plays no role, leaving the heuristic's $+7.6\%$ gap there a property of the method rather than this threshold. The same supplement rescales all four thresholds and finds the response shallow, so we keep the defaults and tune none per instance.
+The coefficient $0.4$ is calibrated on a separate family of 80 instances built so the same $\zeta$ occurs at two catalogue sizes, which the benchmark of Section~\ref{sec:experiments} cannot do because its generator ties the station count to the catalogue. Across its eight geometry cells the visit-minimising bound $\beta^\ast$ is identical at both catalogue sizes for a fixed slot capacity and moves with $\zeta$ across the whole range for a fixed catalogue, the Spearman rank correlation between $\beta^\ast$ and $\zeta$ being $1.000$ against $0.000$ between $\beta^\ast$ and $N$ (Supplementary Section~S1). The dependence is monotone but not proportional, the minimising ratio being $0.60$ at $\zeta\le 50$ and $0.40$ at $\zeta=100$, the capacity of every benchmark instance of 500 SKUs and above; we adopt $0.4$ because it minimises at the sizes the method is intended for and errs low elsewhere, where larger communities are harder to place within the workload constraint. It is deliberately not optimal at the smallest size, where $\zeta=10$ puts the bound on its floor of 5 and the coefficient plays no role, leaving the heuristic's $+7.6\%$ gap there a property of the method rather than this threshold. Supplementary Section~S2 rescales all four thresholds and finds the response shallow, so we keep the defaults and tune none per instance.
 
 Figure~\ref{fig:heuristic_flow} gives the five stages. At placement a community goes to the station with room for it whole that already holds the largest share of its products in the incumbent layout, ties settled towards the lower load ratio, the incumbent being the live layout on the industrial case and the LPT start of Section~\ref{sec:init} on the synthetic instances; a community fitting nowhere whole is split. Supplementary Section~S4 states the procedure as pseudocode.
 
@@ -452,9 +438,11 @@ LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+28.0$\% & $<0.1$ & 0\% \\
 % =====================================================================
 \section{Industrial application}\label{sec:industrial}
 % =====================================================================
-We validate the framework on a real warehouse, Company~A, which operates 26 stations. The dataset consists of anonymised commercial operational records, order lines and station assignments, supplied by the partner company and used with its permission. It contains no personal data and the study involves no human or animal subjects, so no ethical approval was required. Two of them, S25 and S26, hold 1 and 2 locations: too few for a reassignment to change the visit count and too few to leave the workload anywhere to move, so they are left as they stand and the catalogue of $|P| = 21{,}874$ products sits on the other 24, which enter the solvers and the evaluation. Within those 24 a product keeps the location the site has already given it when it appears in at most five orders \emph{and} sits at one of the three static-shelving stations, whose slotting is not re-planned; a further 171 products, which survive only in orders the extract does not retain, are pinned the same way. That leaves $15{,}975$ products free to relocate and fixes $5{,}899$. Frozen products keep their slots and their workload share, so the solver receives only the remaining tolerance while the evaluation charges every station with its complete load on the complete order stream; the reductions below are therefore not inflated by the reduced decision pool.
+We validate the framework on a real warehouse, Company~A, which operates 26 stations. Two of them, S25 and S26, hold 1 and 2 locations: too few for a reassignment to change the visit count and too few to leave the workload anywhere to move, so they are left as they stand and the catalogue of $|P| = 21{,}874$ products sits on the other 24, which enter the solvers and the evaluation. Within those 24 a product keeps the location the site has already given it when it appears in at most five orders \emph{and} sits at one of the three static-shelving stations, whose slotting is not re-planned; a further 171 products, which survive only in orders the extract does not retain, are pinned the same way. That leaves $15{,}975$ products free to relocate and fixes $5{,}899$. Frozen products keep their slots and their workload share, so the solver receives only the remaining tolerance while the evaluation charges every station with its complete load on the complete order stream; the reductions below are therefore not inflated by the reduced decision pool.
 
-Here the workload row \eqref{eq:wl} keeps the normalised form of Section~\ref{sec:model}, each station's budget $T_s$ being $110\%$ of the load $\sum_{p} L_p/V_s$ its movable products carried under the legacy placement, with $V_s$ that station's own calibrated speed. Dividing by $V_s$ is what makes the quantity mean the same thing at every station, because the technologies differ and a raw line count does not: the busiest station handles $98{,}394$ lines at a speed of $9.92$ and so carries a load of $9{,}923$, while another handles $119{,}185$ lines at $30.43$ and carries $3{,}917$. The Max WL column of Table~\ref{tab:industrial} reports that load. Because the budgets it is measured against still differ in size from station to station, we report alongside it each station's utilisation, its realised load as a percentage of its own legacy load, and the standard deviation of those percentages over the 24 evaluated stations; that denominator gives the legacy layout zero dispersion by construction, so the metric reads as departure from the balance the site operates.
+The Company~A extract is a non-public dataset. It consists of anonymised commercial operational records, order lines and station assignments, supplied by the partner company and used with its permission. It contains no personal data, and the study is non-interventional and involves no human or animal subjects, so no ethics approval was required.
+
+Here the workload row \eqref{eq:wl} keeps the normalised form of Section~\ref{sec:model}, each station's budget $T_s$ being $110\%$ of the complete legacy load $\sum_{p} L_p/V_s$ the station carried, frozen and movable products together, with $V_s$ that station's own calibrated speed. Dividing by $V_s$ is what makes the quantity mean the same thing at every station, because the technologies differ and a raw line count does not: the busiest station handles $98{,}394$ lines at a speed of $9.92$ and so carries a load of $9{,}923$, while another handles $119{,}185$ lines at $30.43$ and carries $3{,}917$. The Max WL column of Table~\ref{tab:industrial} reports that load. Because the budgets it is measured against still differ in size from station to station, we report alongside it each station's utilisation, its realised load as a percentage of its own legacy load, and the standard deviation of those percentages over the 24 evaluated stations; that denominator gives the legacy layout zero dispersion by construction, so the metric reads as departure from the balance the site operates.
 
 \begin{table}[H]
 \centering
@@ -601,28 +589,21 @@ The authors report there are no competing interests to declare.
 During the preparation of this work the authors used a generative AI assistant to refine language and improve readability. The authors subsequently reviewed and edited the content and take full responsibility for the published article.
 
 \section*{Data availability statement}
-This journal applies the Taylor \& Francis ``share upon reasonable request'' data sharing policy. Both synthetic instance families are openly available, the 29 benchmark and 80 calibration instances, each with the generator, station counts and seeds that produced them, together with the per-instance column-generation convergence record of Supplementary Section~S8, at \href{https://anonymous.4open.science/r/Anonymized_Export_CSLAP_v2-01BC/README.md}{this repository}. % ACTION: replace with a persistent DOI (Zenodo/Figshare) before submission -- the guideline asks for a persistent identifier, and single-anonymous review makes the anonymised host unnecessary. The Company~A dataset and the dated extract behind Table~\ref{tab:temporal} cannot be made public because of commercial confidentiality, and may be requested from the authors under reasonable operational conditions. Hexaly and IBM CPLEX depend on commercial licences we cannot redistribute; the model statements and settings needed to rebuild the methods on another solver are given in Sections~\ref{sec:model}, \ref{sec:cg} and~\ref{sec:experiments}.
+This journal applies the Taylor \& Francis ``share upon reasonable request'' data sharing policy. Both synthetic instance families are openly available, the 29 benchmark and 80 calibration instances, each with the generator, station counts and seeds that produced them, together with the per-instance column-generation convergence record of Supplementary Section~S8, at \href{https://anonymous.4open.science/r/Anonymized_Export_CSLAP_v2-01BC/README.md}{this repository}. The Company~A dataset and the dated extract behind Table~\ref{tab:temporal} cannot be made public because of commercial confidentiality, and may be requested from the authors under reasonable operational conditions. Hexaly and IBM CPLEX depend on commercial licences we cannot redistribute; the model statements and settings needed to rebuild the methods on another solver are given in Sections~\ref{sec:model}, \ref{sec:cg} and~\ref{sec:experiments}.
 
 
-% ---------------------------------------------------------------------
-%  ACTION REQUIRED BEFORE SUBMISSION
-%  The journal requires a short biographical note (max 200 words) for
-%  every author. Ermal Belul's entry below is drafted from known facts;
-%  the other three are STUBS and must be completed by the authors
-%  themselves. Keep each to roughly 50 words: the word budget is tight
-%  (see IJSSOL_Instructions.md Part H).
 % ---------------------------------------------------------------------
 \section*{Notes on contributors}
 \noindent\textit{Ermal Belul} is a doctoral candidate at the Universit\'{e} de technologie de Compi\`{e}gne, Heudiasyc laboratory, working under an industrial (CIFRE) agreement with Savoye. His research concerns decision-support models for warehouse storage assignment and intralogistics planning under uncertainty.
 
 \medskip
-\noindent\textit{Marwane Bouznif} is a machine learning and optimization engineer at Savoye. He holds a doctorate from the Universit\'{e} de Grenoble (2012) on constant-time generic algorithms for combinatorial problems in rotagraphs and fasciagraphs. His current work applies operations research and machine learning to automated warehousing, including sorting, robot fleet sizing and storage assignment.
+\noindent\textit{Marwane Bouznif} is a machine learning and optimisation engineer at Savoye. He holds a doctorate from the Universit\'{e} de Grenoble (2012) on constant-time generic algorithms for combinatorial problems in rotagraphs and fasciagraphs. His current work applies operations research and machine learning to automated warehousing, including sorting, robot fleet sizing and storage assignment.
 
 \medskip
-\noindent\textit{Dritan Nace} is Professor at the Universit\'{e} de technologie de Compi\`{e}gne and a member of the Heudiasyc laboratory (UMR CNRS 7253), where he leads the SCOP research team. His work addresses operations research and network optimization, in particular robust and survivable network design, resilient routing, and fair resource allocation.
+\noindent\textit{Dritan Nace} is Professor at the Universit\'{e} de technologie de Compi\`{e}gne and a member of the Heudiasyc laboratory (UMR CNRS 7253), where he leads the SCOP research team. His work addresses operations research and network optimisation, in particular robust and survivable network design, resilient routing, and fair resource allocation.
 
 \medskip
-\noindent\textit{Antoine Jouglet} is Professor at the Universit\'{e} de technologie de Compi\`{e}gne and a member of the Heudiasyc laboratory (UMR CNRS 7253), in the SCOP research team. His work addresses combinatorial optimization and scheduling, with a focus on dominance rules, exact and hybrid solution methods, and their application to industrial logistics problems.
+\noindent\textit{Antoine Jouglet} is Professor at the Universit\'{e} de technologie de Compi\`{e}gne and a member of the Heudiasyc laboratory (UMR CNRS 7253), in the SCOP research team. His work addresses combinatorial optimisation and scheduling, with a focus on dominance rules, exact and hybrid solution methods, and their application to industrial logistics problems.
 
 % ---------------------------------------------------------------------
 % References (APA via apacite)

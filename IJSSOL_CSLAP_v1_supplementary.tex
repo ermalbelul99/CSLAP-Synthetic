@@ -1,4 +1,4 @@
-%% =====================================================================
+﻿%% =====================================================================
 %%  SUPPLEMENTARY MATERIAL
 %%  "Minimising station visits in automated pick-and-pass warehouses:
 %%   a correlated storage assignment model validated at industrial scale"
@@ -218,11 +218,11 @@ distributional assumption on the differences \citep{demsar2006}, and ties are di
 reported $p$ is the probability, under the null hypothesis that the paired differences are
 symmetric about zero, of observing a signed-rank statistic at least as extreme as the one
 obtained, in either direction. Table~\ref{tab:tests} reports the outcome against the
-set-variable MILP, the per-instance reference of the main article.
+set-variable formulation, the per-instance reference of the main article.
 
 \begin{table}[H]
 \centering
-\tbl{Paired Wilcoxon signed-rank tests on the 29 synthetic instances, against the set-variable MILP.}
+\tbl{Paired Wilcoxon signed-rank tests on the 29 synthetic instances, against the set-variable formulation.}
 {\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrr@{}}
 \toprule
 Comparison & Size (SKUs) & $n$ & Wins & $p$ & Min.\ $p$ \\
@@ -514,7 +514,7 @@ constraint is the number of iterations reached inside the cap.
 
 \section{Column-generation formulation of the relocation cap}\label{sup:relocap}
 The bounded-reassignment limit of Section~6.2 of the main article fits the column-generation
-framework as well as the set-variable MILP. Counting, for each bundle $q$, how many of its products
+framework as well as the set-variable formulation. Counting, for each bundle $q$, how many of its products
 would leave their legacy station,
 \[
 d_q \;=\; \bigl|\{\, p \in q \,:\, s'(p) \neq s(q) \,\}\bigr|,
@@ -523,7 +523,7 @@ where $s'(p)$ is the legacy station of product $p$ and $s(q)$ the station bundle
 at, the cap becomes the single knapsack-style master row $\sum_q d_q\, y_q \le k$. Its dual enters
 pricing as a per-product relocation penalty, so the subproblem proposes a bundle only when the
 visits it saves outweigh the relocation budget it consumes. We have not run that variant, and the
-results reported in the main article for bounded reassignment all come from the set-variable MILP.
+results reported in the main article for bounded reassignment all come from the set-variable formulation.
 
 \section{Notation}\label{sup:notation}
 Table~\ref{tab:notation} collects the symbols used throughout the main article. Every symbol is

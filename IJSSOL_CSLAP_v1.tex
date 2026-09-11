@@ -76,9 +76,22 @@ storage location assignment; pick-and-pass warehouse; warehouse automation; mixe
 % =====================================================================
 Order picking absorbs a large share of warehouse operating cost, so where products sit on the shelves has a direct effect on throughput \citep{xie2024combi}. The correlated storage location assignment problem (CSLAP) chooses that placement by grouping products frequently ordered together, and most CSLAP models pursue that aim by minimising picker travel distance \citep{islam2023}. That objective suits a warehouse where a picker walks the aisles, not one where goods move on a conveyor. In an automated pick-and-pass facility the movement of totes between zones is mechanised, and the binding limit is how often a tote leaves the main line and merges back into it. Each diversion adds a fixed mechanical and handling delay and occupies a slot in a finite station buffer, so the cost driver becomes station visits per order together with the balance of workload across zones. We build a CSLAP model on that basis, with total station visits as the objective and no station permitted to exceed its physical capacity or workload budget.
 
-Solving that model at the scale of a real warehouse is difficult for two reasons. The objective counts discrete stops, so its value changes only when a whole order gains or loses a zone and relocating a single product usually leaves it unchanged, so a search steered by the visit count spends most of its moves on a plateau. On the instance family studied here the linear relaxation of the binary programme is meanwhile no stronger than the observation that every order visits at least one station, whatever the correlation structure (Supplementary Section~S6), so branch-and-bound starts from a root bound carrying nothing instance-specific to prune with.
+Solving that model at the scale of a real warehouse is difficult for two reasons. The objective counts discrete stops, so its value changes only when a whole order gains or loses a zone and relocating a single product usually leaves it unchanged, so a search steered by the visit count spends most of its moves on a plateau. On the instance family studied here the linear relaxation of the binary programme is meanwhile no stronger than the observation that every order visits at least one station, whatever the correlation structure (Supplementary Section~S5), so branch-and-bound starts from a root bound carrying nothing instance-specific to prune with.
 
-We make three contributions. (1) We pose CSLAP for pick-and-pass systems with station visits as the objective under hard per-station capacity and workload limits, replacing the travel-distance objective the correlated storage literature inherits from manual picking, and give the model in a binary and a set-variable form (Section~\ref{sec:model}). (2) We build three solution strategies on the structure of that objective, a set-variable formulation as the principal method, a set-partitioning column generation that searches by whole product bundles, and a fast clustering heuristic. We benchmark them on 29 instances under one protocol against a genetic algorithm (GA) and simulated annealing with correlated interchange (SA-C) from the literature, with the binary encoding kept as a representation control (Sections~\ref{sec:methods} and~\ref{sec:experiments}). (3) We validate on an operating warehouse of 21,874 products and 26 stations, where the reduction holds on weeks the layout was not fitted to and every station stays inside its own workload budget, and add a bounded reassignment extension so the gain can be taken in stages (Section~\ref{sec:industrial}).
+Three solution strategies address that model, each matched to a different operational role.
+\begin{itemize}
+\item \textbf{Strategic re-slotting: a set-variable formulation.} The binary model is recast over one set variable per station, whose partition operators let the search move whole subsets of products without repairing a binary matrix. It is the principal method and the form deployed on the industrial site.
+\item \textbf{Fast layouts: a clustering heuristic.} A deterministic graph procedure with scale-relative thresholds groups co-ordered products into communities and places them under both capacity limits in seconds to minutes, with no certificate of quality.
+\item \textbf{Bundle-level search: a set-partitioning column generation.} The problem is decomposed into a master problem choosing among whole product bundles, priced over distinct weighted order supports and driven as a price-and-complete matheuristic that returns feasible layouts together with a valid lower bound.
+\end{itemize}
+The binary encoding of the same model runs alongside them as a representation control, and two metaheuristics established in the CSLAP literature, a genetic algorithm (GA) and simulated annealing with correlated interchange (SA-C), provide the external comparison.
+
+We make three contributions.
+\begin{enumerate}
+\item We pose CSLAP for pick-and-pass systems with station visits as the objective under hard per-station capacity and workload limits, replacing the travel-distance objective the correlated storage literature inherits from manual picking, and give the model in a binary and a set-variable form (Section~\ref{sec:model}).
+\item We build the three strategies above on the structure of that objective and benchmark them on 29 instances under one protocol against GA and SA-C, with the binary encoding kept as a representation control (Sections~\ref{sec:methods} and~\ref{sec:experiments}).
+\item We validate on an operating warehouse of 21,874 products and 26 stations, where the reduction holds on weeks the layout was not fitted to and every station stays inside its own workload budget, and add a bounded reassignment extension so the gain can be taken in stages (Section~\ref{sec:industrial}).
+\end{enumerate}
 
 % =====================================================================
 \section{Related work}\label{sec:litreview}
@@ -160,22 +173,98 @@ Orders travel along a main conveyor and pass a sequence of picking stations, eac
 \label{fig:schematic}
 \end{figure}
 
-Two operational facts drive the model. A visit carries a fixed cost independent of how many items are picked, because the tote must still be decelerated, inducted, scanned and merged, so grouping co-ordered products at one station collects more items per stop and lowers the visit count. It also decongests the finite station buffer, whose overflow blocks the main line: a station calibrated for 1,000 lines a day handles 500 totes if it serves 500 two-line orders, but only 200 for the same picking work in five-line orders. The model does not observe diversion traffic directly, so holding a station's assigned lines within its engineered daily budget serves as the operational proxy. Both effects are captured below, visits in the objective and workload in a hard constraint.
+\subsection{Products, orders and station visits}\label{sec:sets}
+Let $P$ be the catalogue of products, each one stock-keeping unit (SKU), $O$ the orders observed over the planning horizon, and $S$ the stations. Order $o$ requests the products of its line set $P_o \subseteq P$, and $L_p$ is the number of order lines in which product $p$ occurs. Each station $s$ has $\zeta_s$ storage locations, a processing rate $V_s$ in lines per unit time, and a workload budget $T_s$ in the units of $\sum_{p} L_p/V_s$; the product $C_s := T_s V_s$ is its line capacity, the form the pricing subproblem of Section~\ref{sec:cg} uses. Order $o$ visits station $s$ when at least one product of $P_o$ is stored there, and the number of stations an order visits is the quantity the model counts. Table~\ref{tab:notation} collects the notation used throughout the article; every symbol is also defined at its first use.
 
-\subsection{Sets, parameters, decisions, and the mixed-integer linear programme}
-Let $P$ be the catalogue of products, each one stock-keeping unit (SKU), $O$ the orders observed over the planning horizon, and $S$ the stations. Order $o$ requests the products of its line set $P_o \subseteq P$, and $L_p$ is the number of order lines in which product $p$ occurs. Each station $s$ has $\zeta_s$ storage locations, a processing rate $V_s$ in lines per unit time, and a workload budget $T_s$ in the units of $\sum_{p} L_p/V_s$; the product $C_s := T_s V_s$ is its line capacity, the form the pricing subproblem of Section~\ref{sec:cg} uses. We model placement at the station level, assigning a product to exactly one station without fixing which physical slot it occupies, since shelving can be rearranged without changing $\zeta_s$; duplication is left to Section~\ref{sec:conclusion}. Supplementary Section~S11 collects the notation.
+\begin{table}[H]
+\centering
+\tbl{Notation used throughout the article.}
+{\small\begin{tabularx}{\textwidth}{@{}c@{\hspace{2em}}X@{}}
+\toprule
+Symbol & Definition \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Problem data and compact models (Section~\ref{sec:model})}}\\
+$P,\,O,\,S$ & Sets of products (SKUs), orders, and stations (zones) \\
+$P_o$       & Set of products requested in order $o \in O$ \\
+$\zeta_s$   & Number of storage locations at station $s$ \\
+$\zeta$     & Common station capacity under homogeneous stations ($|P|/|S|$) \\
+$L_p$       & Order lines of product $p$ over the planning horizon \\
+$V_s$       & Processing rate of station $s$ (lines per unit time) \\
+$T_s$       & Workload budget of station $s$, in the units of $\sum_p L_p/V_s$ \\
+$C_s$       & Line capacity $T_s V_s$ of station $s$ over the horizon \\
+$x_{ps}$    & 1 if product $p$ is assigned to station $s$ \\
+$z_{os}$    & 1 if order $o$ visits station $s$ \\
+$\Phi_s$    & Set variable: the subset of products assigned to station $s$ \\
+$s'(p),\,k$ & Legacy station of product $p$; relocation cap of the bounded-reassignment extension (Section~\ref{sec:reassign}) \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Decomposition (Section~\ref{sec:cg})}}\\
+$K_s$       & Feasible patterns for station $s$ (product subsets it could hold) \\
+$U,\,w_u$   & Distinct multi-item order supports and their order counts \\
+$Q'$        & Pool of generated bundles \\
+$c_q$       & Weighted-support cost of pattern or bundle $q$ \\
+$y_{sq},\,y_q$ & Selection of $q$ (station-indexed; aggregated) \\
+$\sigma_p,\,\mu,\,\mu_s$ & Duals of the covering, cardinality, and convexity rows \\
+$a_p,\,z_u$ & Pricing variables: membership of product $p$; touch of support $u$ \\
+$\rho,\,B$  & Workload penalty rate of the swap descent; time cap of the drive \\
+$\Pi,\,\Pi^{\ast},\,\Pi(s)$ & A layout; the incumbent; the products $\Pi$ places at station $s$ \\
+$z_{\mathrm{RMP}},\,\mathrm{rc}_{\mathrm{lb}}$ & Restricted-master value; dual bound of the pricing solve \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Clustering heuristic (Section~\ref{sec:heuristic})}}\\
+$N$         & Catalogue size $|P|$, the index of the three graph filters \\
+$\mathrm{cnt}_{xy}$ & Number of orders containing both products $x$ and $y$ \\
+$\mathrm{load}(s)$  & Workload $\sum_{p\in s}L_p/V_s$ of station $s$ \\
+$\phi,\,\gamma,\,r,\,\beta$ & Frequency floor; co-occurrence floor; kept-edge ratio; community size bound \\
+\bottomrule
+\end{tabularx}}
+\label{tab:notation}
+\end{table}
 
-We present the model in two equivalent forms. The first uses the standard binary encoding below, whereas the second replaces the binary matrix with set decision variables, an abstraction specific to the Hexaly solver \citep{blaisemodeling} that exposes high-level partition operators to the search (Section~\ref{sec:setvar}). Both encode the same assignment problem. The binary variable $x_{ps}$ is 1 when product $p$ is assigned to station $s$, and $z_{os}$ records whether order $o$ visits station $s$, forced to 1 whenever any product of $o$ sits at $s$. The model is
+\subsection{Objective: minimising station visits}\label{sec:objective}
+Two operational facts make the visit count, rather than any distance, the quantity to minimise.
+
+\textbf{Fixed stopping overhead.} A visit carries a fixed cost independent of how many items are picked: the tote must be decelerated, inducted, scanned and merged, and the station display must retrieve the lines to pick before the first item is touched. Grouping co-ordered products at one station collects more items per stop, and one longer stop costs less than several short ones.
+
+\textbf{Buffer decongestion.} Each station holds a finite buffer in which totes queue, and its overflow blocks the main line. Consider a station calibrated for 1,000 lines a day. That workload can reach it in two ways:
+\begin{itemize}
+\item fragmented picking: 500 orders visit the station for two lines each, so 500 totes pass through its buffer;
+\item concentrated picking: 200 orders visit for five lines each, so 200 totes pass through.
+\end{itemize}
+The picking work is identical and the buffer occupancy 60\% lower. The model does not observe diversion traffic directly, so holding a station's assigned lines within its engineered daily budget serves as the operational proxy. Both effects enter the model below, visits in the objective and workload as a hard constraint.
+
+\subsection{Workload balancing as a hard constraint}\label{sec:workload}
+Concentrating picks to cut visits carries a risk of its own. A pick-and-pass line behaves as a network of queues \citep{kim2020, tarczynski2023}: were co-ordered products clustered without limit, the optimisation would route most of the traffic to a few stations, and as the arrival rate of totes at a station approaches its service rate the expected waiting time grows without bound, starving the other stations and blocking the main line. Workload balance therefore enters as a constraint and not as a term of the objective. Each station's assigned load must stay within its budget $T_s$, which operations treat as fixed once the conveyor is installed, and minimising visits under that limit secures the overhead and buffer benefits without creating a local bottleneck. How the budget is measured on the industrial site is stated in Section~\ref{sec:industrial}.
+
+\subsection{Modelling abstraction}\label{sec:abstraction}
+We model placement at the station level. A product is assigned to a station without fixing which physical slot it occupies, since shelving within a station can be rearranged without changing $\zeta_s$, and each product occupies one of the station's $\zeta_s$ locations; a per-product footprint would replace that unit count in the capacity constraint without changing the structure of the programme (Section~\ref{sec:conclusion}). Capacity is tight throughout the study: the benchmark instances of Section~\ref{sec:experiments} give $\sum_{s} \zeta_s = |P|$ by construction, and on the industrial site of Section~\ref{sec:industrial} each station's capacity is the number of products it already holds, so every location is occupied and a product can move only by exchange. Each product is stored at a single station; duplicating high-demand products across stations is left to Section~\ref{sec:conclusion}.
+
+\subsection{Binary mixed-integer linear programme}\label{sec:milp}
+We present the model in two equivalent forms. The first uses the standard binary encoding below, whereas the second replaces the binary matrix with set decision variables, an abstraction specific to the Hexaly solver \citep{blaisemodeling} that exposes high-level partition operators to the search (Section~\ref{sec:setvar}). Both encode the same assignment problem.
+
+\noindent\textbf{Decision variables:}
+\begin{itemize}
+\item $x_{ps}$, binary, equal to 1 when product $p \in P$ is assigned to station $s \in S$;
+\item $z_{os}$, continuous in $[0,1]$, recording whether order $o \in O$ visits station $s$; it depends entirely on $x$ and is forced to 1 whenever any product of $o$ sits at $s$.
+\end{itemize}
+
+\noindent\textbf{Objective:}
+\begin{equation}
+\min \quad \sum_{o \in O} \sum_{s \in S} z_{os} \label{eq:obj}
+\end{equation}
+The objective is the total number of station visits over all orders.
+
+\noindent\textbf{Constraints:}
 \begin{align}
-\min \quad & \sum_{o \in O} \sum_{s \in S} z_{os} \label{eq:obj}\\
-\text{s.t.} \quad
-& \sum_{s \in S} x_{ps} = 1 && \forall p \in P \label{eq:assign}\\
+& \sum_{s \in S} x_{ps} \ge 1 && \forall p \in P \label{eq:assign}\\
 & \sum_{p \in P} x_{ps} \le \zeta_s && \forall s \in S \label{eq:cap}\\
 & x_{ps} \le z_{os} && \forall o \in O,\ p \in P_o,\ s \in S \label{eq:link}\\
 & \sum_{p \in P} x_{ps}\,\frac{L_p}{V_s} \le T_s && \forall s \in S \label{eq:wl}\\
 & x_{ps} \in \{0,1\},\quad z_{os} \in [0,1]. && \label{eq:dom}
 \end{align}
-Three points are not evident from the rows. (i) The objective drives $z_{os}$ to its lower bound, so it takes value 1 only when a visit is unavoidable and stays integral without a big-$M$ term despite being declared continuous. (ii) In the workload cap \eqref{eq:wl} the sum runs over all products assigned to the station, not over a single order. (iii) Summing the linking rows \eqref{eq:link} over the stations gives $\sum_{s} z_{os}\ge 1$ for every order, a floor $x_{ps}=1/|S|$ attains under the operational slack of Section~\ref{sec:experiments}, so on this family the linear relaxation is worth exactly $|O|$ whatever the correlation structure (Supplementary Section~S6).
+Constraint \eqref{eq:assign} requires every product to be stored at some station. Constraint \eqref{eq:cap} caps the number of products a station holds by its slot count. The linking rows \eqref{eq:link} force $z_{os}$ to 1 whenever any product of order $o$ sits at station $s$. The workload cap \eqref{eq:wl} bounds the load a station carries; its sum runs over all products assigned to the station, not over a single order.
+
+Two properties follow from the rows once the tight capacity of Section~\ref{sec:abstraction} is taken into account. First, \eqref{eq:assign} and \eqref{eq:cap} together fix the assignment: summing \eqref{eq:cap} over the stations bounds the total number of placements by $\sum_s \zeta_s = |P|$, while \eqref{eq:assign} demands at least one placement per product, so every product is placed at exactly one station. Second, $z_{os}$ is integral although declared continuous: $x$ being a binary assignment, the linking rows and the minimisation set $z_{os}$ to $\max_{p \in P_o} x_{ps}$ at any optimum, which is 0 or 1. Constraint \eqref{eq:assign} is written as an inequality because it is the form that survives slack capacity, where the same rows admit storing a product at more than one station, the duplication extension of Section~\ref{sec:conclusion}.
+
+A third property concerns the relaxation. Summing the linking rows \eqref{eq:link} over the stations and applying \eqref{eq:assign} gives $\sum_{s} z_{os}\ge 1$ for every order, a floor that $x_{ps}=1/|S|$ attains under the operational slack of Section~\ref{sec:experiments}, so on this family the linear relaxation is worth exactly $|O|$ whatever the correlation structure (Supplementary Section~S5).
 
 \subsection{Set-variable reformulation}\label{sec:setvar}
 The same model admits an alternative representation through set decision variables, a feature of the Hexaly solver that replaces the binary assignment matrix with one set variable per station \citep{blaisemodeling}, whose high-level operators (partition, contains, count) let the solver navigate the flat, step-function landscape without flipping individual binary flags. The set variable $\Phi_s$ holds the subset of products assigned to station $s$, so $\{\Phi_s\}_{s \in S}$ replaces the matrix $x_{ps}$ and the number of declared variables falls from $|P|\times|S|$ to $|S|$. The model reads
@@ -204,9 +293,14 @@ For catalogues of this size we use a fast heuristic that groups strongly co-orde
 \end{itemize}
 The coefficient $0.4$ is calibrated on a separate family of 80 instances in which slot capacity and catalogue size vary independently, which the benchmark of Section~\ref{sec:experiments} cannot do because its generator ties the station count to the catalogue. There the visit-minimising bound tracks the slot capacity and is insensitive to the catalogue (Supplementary Section~S1), and rescaling any of the four thresholds moves the result little (Supplementary Section~S2), so we keep the defaults and tune none per instance.
 
-Five stages take the orders to a layout (Figure~\ref{fig:heuristic_flow}). At placement a community goes to the station with room for it whole that already holds the largest share of its products in the incumbent layout, ties settled towards the lower load ratio; a community fitting nowhere whole is split. The incumbent is the live layout on the industrial case and the longest-processing-time (LPT) start of Section~\ref{sec:init} on the synthetic instances. Supplementary Section~S4 states the procedure as pseudocode.
-
-The last stage repairs workload by exchanging products rather than relocating them, because every station is already full: the benchmark instances give $\sum_s \zeta_s = |P|$ exactly, and on the industrial site each station's capacity is the number of products it already holds. It repeatedly takes the station furthest over its cap, offers one of its heaviest products in exchange for a lighter one at a station that can absorb it, and among the admissible swaps applies the one that separates the fewest co-ordered pairs, so feasibility is recovered at the least cost to the clustering. It stops when every station is inside its cap or no admissible swap remains; that is a stopping rule and not a feasibility guarantee, though every run reported here ended with no station over its cap. Supplementary Section~S4 states the selection rule exactly.
+Five stages take the orders to a layout (Figure~\ref{fig:heuristic_flow}).
+\begin{enumerate}
+\item \textbf{Preprocessing and pair generation.} Products appearing in fewer than $\phi$ orders are set aside. Every unordered pair of retained products sharing a multi-item order is counted, $\mathrm{cnt}_{ij}$ being the number of orders containing both. Pairs with $\mathrm{cnt}_{ij}<\gamma$ are dropped, as are pairs whose count falls below the fraction $r$ of the more frequent endpoint's own order count, a ratio symmetric in the two products that reads as the confidence of the weaker association direction. The surviving pairs are sorted by decreasing count.
+\item \textbf{Community formation.} While candidate pairs remain, the top pair opens a community, which absorbs the unassigned product of highest aggregate co-occurrence with its current members until it holds $\beta$ products or no adjacent unassigned product is left. Every remaining pair containing an absorbed product is deleted, so no product joins two communities.
+\item \textbf{Post-processing.} Each product left unassigned joins, among the communities still below $\beta$, the one with which its co-occurrence is largest, counted on every pair and not only on the filtered graph, ties going to the community opened earliest. Products with no co-occurrence to any open community are grouped into new communities of at most $\beta$ products.
+\item \textbf{Station assignment.} A station is admissible for a community when it has slot room for the whole community and its workload $\mathrm{load}(s)$ plus the community's stays within $T_s$. Communities are placed in decreasing order of cumulative demand, each at the admissible station holding the largest share of its products in the incumbent layout, ties settled towards the lower load ratio $\mathrm{load}(s)/T_s$; a community no station admits whole is split, heaviest product first, each product placed by the same rule. The incumbent is the live layout on the industrial case and the longest-processing-time (LPT) start of Section~\ref{sec:init} on the synthetic instances.
+\item \textbf{Workload repair.} Because capacity is tight (Section~\ref{sec:abstraction}), workload is repaired by exchanging products rather than relocating them. The stage repeatedly takes the station of greatest relative overload $\mathrm{load}(s)/T_s$, offers one of its heaviest products in exchange for a lighter one at a station that stays inside its own cap, and among the admissible exchanges applies the one that separates the least co-occurrence weight, so feasibility is recovered at the least cost to the clustering. It stops when every station is inside its cap, when no admissible exchange remains, or when an exchange budget proportional to the catalogue is spent. That is a stopping rule and not a feasibility guarantee, though every run reported here ended with no station over its cap.
+\end{enumerate}
 
 \begin{figure}[H]
 \centering
@@ -281,16 +375,16 @@ One subproblem generates improving bundles. With $a_p \in \{0,1\}$ marking the p
 & \sum_{p \in P} L_p\, a_p \le C_s, \qquad a_p \in \{0,1\},\ z_u \in [0,1].
 \end{aligned}
 \]
-Encoding coverage per distinct support rather than per order keeps the subproblem's size tied to the number of distinct supports, not the raw order count, which grows without bound as the horizon lengthens. What limits the method is the number of pricing iterations reached inside the cap, not the cost of building the model (Section~\ref{sec:cgbound}); Supplementary Section~S5 gives the build and solve costs.
+Encoding coverage per distinct support rather than per order keeps the subproblem's size tied to the number of distinct supports, not the raw order count, which grows without bound as the horizon lengthens. What limits the method is the number of pricing iterations reached inside the cap, not the cost of building the model (Section~\ref{sec:cgbound}); Supplementary Section~S4 gives the build and solve costs.
 
 \subsubsection{Price-and-complete drive}\label{sec:cgdrive}
 Standard column generation adds one bundle per iteration, the one with the most negative reduced cost. In preliminary runs that loop stalled: because the master selects at most $|S|$ bundles that must together cover every product, a newly priced bundle cannot enter an integer solution until complementary bundles covering the rest of the catalogue are present, so the restricted master ceased to improve even though bundles of negative reduced cost kept arriving. We therefore drive it as a matheuristic generating coordinated bundle sets that form full feasible partitions, the exact pricing subproblem serving to discover mathematically optimal bundles that break the plateau, not to certify optimality. It maintains a pool $Q'$ of every bundle generated, never pruned, and an incumbent $\Pi^{\ast}$, the best complete feasible layout so far, writing $\Pi(s)$ for the products a layout $\Pi$ places at station $s$ and $B$ for the time cap. Algorithm~\ref{alg:cgdrive} states the four stages: a warm start from the LPT partition of Section~\ref{sec:init}, a generation loop alternating master solves, pricing passes and completions that enter the pool only if they hold every $\zeta_s$ and $T_s$, an integer master over the accumulated pool, and a closing descent. Four operators do the work.
-\begin{itemize}
-\item \textsc{GreedyPrice} builds one bundle by adding products in the order of the price the master currently puts on them, stopping where the bundle stops paying for itself.
-\item \textsc{ExactPrice} solves the pricing subproblem of Section~\ref{sec:cgpricing} as an integer programme and reports whether it proved optimality, since only a proven-empty call may stop the loop.
-\item \textsc{Complete} turns a bundle into a full layout by placing every remaining product at a station that has room for it and shares the most orders with it.
-\item \textsc{Descend} improves a layout by swapping pairs of products between stations whenever the swap lowers the visit count, any station pushed over its workload cap being penalised heavily enough that the descent never buys visits with feasibility.
-\end{itemize}
+\begin{enumerate}
+\item \textbf{\textsc{GreedyPrice}.} Before the exact pricer is called, an accelerator builds one bundle from the products of positive dual price, ordered by price and by price per unit of workload, extending it under the slot and line limits and keeping the prefix of least reduced cost rather than the filled bundle. It returns nothing when no prefix prices out negatively, and its purpose is to supply an improving column at a fraction of the cost of an exact solve.
+\item \textbf{\textsc{ExactPrice}.} It solves the pricing subproblem of Section~\ref{sec:cgpricing} as an integer programme under a per-call time limit and returns the bundles found, the solver's dual bound, which remains valid when the call is truncated, and a flag recording whether it proved optimality. Only a proven-empty call may stop the loop, and the dual bound feeds the lower bound of Section~\ref{sec:cgbound}.
+\item \textbf{\textsc{Complete}.} It extends a priced bundle to a full layout by placing the remaining products, heaviest first, at the station that admits each under both caps and whose products already touch the greatest weight of supports containing it. A product no station admits goes to the least loaded station, which can leave the completion infeasible for the gate of Stage~2 to discard; the point of completing is that a coordinated set of bundles, and not an isolated column, enters the pool.
+\item \textbf{\textsc{Descend}.} A first-improvement descent exchanges pairs of products held at different stations, which leaves every station's product count unchanged, and accepts an exchange when it lowers the visit count plus $\rho$ times the total workload excess, with $\rho$ the total order weight so that no exchange can trade feasibility for visits. The change induced by an exchange is scored from per-station support counts rather than by rescanning the orders, and the descent polishes the warm start, each completed layout and the final incumbent.
+\end{enumerate}
 Algorithm~\ref{alg:cgdrive} composes them across the four stages.
 
 \begin{algorithm}[H]
@@ -334,14 +428,14 @@ Algorithm~\ref{alg:cgdrive} composes them across the four stages.
 \end{algorithmic}
 \end{algorithm}
 
-Supplementary Section~S5 gives the exact rule of each operator, the incremental swap evaluation and the division of the cap $B$ across the stages.
+Supplementary Section~S4 gives the exact rule of each operator, the incremental swap evaluation and the division of the cap $B$ across the stages.
 
 Three design points are not visible in the stage list. First, Stage 2 resolves the stall because the patterns of the \emph{whole completed layout} enter the pool, so the complementary columns the integer master needs arrive together rather than one at a time. Second, the incumbent is feasible by construction: the gate of Stage~2 admits a completed layout only when it holds every $\zeta_s$ and $T_s$, so $\Pi^{\ast}$ can only improve. Third, Stage 3 lets the integer master reassemble a layout from bundles drawn from different completions, which no single completion could produce.
 
 The master objective counts weighted multi-item supports rather than visits, so the visits reported for a returned layout are recomputed on the raw orders under the protocol of Section~\ref{sec:experiments}.
 
 \subsubsection{Lower bound and scope}\label{sec:cgbound}
-The method also reports a valid lower bound on the optimal visit count. It follows from linear-programming duality on the restricted master together with the pricing solve's own dual bound, so it holds whatever heuristic produced the layouts; Supplementary Section~S6 states the aggregated and the station-indexed form and derives both. The bound applies to the optimal layout, not the returned one, which is why Section~\ref{sec:experiments} compares against a per-instance reference and not a certified optimum. Within these caps it is informative only at 50 SKUs; from 500 upward it is vacuous, and the reason is iteration count, not relaxation strength: pricing did not converge on any instance, so what is reported is a Farley bound \citep{farley1990note} at a truncated dual vector (Supplementary Section~S9 releases the convergence record). That is why dual stabilisation, and not a stronger formulation, is the remedy Section~\ref{sec:conclusion} names. The aggregated form serves the homogeneous family, a heterogeneous site reverting to the station-indexed master.
+The method also reports a valid lower bound on the optimal visit count. It follows from linear-programming duality on the restricted master together with the pricing solve's own dual bound, so it holds whatever heuristic produced the layouts; Supplementary Section~S5 states the aggregated and the station-indexed form and derives both. The bound applies to the optimal layout, not the returned one, which is why Section~\ref{sec:experiments} compares against a per-instance reference and not a certified optimum. Within these caps it is informative only at 50 SKUs; from 500 upward it is vacuous, and the reason is iteration count, not relaxation strength: pricing did not converge on any instance, so what is reported is a Farley bound \citep{farley1990note} at a truncated dual vector (Supplementary Section~S8 releases the convergence record). That is why dual stabilisation, and not a stronger formulation, is the remedy Section~\ref{sec:conclusion} names. The aggregated form serves the homogeneous family, a heterogeneous site reverting to the station-indexed master.
 
 \subsection{Initialisation and warm start}\label{sec:init}
 A warm start must be feasible before it can be good, which rules out the obvious candidate: the clustering heuristic groups products by affinity first, so a layout it returns can leave a station over its workload budget, and a solver handed an infeasible initial assignment discards it. We therefore build the start by a rule that disregards correlation, sorting products by descending order-line frequency $L_p$ and assigning them greedily to the station with the lowest accumulated workload, the LPT sweep of Algorithm~\ref{alg:cgdrive}, which tests both $\zeta_s$ and $T_s$ before each placement. Ignoring correlation is also what makes the layout usable as the correlation-blind anchor of Table~\ref{tab:reliability}, which measures what the catalogue costs when nothing is grouped.
@@ -351,18 +445,57 @@ All three strategies and the binary control start from that layout on the synthe
 \subsection{Baselines}\label{sec:baselines}
 We benchmark against two metaheuristics established in the CSLAP literature: simulated annealing with correlated interchange \citep{kim2012, zhang2019cie} and a genetic algorithm \citep{pan2015}. SA-C draws a pair of frequently co-ordered products, exchanges the stations they sit at, and accepts a worsening move with a probability that falls as the temperature cools. The genetic algorithm carries a population of complete assignments, combines two parents by copying a block of the catalogue from one into the other, mutates by exchanging two products' stations, and repairs any station left over capacity.
 
-Both are adapted in one respect. The visit objective is piecewise constant, so most local swaps leave it unchanged and a search guided by it alone stalls on a plateau. Both baselines therefore evaluate a surrogate adding capacity and workload penalties to the visit count together with a dispersion term penalising the separation of correlated items; that third term breaks the plateau, keeping the search moving while the visit count stands still. The penalty and dispersion weights were fixed in advance, not tuned, and we did not search over them, so what the baselines report is the published operators under one untuned constraint-handling scheme. Supplementary Section~S5 gives the operators, weights and parameters of both.
+Both are adapted in one respect. The visit objective is piecewise constant, so most local swaps leave it unchanged and a search guided by it alone stalls on a plateau. Both baselines therefore evaluate a surrogate adding capacity and workload penalties to the visit count together with a dispersion term penalising the separation of correlated items; that third term breaks the plateau, keeping the search moving while the visit count stands still. The penalty and dispersion weights were fixed in advance, not tuned, and we did not search over them, so what the baselines report is the published operators under one untuned constraint-handling scheme. Supplementary Section~S4 gives the operators, weights and parameters of both.
 
 % =====================================================================
 \section{Computational experiments}\label{sec:experiments}
 % =====================================================================
 \subsection{Instance generation}
-We generate four synthetic families of $N \in \{50, 500, 1000, 2000\}$ products, adapted from the common-itemset approach of \citet{zhang2019cie} at correlation degree $0.7$ with proportional order volumes. To remove architectural bias every station is identical, with the same slot capacity $\zeta_s = \lfloor |P|/|S| \rfloor$ and processing rate $V_s = 1$, and $T_s$ applies a 10\% operational slack to the average workload per station. That slack does not by itself prove a balanced feasible layout exists, since a single dominant $L_p$ could exhaust a station, but the LPT sweep of Section~\ref{sec:init} produced one on every instance generated, so a workload violation here is a property of the method rather than of the instance.
+We generate four synthetic families of $N \in \{50, 500, 1000, 2000\}$ products, adapted from the common-itemset approach of \citet{zhang2019cie} at correlation degree $0.7$ with proportional order volumes. To remove architectural bias every station is identical, with the same slot capacity $\zeta_s = \lfloor |P|/|S| \rfloor$ and processing rate $V_s = 1$, and $T_s$ applies a 10\% operational slack to the average workload per station. That slack does not by itself prove a balanced feasible layout exists, since a single dominant $L_p$ could exhaust a station, but the LPT sweep of Section~\ref{sec:init} produced one on every instance generated, so a workload violation here is a property of the method rather than of the instance. Table~\ref{tab:families} summarises the four families together with the per-size time cap of Section~\ref{sec:protocol}.
 
-A generator can easily produce correlation no warehouse would exhibit, so we checked the instances against the Company~A data on three properties. First, order size: the synthetic order size is drawn uniformly from the integers $5$ to $15$, with a median of 10 items, the industrial median. Second, sparsity: in the industrial data only 2.47\% of the product pairs that could co-occur ever do, reproduced by drawing each common itemset from a narrow fraction $U[0.1,0.5]$ of the catalogue. Third, correlation strength: taking the 1\% most frequent pairs and measuring how often one product is ordered when the other is gives 8.89\% synthetically against 14.24\% industrially. The synthetic correlation is therefore less pronounced than the industrial.
+\begin{table}[H]
+\centering
+\tbl{The four synthetic instance families of the benchmark.}
+{\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}rrrrrr@{}}
+\toprule
+SKUs $|P|$ & Stations $|S|$ & Capacity $\zeta$ & Mean orders & Instances $n$ & Time cap (s) \\
+\midrule
+50      & 5  & 10  & 2{,}036  & 12 & 120 \\
+500     & 5  & 100 & 20{,}832 & 10 & 300 \\
+1{,}000 & 10 & 100 & 38{,}743 & 4  & 600 \\
+2{,}000 & 20 & 100 & 78{,}698 & 3  & 1{,}200 \\
+\bottomrule
+\end{tabular*}}
+\tabnote{Every station of a family has the same capacity $\zeta=|P|/|S|$ and processing rate $V_s=1$, with $T_s$ set at 10\% above the average workload per station. Mean orders is the mean order count over the $n$ instances of the family. The instance count falls with size because a single cell at 2,000 SKUs costs more solver time than the whole 50-SKU block.}
+\label{tab:families}
+\end{table}
 
-\subsection{Protocol and metrics}
-A single instance cannot tell whether a ranking reflects method quality or one favourable draw of the generator, so we evaluate every method over 29 independently generated instances on distinct seeds. There are twelve at 50 SKUs, ten at 500, four at 1,000 and three at 2,000, the count falling with size because a single cell at 2,000 SKUs costs more solver time than the whole 50-SKU block. All optimising methods run under a common per-size cap of 120, 300, 600 and 1,200 seconds, so every ranking is conditional on that cap. Every run was produced on the same 16-core host under the same Python 3.10 environment, each method receiving the same four-thread allocation, with the column generation on CPLEX 22.1.1, the two MILP representations on Hexaly 13.0, the baselines our own Python implementations, and one run per instance. The genetic algorithm is stochastic, and so is the column-generation drive, which mutates its warm start and samples swap partners; with a single run per instance their algorithmic variance is not measured here, so any difference at a size carrying few instances rests on single draws. Supplementary Section~S5 states the setup, stage budgets, baseline parameters and seeds in full.
+A generator can easily produce correlation no warehouse would exhibit, so we checked the instances against the Company~A data on three properties (Table~\ref{tab:realism}). The synthetic order size is drawn uniformly from the integers 5 to 15, which reproduces the industrial median of 10 items. In the industrial data only 2.47\% of the product pairs that could co-occur ever do, a sparsity reproduced by drawing each common itemset from a narrow fraction $U[0.1,0.5]$ of the catalogue. Taking the 1\% most frequent pairs and measuring how often one product is ordered when the other is gives 8.89\% synthetically against 14.24\% industrially, so the synthetic correlation is less pronounced than the industrial and the instances do not favour the correlation-driven methods.
+
+\begin{table}[H]
+\centering
+\tbl{Structural checks of the synthetic instances against the Company~A data.}
+{\begin{tabularx}{\textwidth}{@{}Xll@{}}
+\toprule
+Property & Synthetic instances & Company~A \\
+\midrule
+Order size (median items per order) & 10, drawn from $U\{5,\dots,15\}$ & 10 \\
+Pair sparsity (share of possible product pairs that ever co-occur) & itemsets drawn from $U[0.1,0.5]$ of the catalogue & 2.47\% \\
+Correlation strength (conditional order frequency within the 1\% most frequent pairs) & 8.89\% & 14.24\% \\
+\bottomrule
+\end{tabularx}}
+\label{tab:realism}
+\end{table}
+
+\subsection{Protocol and metrics}\label{sec:protocol}
+A single instance cannot tell whether a ranking reflects method quality or one favourable draw of the generator, so we evaluate every method over the 29 independently generated instances of Table~\ref{tab:families}, on distinct seeds. All optimising methods run under the common per-size cap of that table, so every ranking is conditional on that cap. The genetic algorithm is stochastic, and so is the column-generation drive, which mutates its warm start and samples swap partners; with a single run per instance their algorithmic variance is not measured here, so any difference at a size carrying few instances rests on single draws. The computational setup is common to every method:
+\begin{itemize}
+\item one 16-core host under one Python 3.10 environment, each method receiving the same four-thread allocation;
+\item the column generation on CPLEX 22.1.1, the two MILP representations on Hexaly 13.0;
+\item the two baselines as our own Python implementations of the published operators;
+\item one run per instance in every cell.
+\end{itemize}
+Supplementary Section~S4 states the setup, stage budgets, baseline parameters and seeds in full.
 
 The set-variable formulation is the per-instance reference, not because it is always best, since at 2,000 SKUs both the column generation and the clustering heuristic outperform it, but because it is the form we deploy, having performed best at industrial scale. Every method returned a feasible layout on all 29 instances, holding both the slot capacity and the workload cap, so the comparison below is one of quality and time alone.
 
@@ -451,7 +584,14 @@ LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+28.0$\% & $<0.1$ & 0\% \\
 % =====================================================================
 \section{Industrial application}\label{sec:industrial}
 % =====================================================================
-We validate the framework on a real warehouse, Company~A, which operates 26 stations. Two of them, S25 and S26, hold 1 and 2 locations: too few for a reassignment to change the visit count and too few to leave the workload anywhere to move, so they are left as they stand and the catalogue of $|P| = 21{,}874$ products sits on the other 24, which enter the solvers and the evaluation. Within those 24 a product keeps the location the site has already given it when it appears in at most five orders \emph{and} sits at one of the three static-shelving stations, whose slotting is not re-planned; a further 171 products, which survive only in orders the extract does not retain, are pinned the same way. That leaves $15{,}975$ products free to relocate and fixes $5{,}899$. Frozen products keep their slots and their workload share, so the solver receives only the remaining tolerance while the evaluation charges every station with its complete load on the complete order stream; the reductions below are therefore not inflated by the reduced decision pool. Supplementary Section~S7 records the dataset, the residual resources and the site rules that fix them.
+We validate the framework on a real warehouse, Company~A. Its decision pool is as follows.
+\begin{itemize}
+\item 26 stations, of which 24 are evaluated. Stations S25 and S26 hold 1 and 2 locations, too few for a reassignment to change the visit count and too few to leave the workload anywhere to move, so they are left as they stand.
+\item $|P| = 21{,}874$ products on the 24 evaluated stations, which enter the solvers and the evaluation.
+\item $5{,}899$ products frozen in place. A product keeps the location the site has already given it when it appears in at most five orders \emph{and} sits at one of the three static-shelving stations, whose slotting is not re-planned; a further 171 products, which survive only in orders the extract does not retain, are pinned the same way.
+\item $15{,}975$ products free to relocate.
+\end{itemize}
+Frozen products keep their slots and their workload share, so the solver receives only the remaining tolerance while the evaluation charges every station with its complete load on the complete order stream; the reductions below are therefore not inflated by the reduced decision pool. Supplementary Section~S6 records the dataset, the residual resources and the site rules that fix them.
 
 The Company~A extract is a non-public dataset. It consists of anonymised commercial operational records, order lines and station assignments, supplied by the partner company and used with its permission. It contains no personal data, and the study is non-interventional and involves no human or animal subjects, so no ethics approval was required.
 
@@ -478,11 +618,11 @@ SA-C & 1{,}058{,}563 & 0.37 & 15.38 & 36{,}000 & 10{,}811 & 12.14 & \textcolor{r
 \label{tab:industrial}
 \end{table}
 
-The methods separate on how they spend the workload budget before they separate on visits (Table~\ref{tab:industrial}). The heuristic removes 6.2\% in thirteen minutes, but only by spending the tolerance in full: sixteen of the twenty-four stations end at or above $105\%$ of their legacy load, eight sit on the $110\%$ cap itself, and five are stripped below $70\%$ (Figure~\ref{fig:workload}a). Its utilisation dispersion of $27.4$ is an order of magnitude above every optimising method. The column generation removes $5.8\%$ while holding dispersion at $2.4$ and leaving headroom everywhere, and the visit counts do not separate the two: its result falls inside the spread the heuristic covers over feasible bounds, six of the eleven beating it and five not, the bound the rule itself returns among the latter (Supplementary Section~S8). A layout pinned against the cap is also feasible on the weeks it was fitted to and infeasible on the first week demand grows.
+\textbf{The heuristic spends the tolerance in full.} The methods separate on how they spend the workload budget before they separate on visits (Table~\ref{tab:industrial}). The heuristic removes 6.2\% in thirteen minutes, but only by spending the tolerance in full: sixteen of the twenty-four stations end at or above $105\%$ of their legacy load, eight sit on the $110\%$ cap itself, and five are stripped below $70\%$ (Figure~\ref{fig:workload}a). Its utilisation dispersion of $27.4$ is an order of magnitude above every optimising method. The column generation removes $5.8\%$ while holding dispersion at $2.4$ and leaving headroom everywhere, and the visit counts do not separate the two: its result falls inside the spread the heuristic covers over feasible bounds, six of the eleven beating it and five not, the bound the rule itself returns among the latter (Supplementary Section~S7). A layout pinned against the cap is also feasible on the weeks it was fitted to and infeasible on the first week demand grows.
 
-The community bound survives the transfer, but only a grid finds its best value. Section~\ref{sec:heuristic} sets $\beta$ from a single slot capacity, presuming interchangeable stations; here they hold between 8 and 2{,}575 movable products, a mean of 666, on which the rule returns $\beta=266$. That value is feasible and removes 5.7\% of the visits, yet it is not the best reachable, and feasibility is not an interval in $\beta$: $\beta=67$ and $\beta=200$ are feasible while $\beta=33$ and $\beta=133$ between them are not (Supplementary Section~S8). We therefore select $\beta$ on a seven-point grid anchored on the mean capacity, keeping the feasible layout with fewest visits. That is $\beta=333$, which gives the heuristic row of Table~\ref{tab:industrial}, its time entry charging the whole grid. The bound is not tuned: every setting above 200 is feasible and they span barely a percentage point, so the grid buys avoidance of the infeasible band. On interchangeable stations none of this arises, the rule's $\beta$ being feasible on all 29 benchmark instances.
+\textbf{The community bound survives the transfer, but only a grid finds its best value.} Section~\ref{sec:heuristic} sets $\beta$ from a single slot capacity, presuming interchangeable stations; here they hold between 8 and 2{,}575 movable products, a mean of 666, on which the rule returns $\beta=266$. That value is feasible and removes 5.7\% of the visits, yet it is not the best reachable, and feasibility is not an interval in $\beta$: $\beta=67$ and $\beta=200$ are feasible while $\beta=33$ and $\beta=133$ between them are not (Supplementary Section~S7). We therefore select $\beta$ on a seven-point grid anchored on the mean capacity, keeping the feasible layout with fewest visits. That is $\beta=333$, which gives the heuristic row of Table~\ref{tab:industrial}, its time entry charging the whole grid. The bound is not tuned: every setting above 200 is feasible and they span barely a percentage point, so the grid buys avoidance of the infeasible band. On interchangeable stations none of this arises, the rule's $\beta$ being feasible on all 29 benchmark instances.
 
-The set-variable formulation takes the opposite position, removing 13.7\% of the station visits while every station's utilisation shift stays within $[-5.9\%, +9.6\%]$, inside the site's 10\% slack (Figure~\ref{fig:workload}b), so the deepest reduction we obtain is also deployable, although no method here returns a certified optimum. The binary MILP, on the same engine and budget, is also feasible everywhere yet carries 7.8\% more visits. The representation is the experimental treatment, engine and budget being held fixed, though the search was not instrumented, so attributing the gap specifically to the $|P| \times |S|$ repair burden the set encoding removes stays an interpretation; the synthetic family, where the two forms differ by less than 0.6\% at every scale, gives no warning of it. A benchmark of a few thousand products would have retired the reformulation as redundant.
+\textbf{The set-variable formulation removes 13.7\% within the tolerance.} It takes the opposite position, removing 13.7\% of the station visits while every station's utilisation shift stays within $[-5.9\%, +9.6\%]$, inside the site's 10\% slack (Figure~\ref{fig:workload}b), so the deepest reduction we obtain is also deployable, although no method here returns a certified optimum. The binary MILP, on the same engine and budget, is also feasible everywhere yet carries 7.8\% more visits. The representation is the experimental treatment, engine and budget being held fixed, though the search was not instrumented, so attributing the gap specifically to the $|P| \times |S|$ repair burden the set encoding removes stays an interpretation; the synthetic family, where the two forms differ by less than 0.6\% at every scale, gives no warning of it. A benchmark of a few thousand products would have retired the reformulation as redundant.
 
 \begin{figure}[H]
 \centering
@@ -500,12 +640,16 @@ The set-variable formulation takes the opposite position, removing 13.7\% of the
 \label{fig:workload}
 \end{figure}
 
-The column generation removes 5.8\% of the visits the site incurs today while disturbing its balance least. It ran on Company~A in its station-indexed form with the set-variable formulation's inputs, so the two solve the same constrained problem. Four elements differ from the homogeneous drive. The warm start is the live layout rather than an LPT partition. Priced bundles are installed by an ejection-style recompletion, which empties the target station, installs the bundle there and reinserts the displaced products at the stations sharing the most order weight with them. The stage budgets follow a different schedule, and a bound pass absent from the homogeneous one prices every station once more at the incumbent duals before the integer master. Supplementary Section~S5 gives both schedules. The run priced exactly throughout and used its full cap. Its layout shares the set-variable solution's feasibility profile, both exceeding the raw legacy load on ten stations and both inside the site's 10\% tolerance everywhere (Figure~\ref{fig:workload}b, c). The drive produces that profile: warm-starting from the live layout keeps it near the incumbent balance, and enforcing the workload cap inside pricing means no violating bundle is generated.
+\textbf{The column generation disturbs the balance least.} It removes 5.8\% of the visits the site incurs today while disturbing the site's balance least. It ran on Company~A in its station-indexed form with the set-variable formulation's inputs, so the two solve the same constrained problem. Four elements differ from the homogeneous drive. The warm start is the live layout rather than an LPT partition. Priced bundles are installed by an ejection-style recompletion, which empties the target station, installs the bundle there and reinserts the displaced products at the stations sharing the most order weight with them. The stage budgets follow a different schedule, and a bound pass absent from the homogeneous one prices every station once more at the incumbent duals before the integer master. Supplementary Section~S4 gives both schedules. The run priced exactly throughout and used its full cap. Its layout shares the set-variable solution's feasibility profile, both exceeding the raw legacy load on ten stations and both inside the site's 10\% tolerance everywhere (Figure~\ref{fig:workload}b, c). The drive produces that profile: warm-starting from the live layout keeps it near the incumbent balance, and enforcing the workload cap inside pricing means no violating bundle is generated.
 
-The site runs about 81,700 station stops a week across the extract, so at the 6.6 to 7.4\% the layout holds on weeks it was not fitted to (Section~\ref{sec:temporal}) the expected saving is roughly 5,400 to 6,050 fewer stops per week. Each eliminated visit removes one cycle of deceleration, induction, scanning and merge, whose duration is site-specific and unmeasured here, so we state the effect per unit: for every second of per-visit cycle time the out-of-sample reduction frees 1.5 to 1.7 hours of station dwell per week. The projection is linear and ignores queueing, so a discrete-event study is needed to confirm it (Section~\ref{sec:conclusion}).
+\textbf{Labour projection.} The site runs about 81,700 station stops a week across the extract, so at the 6.6 to 7.4\% the layout holds on weeks it was not fitted to (Section~\ref{sec:temporal}) the expected saving is roughly 5,400 to 6,050 fewer stops per week. Each eliminated visit removes one cycle of deceleration, induction, scanning and merge, whose duration is site-specific and unmeasured here, so we state the effect per unit: for every second of per-visit cycle time the out-of-sample reduction frees 1.5 to 1.7 hours of station dwell per week. The projection is linear and ignores queueing, so a discrete-event study is needed to confirm it (Section~\ref{sec:conclusion}).
 
 \subsection{Robustness on unseen weeks}\label{sec:temporal}
-A layout is optimised once and then operated as demand evolves, so we test out of sample. The dataset spans 13 weeks, from 1 September to 30 November 2021, split on the recorded delivery date of each order. The model sees the first 10 weeks and is evaluated on the last 3, then the first 8 and the last 5, each layout compared with the original placement and with an oracle optimised on the test weeks \citep{lee2020cie, wang2020}.
+A layout is optimised once and then operated as demand evolves, so we test out of sample. The dataset spans 13 weeks, from 1 September to 30 November 2021, split on the recorded delivery date of each order. Two splits are run, each layout compared with the original placement and with an oracle optimised on the test weeks themselves \citep{lee2020cie, wang2020}:
+\begin{itemize}
+\item the model sees the first 10 weeks and the layout is evaluated on the last 3;
+\item the model sees the first 8 weeks and the layout is evaluated on the last 5.
+\end{itemize}
 
 This test separates two quantities the paper must not conflate. The 13.7\% of Table~\ref{tab:industrial} is in sample, the layout having been optimised on the same 13 weeks it is measured over; on unseen weeks the same method removes 6.6\% of visits on the three-week hold-out and 7.4\% on the five-week one (Table~\ref{tab:temporal}). The deployable expectation for a site re-slotting on recent history is the second pair, the first an upper bound reached only when demand does not move.
 
@@ -539,7 +683,13 @@ An established facility cannot absorb a disruptive re-slotting wave \citep{chabo
 \sum_{p \in P} x_{p,\,s'(p)} \ \ge\ |P| - k
 \label{eq:reassign}
 \end{equation}
-limits the relocated products to at most $k$. Nothing else changes and the legacy layout stays feasible for every $k$, so the model has a solution whatever budget the site sets; the cap also admits a column-generation form, stated in Supplementary Section~S10 but not run here. We solve it with the set-variable formulation for $k \in \{250, 500, 1000, 2000, 5000\}$ under a one-hour limit each, against the legacy layout ($k=0$) and the full re-optimisation (Table~\ref{tab:reassign}).
+limits the relocated products to at most $k$. Nothing else changes and the legacy layout stays feasible for every $k$, so the model has a solution whatever budget the site sets.
+
+The cap also fits the column-generation framework of Section~\ref{sec:cg}. Counting, for each bundle $q$, how many of its products would leave their legacy station,
+\[
+d_q \;=\; \bigl|\{\, p \in q \,:\, s'(p) \neq s(q) \,\}\bigr|,
+\]
+where $s(q)$ is the station bundle $q$ is installed at, the cap becomes the single master row $\sum_{q} d_q\, y_q \le k$. Its dual enters pricing as a per-product relocation penalty, so the subproblem proposes a bundle only when the visits it saves outweigh the relocation budget it consumes. We have not run that variant: every bounded-reassignment result below comes from the set-variable formulation, solved for $k \in \{250, 500, 1000, 2000, 5000\}$ under a one-hour limit each, against the legacy layout ($k=0$) and the full re-optimisation (Table~\ref{tab:reassign} and Figure~\ref{fig:ksweep}).
 
 \begin{table}[H]
 \centering
@@ -561,7 +711,14 @@ Full re-opt.   & --     & 917{,}465 & 145{,}042 & 100\% & 0 \\
 \label{tab:reassign}
 \end{table}
 
-Bounded re-slotting returns benefit sub-proportionally to effort at every cap: at $k = 5{,}000$, which is $31.3\%$ of the $15{,}975$ movable products, the layout captures $19.2\%$ of the available reduction, about 5.6 visits per relocated product against at least $145{,}042/15{,}975 \approx 9.1$ for the full re-optimisation, and no cap shows an inflection point at which a small subset of moves captures a disproportionate share. The objective explains the asymmetry: a visit disappears only when an order loses its last product at a station, so relocating part of a co-ordered group yields nothing until the remainder follows. We cannot separate that structural reading from an effect of the search budget: every bounded run exhausted its hour against the ten hours of the full re-optimisation, and none converged, so how much of the shortfall a longer run would recover is not measured here. Every point of the trade-off is nonetheless deployable, all stations staying within capacity and workload and close to their legacy loads, so a site can set its relocation budget against available labour.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\linewidth]{Images_CSLAP/reassignment_ksweep_curve.png}
+\caption{Station-visit reduction against the share of the catalogue relocated, on the industrial instance. The dashed line marks the 145,042 visits removed by the full re-optimisation. The benefit accrues with relocation effort, and no small subset of moves captures a disproportionate share of it.}
+\label{fig:ksweep}
+\end{figure}
+
+Bounded re-slotting returns benefit sub-proportionally to effort at every cap (Figure~\ref{fig:ksweep}): at $k = 5{,}000$, which is $31.3\%$ of the $15{,}975$ movable products, the layout captures $19.2\%$ of the available reduction, about 5.6 visits per relocated product against at least $145{,}042/15{,}975 \approx 9.1$ for the full re-optimisation, and no cap shows an inflection point at which a small subset of moves captures a disproportionate share. The objective explains the asymmetry: a visit disappears only when an order loses its last product at a station, so relocating part of a co-ordered group yields nothing until the remainder follows. We cannot separate that structural reading from an effect of the search budget: every bounded run exhausted its hour against the ten hours of the full re-optimisation, and none converged, so how much of the shortfall a longer run would recover is not measured here. Every point of the trade-off is nonetheless deployable, all stations staying within capacity and workload and close to their legacy loads, so a site can set its relocation budget against available labour.
 
 % =====================================================================
 \section{Managerial insights}\label{sec:managerial}
@@ -583,9 +740,13 @@ We posed the correlated storage location assignment problem for automated pick-a
 
 The two other strategies divide the remaining ground between them. The set-partitioning column generation, driven as a price-and-complete matheuristic, never breaches a workload cap, improves the live industrial layout by 5.8\% while disturbing the engineered balance least, and overtakes the reference between 1,000 and 2,000 products on this benchmark, on three instances at the larger size. The clustering heuristic is the fast fallback, reaching a lower visit count than the reference at 2,000 products in under a minute against twenty. On the industrial site it removes 6.2\% in thirteen minutes, but spends the whole workload tolerance and leaves most stations at their cap, so it earns its place where a layout is needed quickly and not where a ten-hour budget is available.
 
-Methodologically, two extensions remain. Dual stabilisation \citep{dumerle1999stabilized, wentges1997weighted} is the first, and Section~\ref{sec:cgbound} gives the measured reason for preferring it to a stronger formulation. The master never priced out inside the cap, so the bound is limited by how far the dual iteration got and not by the relaxation's strength, and reaching the value of the full linear master would turn the matheuristic reading into certified gaps. A fuller account would isolate the drive's operators by ablation and carry an adaptive large neighbourhood search and an open-source constraint-programming model \citep{ropke2006alns, perron2023cpsat} as further baselines, the latter measuring the cost to a practitioner without a commercial licence.
-
-At the modelling level, two limitations remain. The first is product geometry: replacing the unit count of a station's capacity with a per-product footprint $f_p$ in \eqref{eq:cap} would admit three-dimensional packing limits without changing the structure of the programme, and the same extension covers duplicating a high-demand product across stations, which the single-station assumption excludes. The second is the visit-to-throughput link: we balance workload, which lowers expected queueing, but do not model the queue, and feeding the optimised layouts into a discrete-event simulation would convert the planning figures of Section~\ref{sec:managerial} into measured throughput and open the way to stochastic demand and real-time routing. What these layouts are worth in throughput rather than stops is the question we leave open.
+Four perspectives follow from the limits of this study.
+\begin{enumerate}
+\item \textbf{Dual stabilisation} \citep{dumerle1999stabilized, wentges1997weighted}. Section~\ref{sec:cgbound} gives the measured reason for preferring it to a stronger formulation: the master never priced out inside the cap, so the bound is limited by how far the dual iteration got and not by the relaxation's strength, and reaching the value of the full linear master would turn the matheuristic reading into certified gaps.
+\item \textbf{Ablation and further baselines.} A fuller account would isolate the drive's operators by ablation and carry an adaptive large neighbourhood search and an open-source constraint-programming model \citep{ropke2006alns, perron2023cpsat} as further baselines, the latter measuring the cost to a practitioner without a commercial licence.
+\item \textbf{Product geometry and duplication.} Replacing the unit count of a station's capacity with a per-product footprint $f_p$ in \eqref{eq:cap} would admit three-dimensional packing limits without changing the structure of the programme, and under slack capacity the covering form of \eqref{eq:assign} already admits storing a high-demand product at several stations, which the tight-capacity setting of this study excludes.
+\item \textbf{From visits to throughput.} We balance workload, which lowers expected queueing, but do not model the queue. Feeding the optimised layouts into a discrete-event simulation would convert the planning figures of Section~\ref{sec:managerial} into measured throughput and open the way to stochastic demand and real-time routing. What these layouts are worth in throughput rather than stops is the question we leave open.
+\end{enumerate}
 
 % ---------------------------------------------------------------------
 % BACK MATTER (order per the IJSS:O&L Original Article specification)
@@ -606,7 +767,7 @@ The authors report there are no competing interests to declare.
 During the preparation of this work the authors used a generative AI assistant to refine language and improve readability. The authors subsequently reviewed and edited the content and take full responsibility for the published article.
 
 \section*{Data availability statement}
-This journal applies the Taylor \& Francis ``share upon reasonable request'' data sharing policy. Both synthetic instance families are openly available, the 29 benchmark and 80 calibration instances, each with the generator, station counts and seeds that produced them, together with the per-instance column-generation convergence record of Supplementary Section~S9, at \href{https://anonymous.4open.science/r/Anonymized_Export_CSLAP_v2-01BC/README.md}{this repository}. The Company~A dataset and the dated extract behind Table~\ref{tab:temporal} cannot be made public because of commercial confidentiality, and may be requested from the authors under reasonable operational conditions. Hexaly and IBM CPLEX depend on commercial licences we cannot redistribute; the model statements and settings needed to rebuild the methods on another solver are given in Sections~\ref{sec:model}, \ref{sec:cg} and~\ref{sec:experiments}.
+This journal applies the Taylor \& Francis ``share upon reasonable request'' data sharing policy. Both synthetic instance families are openly available, the 29 benchmark and 80 calibration instances, each with the generator, station counts and seeds that produced them, together with the per-instance column-generation convergence record of Supplementary Section~S8, at \href{https://anonymous.4open.science/r/Anonymized_Export_CSLAP_v2-01BC/README.md}{this repository}. The Company~A dataset and the dated extract behind Table~\ref{tab:temporal} cannot be made public because of commercial confidentiality, and may be requested from the authors under reasonable operational conditions. Hexaly and IBM CPLEX depend on commercial licences we cannot redistribute; the model statements and settings needed to rebuild the methods on another solver are given in Sections~\ref{sec:model}, \ref{sec:cg} and~\ref{sec:experiments}.
 
 
 % ---------------------------------------------------------------------

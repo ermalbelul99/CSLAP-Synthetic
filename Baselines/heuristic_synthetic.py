@@ -50,12 +50,16 @@ def _repair_workload(station_ids, members, station_load, wl_ceiling, assignment,
 
     A swap is scored by the co-occurrence weight it breaks,
 
-        cost = aff(p, s) + aff(q, t) - aff(p, t) - aff(q, s),
+        cost = A(p, s\{p}) + A(q, t\{q}) - A(p, t\{q}) - A(q, s\{p}),
 
-    with aff(x, s) the summed co-occurrence of x with the products of s over the
-    kept pairs only. Minimising it keeps correlated products together while the
-    load moves. ``swap_partners`` bounds the candidate scan at each end, in the
-    same spirit as the partner sampling of the column generation's swap descent.
+    with A(x, C) the summed co-occurrence of x with the products of C over the
+    kept pairs only. Each exchanged product is removed from the set it is scored
+    against, because neither stays where it was; see the note at the call site
+    for why evaluating aff() on the pre-swap membership needs a +2*cnt_pq
+    correction to get there. Minimising it keeps correlated products together
+    while the load moves. ``swap_partners`` bounds the candidate scan at each
+    end, in the same spirit as the partner sampling of the column generation's
+    swap descent.
 
     Mutates ``members``, ``station_load`` and ``assignment`` in place; returns
     the number of swaps applied.

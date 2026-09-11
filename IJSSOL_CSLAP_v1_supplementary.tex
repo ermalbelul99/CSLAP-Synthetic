@@ -81,7 +81,7 @@ on it can separate them.
 
 We therefore built a second family in which the two are not confounded. It uses the same
 generator as Section~5 of the main article (the common-itemset procedure of
-\citet{zhang2019cie} at correlation degree $0.7$, with order size drawn from $U[5,15]$ and
+\citet{zhang2019cie} at correlation degree $0.7$, with order size drawn uniformly from the integers $5$ to $15$ and
 proportional order volumes) and changes one thing: the number of stations is set independently
 of the catalogue rather than as $\max(5,\lfloor N/100\rfloor)$. Two catalogue sizes,
 $N\in\{500,1000\}$, are crossed with four station counts chosen so that the same slot
@@ -335,15 +335,19 @@ to the fixed-size blocks of the last line.
   \EndIf
 \EndFor
 \Statex
-\State \textbf{Step 5: workload repair} \Comment{$\mathrm{aff}(x,s)=\sum_{y\in s}\mathrm{cnt}_{xy}$}
+\State \textbf{Step 5: workload repair} \Comment{$A(x,C)=\sum_{y\in C}\mathrm{cnt}_{xy}$; at most $10|P|+100$ exchanges}
 \While{some station exceeds its workload cap}
   \State $s\gets$ the station of greatest relative overload $\mathrm{load}(s)/T_s$
-  \State $E\gets$ exchanges of a heaviest product $p$ of $s$ against a lightest product $q$
-  \State \hskip 1.2em of another station $t$ that lighten $s$ and keep $t$ inside its cap
-  \State \textbf{if} $E=\varnothing$ \textbf{then break}
-  \State apply the $(p,q)\in E$ of least broken weight $\mathrm{aff}(p,s)+\mathrm{aff}(q,t)-\mathrm{aff}(p,t)-\mathrm{aff}(q,s)$
+  \State $E\gets$ exchanges of one of the 50 products of $s$ of largest $L_p$ against one of the
+  \State \hskip 1.2em 50 products of smallest $L_q$ of another station $t$, admitting only pairs with
+  \State \hskip 1.2em $L_q<L_p$ that strictly lighten $s$ and keep $t$ inside its own cap
+  \State \textbf{if} $E=\varnothing$ or the exchange cap is reached \textbf{then break}
+  \State apply the $(p,q)\in E$ of least broken weight
+  \State \hskip 1.2em $A(p,s\setminus\{p\})+A(q,t\setminus\{q\})-A(p,t\setminus\{q\})-A(q,s\setminus\{p\})$,
+  \State \hskip 1.2em ties to the larger reduction in $\mathrm{load}(s)$, then to the lower product identifiers
 \EndWhile
-\State \textbf{Output:} a product-to-station assignment respecting $\zeta_s$ and $T_s$
+\State \textbf{Output:} a product-to-station assignment, feasible for $\zeta_s$ by construction and for
+\State \hskip 1.2em $T_s$ whenever the loop exited with every station inside its cap
 \end{algorithmic}
 \end{algorithm}
 
@@ -516,35 +520,63 @@ convergence only when an exact solve at the true duals proves that no bundle of 
 cost remains.
 
 \section{The industrial community-bound search}\label{sup:betasearch}
-Section~6 of the main article reports that the community bound $\beta$ does not transfer to
-Company~A, whose stations hold between 8 and 2{,}575 movable products. This section records the
-full search behind that finding.
+Section~6 of the main article selects the community bound $\beta$ for Company~A, whose stations
+hold between 8 and 2{,}575 movable products, on a seven-point grid rather than from the rule of
+Section~4.1. This section records the full search behind that choice.
 
 Applying the rule $\beta=\max(5,\lfloor 0.4\,\zeta+\tfrac12\rfloor)$ to the mean station capacity
-returns $\beta=266$, which no repair can make feasible. A community sized for the average station
-cannot fit the small ones, so placement overloads them and the repair spends itself undoing
-placement rather than balancing it.
+returns $\beta=266$. That setting is feasible and removes $5.66\%$ of the visits the site incurs
+today, so the rule does yield a deployable layout here. It is simply not the best value reachable,
+and nothing in the rule reveals as much.
 
-We evaluated nineteen settings in all. Five yield a feasible layout, $\{15, 33, 47, 350, 450\}$,
-and the remaining fourteen, spread from 63 to 399, do not, so feasibility is not an interval in
-$\beta$. We can only offer a hypothesis for the two large feasible settings, which the data does
-not let us test: once $\beta$ passes the capacity of all but the largest stations, almost every
-community has to be split at placement, and the split rule that then governs the layout places
-products one at a time by the same admissibility test, so the blocks it produces are sized by what
-the stations can take rather than by $\beta$. On that reading the middle of the range is the worst
-place to sit, because communities are too large for the small stations and too small to force the
-split path throughout.
+Table~\ref{tab:betasearch} reports the fifteen settings evaluated. Feasibility is not an interval
+in $\beta$, and the shape it does take is the one the split rule predicts. A community larger than
+a station has to be split at placement, and the split rule then places products one at a time under
+the same admissibility test, so the blocks it produces are sized by what the stations can take
+rather than by $\beta$. Both ends of the range therefore respect the small stations: the low end
+because its communities already fit them, the high end because almost every community is split
+before placement. The middle is the worst place to sit, with communities too large for the small
+stations and too small to force the split path throughout. The four infeasible settings, from 33 to
+133, are exactly that middle.
 
-The protocol a site would run is a grid anchored on the mean capacity, $\{33,67,133,200,266,333,
-399\}$, keeping the feasible layout with fewest visits. Exactly one of the seven is feasible,
-$\beta=33$, and it gives the heuristic row of the main article's industrial table, whose time entry
-charges the whole seven-point grid for that reason. The other twelve settings were exploratory and
-are excluded from the reported cost, not because they were cheap: charging all nineteen would raise
-the heuristic to roughly 1,750 seconds, still an order of magnitude below the next fastest method.
-Two of those exploratory settings are better and feasible, $\beta=350$ and $\beta=450$ at
-$1{,}030{,}978$ and $1{,}036{,}764$ visits, but no grid we could have specified in advance selects
-them, and we report them as a limitation rather than a result. On a warehouse of interchangeable
-stations none of this arises, the rule's $\beta$ being feasible on all 29 benchmark instances.
+The protocol a site would run is the grid anchored on the mean capacity,
+$\{33,67,133,200,266,333,399\}$, keeping the feasible layout with fewest visits. Five of the seven
+are feasible and $\beta=333$ is the best of them, which gives the heuristic row of the main
+article's industrial table and is why that row's time entry charges the whole grid, 790 seconds.
+The other eight settings were exploratory and are excluded from that cost; charging all fifteen
+would raise the heuristic to $1{,}480$ seconds, still an order of magnitude below the next fastest
+method. One exploratory setting is better, $\beta=300$ at $994{,}596$ visits against $996{,}448$, a
+further $0.19\%$, but a grid specified in advance does not contain it. On a warehouse of
+interchangeable stations none of this arises, the rule's $\beta$ being feasible on all 29 benchmark
+instances.
+
+\begin{table}[H]
+\centering
+\tbl{The industrial community-bound search on the Company~A instance.}
+{\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}rrrrl@{}}
+\toprule
+$\beta$ & Visits & Reduction (\%) & Time (s) & Status \\
+\midrule
+15  & 1{,}037{,}244 & 2.38 & 50  & feasible \\
+33  & 1{,}010{,}119 & 4.93 & 97  & infeasible, grid \\
+47  & 1{,}000{,}007 & 5.88 & 79  & infeasible \\
+67  & 996{,}734     & 6.19 & 105 & feasible, grid \\
+100 & 1{,}001{,}182 & 5.77 & 74  & infeasible \\
+133 & 1{,}007{,}309 & 5.20 & 123 & infeasible, grid \\
+200 & 1{,}001{,}428 & 5.75 & 89  & feasible, grid \\
+250 & 1{,}005{,}780 & 5.34 & 78  & feasible \\
+266 & 1{,}002{,}379 & 5.66 & 87  & feasible, grid, rule \\
+300 & 994{,}596     & 6.39 & 70  & feasible \\
+333 & 996{,}448     & 6.22 & 94  & feasible, grid, selected \\
+350 & 1{,}000{,}162 & 5.87 & 119 & feasible \\
+365 & 1{,}001{,}206 & 5.77 & 117 & feasible \\
+399 & 1{,}000{,}199 & 5.86 & 194 & feasible, grid \\
+450 & 995{,}426     & 6.31 & 104 & feasible \\
+\bottomrule
+\end{tabular*}}
+\tabnote{Reduction is against the legacy layout's $1{,}062{,}507$ visits. A setting is feasible when no station exceeds its own workload budget, $110\%$ of its complete legacy load; the check is per station, so a low visit count does not imply feasibility. ``grid'' marks the seven settings of the protocol a site would run, ``rule'' the value returned by $\beta=\max(5,\lfloor 0.4\,\zeta+\tfrac12\rfloor)$ on the mean station capacity, and ``selected'' the feasible grid setting with fewest visits, which gives the heuristic row of the main article's industrial table.}
+\label{tab:betasearch}
+\end{table}
 
 \section{Per-instance column-generation convergence record}\label{sup:cgrecord}
 The released archive named in the main article's data availability statement carries, for every
@@ -605,7 +637,13 @@ $\sigma_p,\,\mu,\,\mu_s$ & Duals of the covering, cardinality, and convexity row
 $a_p,\,z_u$ & Pricing variables: membership of product $p$; touch of support $u$ \\
 $\rho,\,B$  & Workload penalty rate of the swap descent; time cap of the drive \\
 $\Pi,\,\Pi^{\ast},\,\Pi(s)$ & A layout; the incumbent; the products $\Pi$ places at station $s$ \\
-$z_{\mathrm{RMP}},\,z_{\mathrm{IP}},\,\mathrm{rc}_{\mathrm{lb}}$ & Restricted-master value; integer-master value; pricing dual bound \\
+$z_{\mathrm{RMP}},\,z_{\mathrm{LP}},\,z_{\mathrm{IP}},\,\mathrm{rc}_{\mathrm{lb}}$ & Restricted-master value; full linear-master value; integer-master value; pricing dual bound \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Clustering heuristic (Section~4.1 of the main article)}}\\
+$\mathrm{cnt}_{xy}$ & Number of orders containing both products $x$ and $y$ \\
+$\mathrm{load}(s)$  & Workload $\sum_{p\in s}L_p/V_s$ of station $s$ \\
+$A(x,C)$    & Co-occurrence weight $\sum_{y\in C}\mathrm{cnt}_{xy}$ tying product $x$ to a set $C$ \\
+$\phi,\,\gamma,\,r,\,\beta$ & Frequency floor; co-occurrence floor; kept-edge ratio; community size bound \\
 \bottomrule
 \end{tabularx}}
 \label{tab:notation}

@@ -35,3 +35,18 @@
 25	9	heuristic mean time, 500 SKUs
 54	24	heuristic mean time, 1000 SKUs
 119	47	heuristic mean time, 2000 SKUs
+#
+# --- Heuristic row of tab:industrial and the Section 6 prose citing it.
+# Same two corrections, re-run over the seven-point beta grid the article
+# describes (industrial_rerun/beta*.csv, 2026-09-11). The grid's pick moved
+# from beta=33 to beta=333 because beta=33 is no longer feasible: five of the
+# seven settings are feasible now rather than one. T4 did not flag these --
+# the row reorder destroyed their context keys, so they surfaced as removed
+# and added contexts rather than changed ones. Declared here for the record.
+1{,}044{,}932	996{,}448	heuristic industrial visits
+1.65	6.22	heuristic industrial reduction (%)
+13.89	8.61	heuristic industrial gap vs the set-variable reference (%)
+647	790	heuristic industrial time, charging the whole seven-point grid (s)
+10{,}911	10{,}915	heuristic industrial busiest-station load
+27.90	27.37	heuristic industrial utilisation SD (%)
+-83.8	-73.0	heuristic per-station utilisation shift, lower end (%)

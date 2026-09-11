@@ -110,7 +110,19 @@ def _repair_workload(station_ids, members, station_load, wl_ceiling, assignment,
                         continue
                     if new_s >= station_load[s] - 1e-12:
                         continue
-                    cost = (aff(p, s) + aff(q, t)) - (aff(p, t) + aff(q, s))
+                    # The broken weight is
+                    #   A(p, s\{p}) + A(q, t\{q}) - A(p, t\{q}) - A(q, s\{p}),
+                    # because p and q both leave their stations in the exchange
+                    # and so must not be scored against each other. aff() runs
+                    # on the PRE-swap membership, where q is still in t and p is
+                    # still in s, so each subtracted term carries cnt_pq once;
+                    # adding it back twice recovers the correct delta. Without
+                    # this the score is uniformly 2*cnt_pq too low, which biases
+                    # the choice towards exchanging products that are strongly
+                    # co-ordered with each other -- the opposite of the intent.
+                    cnt_pq = neigh.get(p, {}).get(q, 0)
+                    cost = ((aff(p, s) + aff(q, t))
+                            - (aff(p, t) + aff(q, s)) + 2 * cnt_pq)
                     key = (cost, -(station_load[s] - new_s), str(p), str(q))
                     if best is None or key < best[0]:
                         best = (key, p, q, t, new_s, new_t)
@@ -310,15 +322,79 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df, *,
 
         communities.append(community)
 
-    # Communities born from the correlation step, BEFORE the filler groups of
-    # Step 3 are appended (diagnostic only; not used by the algorithm).
+    # Communities born from the correlation step, BEFORE Step 3 sweeps the
+    # residue into them and appends filler groups (diagnostic only; not used
+    # by the algorithm).
     n_corr_communities = len(communities)
 
     # --- Step 3: Post-processing (unassigned products) ---
+    # The residue is of two kinds: products the Step-1 frequency floor dropped
+    # from P*, and products in P* whose surviving pairs were all consumed by
+    # communities opened earlier. Both are swept into the community they are
+    # most co-ordered with, among those that still have room -- the behaviour
+    # Section 4.1 of the article and the Step-3 pseudocode of the supplement
+    # describe. Before 2026-09 this step did no such thing: it chunked the whole
+    # residue into fixed-size blocks in catalogue order, with no co-occurrence
+    # test at all, and that chunking now applies only to what the sweep cannot
+    # place.
+    #
+    # Affinity is scored on the RAW order co-occurrence, not on `filtered_pairs`.
+    # A product below MIN_FREQ_PREPROC has no entry in the filtered graph at all,
+    # so scoring there would send every low-frequency product straight down the
+    # fallback path and reproduce the very behaviour this step replaces.
     unassigned = [p for p in products if p not in assigned]
-    # Group unassigned into communities of MNOPPC
-    for i in range(0, len(unassigned), MNOPPC):
-        communities.append(set(unassigned[i: i + MNOPPC]))
+
+    # Reverse index over the residue only: product -> orders containing it, plus
+    # the de-duplicated member list of each order that carries any of them.
+    resid = set(unassigned)
+    resid_orders = defaultdict(list)
+    order_members = {}
+    if resid:
+        for o, prods in order_prods.items():
+            uniq = set(prods)
+            hit = uniq & resid
+            if not hit:
+                continue
+            order_members[o] = uniq
+            for p in hit:
+                resid_orders[p].append(o)
+
+    # Community index of every product placed by Step 2, kept current as the
+    # sweep proceeds so a product may be drawn to a community by an earlier
+    # residual already swept into it.
+    home = {}
+    for ci, c in enumerate(communities):
+        for p in c:
+            home[p] = ci
+
+    leftover = []
+    for p in unassigned:
+        score = defaultdict(int)
+        for o in resid_orders.get(p, ()):
+            for q in order_members[o]:
+                ci = home.get(q)
+                if ci is not None:
+                    score[ci] += 1
+        # Highest co-occurrence among the communities that still have room.
+        # Ties break on the lowest community index, so the outcome does not
+        # depend on dict or set iteration order (cf. PYTHONHASHSEED).
+        best_ci, best_score = None, 0
+        for ci in sorted(score):
+            if score[ci] > best_score and len(communities[ci]) < MNOPPC:
+                best_ci, best_score = ci, score[ci]
+        if best_ci is None:
+            leftover.append(p)
+            continue
+        communities[best_ci].add(p)
+        home[p] = best_ci
+        assigned.add(p)
+
+    # Whatever is co-ordered with nothing that still has room becomes its own
+    # block, which is what the pre-2026-09 code did to the entire residue.
+    n_step3_swept = len(unassigned) - len(leftover)
+    n_step3_filler = len(leftover)
+    for i in range(0, len(leftover), MNOPPC):
+        communities.append(set(leftover[i: i + MNOPPC]))
 
     # --- Step 4: Workload-aware station assignment ---
     # Sort communities by total frequency (most impactful first). This is also
@@ -487,6 +563,10 @@ def heuristic_cslap(order_prods, stations, products, prod_lines, orders_df, *,
             "n_assigned": len(assignment),
             # largest community handed to the station-assignment step
             "community_size_max": max((len(c) for c in communities), default=0),
+            # Step-3 residue: swept into an existing community by
+            # co-occurrence, vs. left to the fixed-size filler blocks
+            "n_step3_swept": n_step3_swept,
+            "n_step3_filler": n_step3_filler,
             # effective thresholds actually used (audit of the caller's overrides)
             "min_freq_preproc": MIN_FREQ_PREPROC,
             "min_freq": MIN_FREQ,

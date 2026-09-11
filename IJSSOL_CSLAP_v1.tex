@@ -174,16 +174,15 @@ Orders travel along a main conveyor and pass a sequence of picking stations, eac
 \end{figure}
 
 \subsection{Products, orders and station visits}\label{sec:sets}
-Let $P$ be the catalogue of products, each one stock-keeping unit (SKU), $O$ the orders observed over the planning horizon, and $S$ the stations. Order $o$ requests the products of its line set $P_o \subseteq P$, and $L_p$ is the number of order lines in which product $p$ occurs. Each station $s$ has $\zeta_s$ storage locations, a processing rate $V_s$ in lines per unit time, and a workload budget $T_s$ in the units of $\sum_{p} L_p/V_s$; the product $C_s := T_s V_s$ is its line capacity, the form the pricing subproblem of Section~\ref{sec:cg} uses. Order $o$ visits station $s$ when at least one product of $P_o$ is stored there, and the number of stations an order visits is the quantity the model counts. Table~\ref{tab:notation} collects the notation used throughout the article; every symbol is also defined at its first use.
+Let $P$ be the catalogue of products, each one stock-keeping unit (SKU), $O$ the orders observed over the planning horizon, and $S$ the stations. Order $o$ requests the products of its line set $P_o \subseteq P$, and $L_p$ is the number of order lines in which product $p$ occurs. Each station $s$ has $\zeta_s$ storage locations, a processing rate $V_s$ in lines per unit time, and a workload budget $T_s$ in the units of $\sum_{p} L_p/V_s$; the product $C_s := T_s V_s$ is its line capacity, the form the pricing subproblem of Section~\ref{sec:cg} uses. Order $o$ visits station $s$ when at least one product of $P_o$ is stored there, and the number of stations an order visits is the quantity the model counts. Table~\ref{tab:data} lists the problem data; the decision variables are declared with each model below, and the notation of the decomposition method is collected where that method is introduced (Table~\ref{tab:cgnotation}).
 
 \begin{table}[H]
 \centering
-\tbl{Notation used throughout the article.}
+\tbl{Problem data.}
 {\small\begin{tabularx}{\textwidth}{@{}c@{\hspace{2em}}X@{}}
 \toprule
 Symbol & Definition \\
 \midrule
-\multicolumn{2}{@{}l}{\emph{Problem data and compact models (Section~\ref{sec:model})}}\\
 $P,\,O,\,S$ & Sets of products (SKUs), orders, and stations (zones) \\
 $P_o$       & Set of products requested in order $o \in O$ \\
 $\zeta_s$   & Number of storage locations at station $s$ \\
@@ -192,31 +191,9 @@ $L_p$       & Order lines of product $p$ over the planning horizon \\
 $V_s$       & Processing rate of station $s$ (lines per unit time) \\
 $T_s$       & Workload budget of station $s$, in the units of $\sum_p L_p/V_s$ \\
 $C_s$       & Line capacity $T_s V_s$ of station $s$ over the horizon \\
-$x_{ps}$    & 1 if product $p$ is assigned to station $s$ \\
-$z_{os}$    & 1 if order $o$ visits station $s$ \\
-$\Phi_s$    & Set variable: the subset of products assigned to station $s$ \\
-$s'(p),\,k$ & Legacy station of product $p$; relocation cap of the bounded-reassignment extension (Section~\ref{sec:reassign}) \\
-\midrule
-\multicolumn{2}{@{}l}{\emph{Decomposition (Section~\ref{sec:cg})}}\\
-$K_s$       & Feasible patterns for station $s$ (product subsets it could hold) \\
-$U,\,w_u$   & Distinct multi-item order supports and their order counts \\
-$Q'$        & Pool of generated bundles \\
-$c_q$       & Weighted-support cost of pattern or bundle $q$ \\
-$y_{sq},\,y_q$ & Selection of $q$ (station-indexed; aggregated) \\
-$\sigma_p,\,\mu,\,\mu_s$ & Duals of the covering, cardinality, and convexity rows \\
-$a_p,\,z_u$ & Pricing variables: membership of product $p$; touch of support $u$ \\
-$\rho,\,B$  & Workload penalty rate of the swap descent; time cap of the drive \\
-$\Pi,\,\Pi^{\ast},\,\Pi(s)$ & A layout; the incumbent; the products $\Pi$ places at station $s$ \\
-$z_{\mathrm{RMP}},\,\mathrm{rc}_{\mathrm{lb}}$ & Restricted-master value; dual bound of the pricing solve \\
-\midrule
-\multicolumn{2}{@{}l}{\emph{Clustering heuristic (Section~\ref{sec:heuristic})}}\\
-$N$         & Catalogue size $|P|$, the index of the three graph filters \\
-$\mathrm{cnt}_{xy}$ & Number of orders containing both products $x$ and $y$ \\
-$\mathrm{load}(s)$  & Workload $\sum_{p\in s}L_p/V_s$ of station $s$ \\
-$\phi,\,\gamma,\,r,\,\beta$ & Frequency floor; co-occurrence floor; kept-edge ratio; community size bound \\
 \bottomrule
 \end{tabularx}}
-\label{tab:notation}
+\label{tab:data}
 \end{table}
 
 \subsection{Objective: minimising station visits}\label{sec:objective}
@@ -346,7 +323,29 @@ The heuristic is a single-pass, deterministic constructive procedure with no obj
 
 
 \subsection{Bundle-level search: set-partitioning column generation with a price-and-complete drive}\label{sec:cg}
-The obstacle of Section~\ref{sec:methods} is the unit of change. Station visits move only when a whole order gains or loses a station, so a search that relocates one product at a time usually reads no change, whereas a method whose smallest move is a whole group registers where a single-product move does not. A set-partitioning decomposition supplies that unit: its columns are complete product bundles, each a set a station could hold, and choosing one installs the group in a single step. We build it following large-scale pricing methods for logistics and scheduling \citep{lubbecke2005selected, muter2022}, with a \emph{master problem} choosing among the bundles generated so far and \emph{pricing} searching for a new bundle worth adding.
+The obstacle of Section~\ref{sec:methods} is the unit of change. Station visits move only when a whole order gains or loses a station, so a search that relocates one product at a time usually reads no change, whereas a method whose smallest move is a whole group registers where a single-product move does not. A set-partitioning decomposition supplies that unit: its columns are complete product bundles, each a set a station could hold, and choosing one installs the group in a single step. We build it following large-scale pricing methods for logistics and scheduling \citep{lubbecke2005selected, muter2022}, with a \emph{master problem} choosing among the bundles generated so far and \emph{pricing} searching for a new bundle worth adding Table~\ref{tab:cgnotation} collects the notation of this section.
+
+\begin{table}[H]
+\centering
+\tbl{Notation of the set-partitioning decomposition.}
+{\small\begin{tabularx}{\textwidth}{@{}c@{\hspace{2em}}X@{}}
+\toprule
+Symbol & Definition \\
+\midrule
+$K_s$       & Feasible patterns for station $s$ (product subsets it could hold) \\
+$U,\,w_u$   & Distinct multi-item order supports and their order counts \\
+$Q'$        & Pool of generated bundles \\
+$c_q$       & Weighted-support cost of pattern or bundle $q$ \\
+$y_{sq},\,y_q$ & Selection of $q$ (station-indexed; aggregated) \\
+$\sigma_p,\,\mu,\,\mu_s$ & Duals of the covering, cardinality, and convexity rows \\
+$a_p,\,z_u$ & Pricing variables: membership of product $p$; touch of support $u$ \\
+$\rho,\,B$  & Workload penalty rate of the swap descent; time cap of the drive \\
+$\Pi,\,\Pi^{\ast},\,\Pi(s)$ & A layout; the incumbent; the products $\Pi$ places at station $s$ \\
+$z_{\mathrm{RMP}},\,\mathrm{rc}_{\mathrm{lb}}$ & Restricted-master value; dual bound of the pricing solve \\
+\bottomrule
+\end{tabularx}}
+\label{tab:cgnotation}
+\end{table}
 
 \subsubsection{Station-indexed and aggregated masters}\label{sec:cgmaster}
 The problem decomposes naturally by station. A \emph{pattern} is a set of products a single station could hold, and $K_s$ is the family feasible for station $s$: subsets $q \subseteq P$ with $|q| \le \zeta_s$ and $\sum_{p \in q} L_p / V_s \le T_s$. The \emph{support} of an order is its line set $P_o$. Many orders share a support, so let $U$ be the set of distinct \emph{multi-item} supports, each with weight $w_u$ equal to the number of orders sharing it; singleton orders visit exactly one station under every layout, so singleton supports contribute a layout-independent constant and are excluded from $U$. With one column per station-pattern pair, the pattern cost $c_q = \sum_{u \in U} w_u\,\mathbf{1}[q \cap u \neq \emptyset]$ counts the weighted supports a pattern touches, and the linear master reads

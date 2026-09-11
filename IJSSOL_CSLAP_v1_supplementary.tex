@@ -546,9 +546,19 @@ article's industrial table and is why that row's time entry charges the whole gr
 The other eight settings were exploratory and are excluded from that cost; charging all fifteen
 would raise the heuristic to $1{,}480$ seconds, still an order of magnitude below the next fastest
 method. One exploratory setting is better, $\beta=300$ at $994{,}596$ visits against $996{,}448$, a
-further $0.19\%$, but a grid specified in advance does not contain it. On a warehouse of
-interchangeable stations none of this arises, the rule's $\beta$ being feasible on all 29 benchmark
-instances.
+further $0.19\%$, but a grid specified in advance does not contain it.
+
+What the grid buys is not a finely tuned bound but the avoidance of the infeasible band. Above
+$\beta=200$ every setting evaluated is feasible, and the eleven of them span $5.34\%$ to $6.39\%$,
+a band of one percentage point: once the bound is large enough to force the split path the visit
+count is insensitive to it. Nothing therefore rests on the particular value the grid returns, and
+we do not read $\beta=333$ as a calibrated quantity. The insensitivity is not total, because the
+settings differ more in how they leave the workload than in what they save: $\beta=450$ reaches
+$6.31\%$ at a utilisation dispersion of $21.6$ against the selected setting's $27.4$. We keep the
+selection rule as stated rather than adding dispersion to it, since the rule was fixed before these
+runs and choosing on a criterion the outcome suggested would not be a protocol a site could follow
+in advance. On a warehouse of interchangeable stations none of this arises, the rule's $\beta$
+being feasible on all 29 benchmark instances.
 
 \begin{table}[H]
 \centering

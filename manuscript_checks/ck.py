@@ -23,6 +23,7 @@ Checks
   t13 numeric multiset invariance of restructured regions, keyed by \\label
   t14 first-use notation audit: every tracked symbol defined at or before use
   t15 supplement cross-references: "Supplementary Section~SN" resolves
+  t16 sentence rhythm: sentences over 60 words, "rather than" density (notes only)
 Helpers: remap (re-locate anchors)
 
 T4 is blinded by restructuring, because moving text destroys its context key.
@@ -1231,12 +1232,59 @@ def t15():
              % ", ".join("S%d (%s)" % (i, titles[i - 1]) for i in orphans))
 
 
+# --------------------------------------------------------------------------
+# T16 -- sentence rhythm (notes only, never a failure)
+# --------------------------------------------------------------------------
+#
+# Two measurable things made the draft read as heavy independently of its
+# content: one sentence in six used "rather than", and a quarter of the
+# sentences ran past 45 words. Both were brought down by hand. This check
+# only reports them, so they cannot creep back unnoticed; it never fails,
+# because sentence length and a contrastive construction are judgement calls.
+
+def t16():
+    print("[T16] sentence rhythm")
+    sec, sents, long_, rt = "front", 0, [], 0
+    for ln, line in enumerate(lines(MAIN), 1):
+        if line.lstrip().startswith("%"):
+            continue
+        m = re.match(r"\\(?:sub)*section\*?\{([^}]*)\}", line)
+        if m:
+            sec = m.group(1)
+            continue
+        if sec == "front" or sec.startswith("Author contributions"):
+            continue
+        if (line.startswith("\\begin{") or line.startswith("\\end{")
+                or line.startswith("\\State") or line.startswith("\\node")
+                or "&" in line):
+            continue
+        for s in re.split(r"(?<=[.!?])\s+", line):
+            if not s.strip() or s.startswith("\\"):
+                continue
+            sents += 1
+            n = len(re.sub(r"\$[^$]*\$", "M", s).split())
+            if n > 60:
+                long_.append((n, ln, sec[:28]))
+            rt += len(re.findall(r"\brather than\b", s))
+    if not sents:
+        note("T16", "no prose sentences found")
+        return
+    dens = 100.0 * rt / sents
+    ok("T16", "%d prose sentences; %d over 60 words; \"rather than\" %d (%.1f per 100)"
+       % (sents, len(long_), rt, dens))
+    for n, ln, sec in sorted(long_, reverse=True):
+        note("T16", "L%d %s: %d words" % (ln, sec, n))
+    if dens > 6.0:
+        note("T16", "\"rather than\" above 6 per 100 sentences; the pass of "
+                    "2026-09-11 brought it from 16.5 to under 5")
+
+
 CHECKS = dict(t0=t0, t1=t1, t2=t2, t3=t3, t4=t4, t5=t5, t6=t6, t7=t7,
               t8=t8, t9=t9, t10=t10, t11=t11, t12=t12, t13=t13, t14=t14,
-              t15=t15, remap=remap)
+              t15=t15, t16=t16, remap=remap)
 GATE = ["t0", "t1", "t2", "t10", "t12", "t9"]
 ALL = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10",
-       "t11", "t12", "t13", "t14", "t15"]
+       "t11", "t12", "t13", "t14", "t15", "t16"]
 
 
 def main():

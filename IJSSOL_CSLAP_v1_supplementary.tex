@@ -363,36 +363,82 @@ is accepted. Beyond about 300 products the candidate partner set is sampled to k
 descent step in hand.
 
 \subsection{Stage budgets of the price-and-complete drive}\label{sup:budgets}
-The time cap $B$ of Section~4.2.3 of the main article is divided across the four stages. On the
-homogeneous benchmarks the warm start ends at $0.08B$, the generation loop at $0.70B$, the integer
-master at $0.85B$, and the final polish takes the remainder. The heterogeneous industrial run uses
-a schedule matched to its longer runs: warm start $0.05B$, generation loop $0.62B$, a bound pass at
-$0.74B$, integer master $0.82B$, and a closing polish.
+The time cap $B$ of Section~4.2.3 of the main article is divided across the four stages of the
+drive, and Table~\ref{tab:budgets} gives the two schedules used. The heterogeneous industrial run
+is matched to its longer runs: it allots smaller shares to the warm start and the generation loop
+than the homogeneous benchmarks do, and it inserts a bound pass that the homogeneous schedule does
+not use.
+
+\begin{table}[H]
+\centering
+\tbl{Stage budgets of the price-and-complete drive, as cumulative fractions of the time cap $B$.}
+{\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcc@{}}
+\toprule
+Stage & Homogeneous benchmarks & Industrial run \\
+\midrule
+Warm start      & $0.08B$   & $0.05B$   \\
+Generation loop & $0.70B$   & $0.62B$   \\
+Bound pass      & not used  & $0.74B$   \\
+Integer master  & $0.85B$   & $0.82B$   \\
+Final polish    & remainder & remainder \\
+\bottomrule
+\end{tabular*}}
+\tabnote{Each entry is the point in the cap at which that stage ends, so the generation loop of the homogeneous schedule runs from $0.08B$ to $0.70B$. The final polish takes whatever the integer master leaves.}
+\label{tab:budgets}
+\end{table}
 
 \subsection{Baseline operators and parameters}\label{sup:baselines}
-Both baselines score a candidate layout with the same surrogate: the station-visit count, plus
-1{,}000 times the total excess over slot capacity or workload cap, plus 0.01 times the
+Both baselines score a candidate layout with the same surrogate: the station-visit count, plus a
+penalty on the total excess over slot capacity or workload cap, plus a dispersion term on the
 co-occurrence weight of product pairs placed at different stations. The first term is the real
 objective, the second makes an infeasible layout uncompetitive, and the third breaks ties between
-layouts the visit count cannot separate.
+layouts the visit count cannot separate. Table~\ref{tab:baselineparams} states the weights of that
+surrogate and the operator settings of both procedures.
 
-The genetic algorithm carries 50 assignment vectors for at most 200 generations or until the
-per-size cap of Section~5.2 of the main article is reached, with binary-tournament parent
-selection, crossover at probability 0.8 copying a contiguous segment of one parent into the other
-up to a quarter of the catalogue with a repair pass for over-capacity stations, mutation at
-probability 0.1 exchanging two products' stations, and the best layout of each generation carried
-forward unchanged. Each of the 50 initial members is drawn by assigning products to stations
-uniformly at random subject to $\zeta_s$, as \citet{pan2015} prescribe.
+The genetic algorithm uses binary-tournament parent selection, crossover copying a contiguous
+segment of one parent into the other with a repair pass for over-capacity stations, mutation
+exchanging two products' stations, and the best layout of each generation carried forward
+unchanged. Each initial member is drawn by assigning products to stations uniformly at random
+subject to $\zeta_s$, as \citet{pan2015} prescribe.
 
-Simulated annealing with correlated interchange starts at temperature 800 and cools geometrically
-by 0.95 per level until the temperature reaches 1 or the cap is met, proposing $\min(2|P|, 1000)$
-moves per level. A move is drawn from the correlated pair list, co-occurring pairs being sorted by
-descending co-occurrence and split into ten equal groups from which a group and then a pair are
-drawn uniformly, and the two products exchange stations. A move lowering the surrogate is always
+Simulated annealing with correlated interchange cools geometrically until its stopping temperature
+is reached. A move is drawn from the correlated pair list, co-occurring pairs being sorted by
+descending co-occurrence and split into equal groups from which a group and then a pair are drawn
+uniformly, and the two products exchange stations. A move lowering the surrogate is always
 accepted, whereas one raising it by $\Delta$ is accepted with probability $\exp(-\Delta/T)$. The
 run starts from a cube-per-order-index (COI) layout, which is correlation-blind like LPT but ranks
 products by demand volume per unit of storage occupied rather than by order-line frequency, filling
 stations in that order \citep{kim2012}.
+
+\begin{table}[H]
+\centering
+\tbl{Surrogate weights and operator settings of the two literature baselines.}
+{\begin{tabularx}{\textwidth}{@{}Xl@{}}
+\toprule
+Parameter & Value \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Shared surrogate}}\\
+Excess penalty on slot capacity and workload cap & $1{,}000$ \\
+Dispersion weight on separated correlated pairs  & $0.01$ \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Genetic algorithm} \citep{pan2015}}\\
+Population size                   & $50$ \\
+Maximum generations               & $200$ \\
+Crossover probability             & $0.8$ \\
+Crossover segment cap             & $0.25\,|P|$ \\
+Mutation probability              & $0.1$ \\
+\midrule
+\multicolumn{2}{@{}l}{\emph{Simulated annealing with correlated interchange} \citep{kim2012}}\\
+Initial temperature               & $800$ \\
+Geometric cooling ratio per level & $0.95$ \\
+Stopping temperature              & $1$ \\
+Moves proposed per level          & $\min(2|P|,\,1000)$ \\
+Correlated-pair groups            & $10$ \\
+\bottomrule
+\end{tabularx}}
+\tabnote{Both procedures also stop at the per-size wall-clock cap of Section~5.2 of the main article, whichever comes first. The crossover segment cap of $0.25\,|P|$ is a quarter of the catalogue. Seeds and solver versions are given in Section~\ref{sup:hardware}.}
+\label{tab:baselineparams}
+\end{table}
 
 \subsection{Hardware, solver versions and seeds}\label{sup:hardware}
 Every run reported in the main article was produced on the same remote machine, a 16-core Windows

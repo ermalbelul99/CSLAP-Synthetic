@@ -460,35 +460,11 @@ LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+28.0$\% & $<0.1$ & 0\% \\
 % =====================================================================
 \section{Industrial application}\label{sec:industrial}
 % =====================================================================
-We validate the framework on a real warehouse, Company~A, whose instance Table~\ref{tab:instance} summarises and which operates 26 stations. Two of them, S25 and S26, are too small for a reassignment to change the visit count or to move workload, so the catalogue of $|P| = 21{,}874$ products sits on the other 24, which enter the solvers and the evaluation. Within those 24 a product keeps the location the site has already given it when it appears in at most five orders \emph{and} sits at one of the three static-shelving stations, whose slotting is not re-planned; both the threshold and the tolerance below are the site's own operating rules, not parameters we chose; a further 171 products, which survive only in orders the extract does not retain, are pinned the same way. That leaves $15{,}975$ products free to relocate and fixes $5{,}899$. Frozen products keep their slots and their workload share, so with $P^{\mathrm{fix}}_s$ the products frozen at station $s$ the optimisation runs on the residual resources $\bar\zeta_s=\zeta_s-\lvert P^{\mathrm{fix}}_s\rvert$ and $\bar T_s = T_s - \sum_{p \in P^{\mathrm{fix}}_s} L_p/V_s$, while the evaluation charges every station with its complete load on the complete order stream; the reductions below are therefore not inflated by the reduced decision pool.
-
-\begin{table}[H]
-\centering
-\tbl{The Company~A instance as it enters the solvers.}
-{\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr@{}}
-\toprule
-Quantity & Value \\
-\midrule
-Planning horizon & 13 weeks, 1 Sept.\ to 30 Nov.\ 2021 \\
-Orders & 284{,}862 \\
-Order lines over the horizon & 1{,}486{,}608 \\
-Products (SKUs) & 21{,}874 \\
-\quad free to relocate & 15{,}975 \\
-\quad frozen in place & 5{,}899 \\
-Stations, of which evaluated & 26, of which 24 \\
-Movable products held per station & 8 to 2{,}575 \\
-Processing rate $V_s$, lines per unit time & 6.2 to 10{,}400 \\
-Legacy station load $\sum_{p} L_p/V_s$ & 0.8 to 9{,}923 \\
-Workload budget $T_s$ & 110\% of the legacy load \\
-\bottomrule
-\end{tabular*}}
-\tabnote{The two excluded stations hold 1 and 2 locations. Processing rates span three orders of magnitude because the stations use different picking technologies, which is why workload is normalised by $V_s$ and raw line counts are not comparable across stations.}
-\label{tab:instance}
-\end{table}
+We validate the framework on a real warehouse, Company~A, which operates 26 stations. Two of them, S25 and S26, hold 1 and 2 locations: too few for a reassignment to change the visit count and too few to leave the workload anywhere to move, so they are left as they stand and the catalogue of $|P| = 21{,}874$ products sits on the other 24, which enter the solvers and the evaluation. Within those 24 a product keeps the location the site has already given it when it appears in at most five orders \emph{and} sits at one of the three static-shelving stations, whose slotting is not re-planned; a further 171 products, which survive only in orders the extract does not retain, are pinned the same way. That leaves $15{,}975$ products free to relocate and fixes $5{,}899$. Frozen products keep their slots and their workload share, so the solver receives only the remaining tolerance while the evaluation charges every station with its complete load on the complete order stream; the reductions below are therefore not inflated by the reduced decision pool.
 
 The Company~A extract is a non-public dataset. It consists of anonymised commercial operational records, order lines and station assignments, supplied by the partner company and used with its permission. It contains no personal data, and the study is non-interventional and involves no human or animal subjects, so no ethics approval was required.
 
-Here the workload row \eqref{eq:wl} keeps the normalised form of Section~\ref{sec:model}, each station's budget $T_s$ being $110\%$ of the complete legacy load $\sum_{p} L_p/V_s$ the station carried, frozen and movable products together, with $V_s$ that station's own calibrated speed. Dividing by $V_s$ is what makes the quantity mean the same thing at every station, since the technologies differ across the range of Table~\ref{tab:instance} and a raw line count does not. The Max WL column of Table~\ref{tab:industrial} reports that load, the busiest legacy station carrying $9{,}923$. Because the budgets it is measured against still differ in size from station to station, we report alongside it each station's utilisation, its realised load as a percentage of its own legacy load, and the standard deviation of those percentages over the 24 evaluated stations; that denominator gives the legacy layout zero dispersion by construction, so the metric reads as departure from the balance the site operates.
+Here the workload row \eqref{eq:wl} keeps the normalised form of Section~\ref{sec:model}, each station's budget $T_s$ being $110\%$ of the complete legacy load $\sum_{p} L_p/V_s$ the station carried, frozen and movable products together, with $V_s$ that station's own calibrated speed. Dividing by $V_s$ is what makes the quantity mean the same thing at every station, since the technologies differ across three orders of magnitude of processing rate and a raw line count does not. The Max WL column of Table~\ref{tab:industrial} reports that load, the busiest legacy station carrying $9{,}923$. Because the budgets it is measured against still differ in size from station to station, we report alongside it each station's utilisation, its realised load as a percentage of its own legacy load, and the standard deviation of those percentages over the 24 evaluated stations; that denominator gives the legacy layout zero dispersion by construction, so the metric reads as departure from the balance the site operates.
 
 \begin{table}[H]
 \centering

@@ -20,5 +20,5 @@ C-REPAIR	hypothesised-mechanism	S5.3,S6	We posed the correlated storage	7\.8|rep
 C-TIMEART	designed	S6.2	Bounded re-slotting returns benefit	shortfall|sub-proportion	(exhausted|did not converge|none converged|not measured here|cannot separate)	Nor is the shortfall a time artefact	results_reassignment_ksweep_v2.csv
 C-CADENCE	recommended	S6.1	Run the layout as a lifecycle	cadence|8 to 10 weeks|re-optimis	(did not vary|we did not test|not tested|windows of this length|starting point)	re-optimising at that cadence keeps it current	none -- cadence never varied
 C-TRAINEVAL	designed	S6.1	All layouts are produced by the set-variable	training window|train	(training and evaluation|both windows|evaluation window)	the only thing that changes	L495 design statement
-C-WLBUDGET	designed	S6	Here the workload row	legacy load	(complete|its own) legacy load	movable products carried under the legacy	results_industrial_heuristic_per_station.csv
+C-WLBUDGET	designed	S6	Workload is measured as load	legacy load	(complete|its own) legacy load	movable products carried under the legacy	results_industrial_heuristic_per_station.csv
 C-NPHARD	assumed	S3.2	Storage assignment under hard synchronisation	NP-hard|polynomial|hard	(structure of|carries the structure|we expect|claim no reduction)	is NP-hard	none -- no reduction given

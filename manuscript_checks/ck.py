@@ -1140,8 +1140,10 @@ NOTATION = [
      r"A\(x,C\)\s*=\s*\\sum_\{y\\in C\}"),
     ("z_LP", r"z_\{\\mathrm\{LP\}\}",
      r"the value of the linear master over every feasible bundle"),
+    # Defined at their assignment in Algorithm 1, whose comment names all three;
+    # the operators themselves are explained in words in the itemize above it.
     ("Q^g / Q^e / opt", r"Q\^\{g\}",
-     r"writes \$Q\^\{g\}\$ and \$Q\^\{e\}\$ for the bundles"),
+     r"Q\^\{g\}\\gets\\Call\{GreedyPrice\}.*\\Comment\{greedy bundle; exact bundles, dual bound, optimality flag\}"),
     ("LPT", r"\bLPT\b",
      r"longest-processing-time \(LPT\)"),
     # Algorithm 1 defines rho with \gets, the prose with =; either counts.

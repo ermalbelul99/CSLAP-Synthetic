@@ -122,8 +122,21 @@ def sentences(par):
     """Crude sentence split that does not break on \\ref{...} or decimals."""
     protected = re.sub(r"(\d)\.(\d)",
                        lambda m: m.group(1) + "\x00" + m.group(2), par)
-    parts = re.split(r"(?<=[.;])\s+", protected)
-    return [p.replace("\x00", ".") for p in parts if p.strip()]
+    # List markup is a sentence boundary, not part of a sentence. Without this
+    # a \ref inside a post-list paragraph gets attributed to "\end{itemize}",
+    # which makes a true finding unreadable.
+    protected = re.sub(r"\\(begin|end)\{(itemize|enumerate|description)\}|\\item",
+                       "\n", protected)
+    parts = re.split(r"(?<=[.;])\s+|\n", protected)
+    out = []
+    for p in parts:
+        if not p.strip():
+            continue
+        # drop fragments that are only markup
+        if not re.sub(r"\\[a-zA-Z]+\*?(\[[^\]]*\])?(\{[^}]*\})?|[{}$\\]", "", p).strip():
+            continue
+        out.append(p.replace("\x00", "."))
+    return out
 
 
 def section_map(path):

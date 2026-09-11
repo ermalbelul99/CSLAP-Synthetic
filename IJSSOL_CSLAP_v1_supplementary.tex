@@ -61,14 +61,6 @@ Company~A instance; Section~\ref{sup:betasearch} reports the full industrial $\b
 Section~\ref{sup:cgrecord} describes the released per-instance column-generation convergence
 record.
 
-To isolate these effects without confounding catalogue volume and station capacity (which are
-tied in the main 29-instance benchmark of Section~5 of the main article), we generated an
-expanded dataset of 80 synthetic instances across crossed combinations of $N \in \{500, 1000\}$
-and $\zeta \in \{20, 25, 50, 100\}$, using the same common-itemset generator script as the
-primary benchmark but with independent random seeds. This secondary dataset allows us to
-systematically test whether $\beta$ scales with $N$ or $\zeta$, and to test threshold
-robustness across diverse warehouse configurations.
-
 \section{Community bound scaling across warehouse geometries}\label{sup:capsweep}
 The three filters of Section~4.1 of the main article are indexed on the catalogue and the
 community bound on the station. That asymmetry needs evidence, because the benchmark of
@@ -273,7 +265,7 @@ difference, and the test quantifies how reliably it recurs.
 
 \section{Implementation, hardware and baseline parameters}\label{sup:impl}
 This section states in full the computational setup that Section~5.2 of the main article
-summarises, together with the incremental swap evaluation of Section~4.2.3, the stage budgets of
+summarises, together with the rule of each operator of the price-and-complete drive of Section~4.2.3, the incremental swap evaluation, the stage budgets of
 the price-and-complete drive, and the parameters of the two literature baselines.
 
 \subsection{Operators of the price-and-complete drive}\label{sup:cgops}
@@ -585,8 +577,8 @@ would raise the heuristic to $1{,}480$ seconds, still an order of magnitude belo
 method. One exploratory setting is better, $\beta=300$ at $994{,}596$ visits against $996{,}448$, a
 further $0.19\%$, but a grid specified in advance does not contain it.
 
-What the grid buys is not a finely tuned bound but the avoidance of the infeasible band. Above
-$\beta=200$ every setting evaluated is feasible, and the eleven of them span $5.34\%$ to $6.39\%$,
+What the grid buys is not a finely tuned bound but the avoidance of the infeasible band. From
+$\beta=200$ upward every setting evaluated is feasible, and those nine span $5.34\%$ to $6.39\%$,
 a band of one percentage point: once the bound is large enough to force the split path the visit
 count is insensitive to it. Nothing therefore rests on the particular value the grid returns, and
 we do not read $\beta=333$ as a calibrated quantity. The insensitivity is not total, because the

@@ -21,6 +21,8 @@ Checks
   t11 announce/deliver, bidirectional      (reviewer_first_skill XIX-A)
   t12 list hygiene and density, both directions          (XIX-A)
   t13 numeric multiset invariance of restructured regions, keyed by \\label
+  t14 first-use notation audit: every tracked symbol defined at or before use
+  t15 supplement cross-references: "Supplementary Section~SN" resolves
 Helpers: remap (re-locate anchors)
 
 T4 is blinded by restructuring, because moving text destroys its context key.
@@ -1189,12 +1191,50 @@ def t14():
         ok("T14", "all %d tracked symbols defined at or before first use" % clean)
 
 
+# --------------------------------------------------------------------------
+# T15 -- supplement cross-references
+# --------------------------------------------------------------------------
+#
+# The two documents compile separately, so the main article cites the
+# supplement as literal text ("Supplementary Section~S7") rather than \ref{}.
+# Nothing in LaTeX checks those. Inserting or moving a supplement section
+# silently shifts every number after it and the main text keeps pointing at
+# whatever now occupies the slot -- a failure that survives compilation and
+# reads perfectly.
+
+def t15():
+    print("[T15] supplement cross-references")
+    supp = strip_comments(read(SUPP))
+    titles = re.findall(r"\\section\{([^}]*)\}", supp)
+    if not titles:
+        bad("T15", "no sections found in the supplement")
+        return
+    refs = collections.Counter(
+        int(n) for n in re.findall(r"Supplementary Section~S(\d+)",
+                                   strip_comments(read(MAIN))))
+    dangling = sorted(n for n in refs if n > len(titles))
+    if dangling:
+        for n in dangling:
+            bad("T15", "main text cites S%d but the supplement has %d sections"
+                % (n, len(titles)))
+    else:
+        ok("T15", "all %d cited section numbers exist (supplement has %d)"
+           % (len(refs), len(titles)))
+    for n in sorted(refs):
+        if n <= len(titles):
+            note("T15", "S%-2d x%d -> %s" % (n, refs[n], titles[n - 1]))
+    orphans = [i + 1 for i in range(len(titles)) if (i + 1) not in refs]
+    if orphans:
+        note("T15", "supplement sections never cited: %s"
+             % ", ".join("S%d (%s)" % (i, titles[i - 1]) for i in orphans))
+
+
 CHECKS = dict(t0=t0, t1=t1, t2=t2, t3=t3, t4=t4, t5=t5, t6=t6, t7=t7,
               t8=t8, t9=t9, t10=t10, t11=t11, t12=t12, t13=t13, t14=t14,
-              remap=remap)
+              t15=t15, remap=remap)
 GATE = ["t0", "t1", "t2", "t10", "t12", "t9"]
 ALL = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10",
-       "t11", "t12", "t13", "t14"]
+       "t11", "t12", "t13", "t14", "t15"]
 
 
 def main():

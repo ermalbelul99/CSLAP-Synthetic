@@ -519,6 +519,56 @@ slows how quickly the floor rises as columns arrive but never invalidates it, an
 convergence only when an exact solve at the true duals proves that no bundle of negative reduced
 cost remains.
 
+\section{The Company~A instance}\label{sup:instance}
+Section~6 of the main article gives the decision pool and the workload basis in prose. This section
+records the dataset behind them, the residual resources the optimisation actually receives, and the
+two parameters the site fixes rather than we do.
+
+\begin{table}[H]
+\centering
+\tbl{The Company~A instance as it enters the solvers.}
+{\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lr@{}}
+\toprule
+Quantity & Value \\
+\midrule
+Planning horizon & 13 weeks, 1 Sept.\ to 30 Nov.\ 2021 \\
+Orders & 284{,}862 \\
+Order lines over the horizon & 1{,}486{,}608 \\
+Products (SKUs) & 21{,}874 \\
+\quad free to relocate & 15{,}975 \\
+\quad frozen in place & 5{,}899 \\
+Stations, of which evaluated & 26, of which 24 \\
+Movable products held per station & 8 to 2{,}575 \\
+Processing rate $V_s$, lines per unit time & 6.2 to 10{,}400 \\
+Legacy station load $\sum_{p} L_p/V_s$ & 0.8 to 9{,}923 \\
+Workload budget $T_s$ & 110\% of the legacy load \\
+\bottomrule
+\end{tabular*}}
+\tabnote{The two excluded stations hold 1 and 2 locations and carry 5 and 11 order lines between them. Processing rates span three orders of magnitude because the stations use different picking technologies, which is why workload is normalised by $V_s$ and raw line counts are not comparable across stations.}
+\label{tab:instance}
+\end{table}
+
+Two parameters are the site's operating rules rather than choices made here. A product is frozen
+when it appears in at most five orders \emph{and} sits at one of the three static-shelving
+stations, the five-order threshold being the site's own; and the workload budget $T_s$ is $110\%$
+of a station's complete legacy load, the $10\%$ being the tolerance the site operates to. Neither
+is tuned here, which is why no sensitivity is reported over them.
+
+Frozen products keep their slots and their workload share, so the optimisation runs on residual
+resources rather than full ones. Writing $P^{\mathrm{fix}}_s$ for the products frozen at station
+$s$,
+\[
+\bar\zeta_s=\zeta_s-\lvert P^{\mathrm{fix}}_s\rvert,
+\qquad
+\bar T_s = T_s - \sum_{p \in P^{\mathrm{fix}}_s} L_p/V_s,
+\]
+and the solver receives $\bar\zeta_s$ and $\bar T_s$ in place of $\zeta_s$ and $T_s$. Evaluation
+reverses this: every station is charged with its complete load, frozen and movable products
+together, over the complete stream of $284{,}862$ orders rather than the $83{,}183$ that contain a
+movable product. The reductions of the main article's industrial table are therefore measured
+against the layout the site operates, on the whole catalogue, and are not inflated by the reduced
+decision pool.
+
 \section{The industrial community-bound search}\label{sup:betasearch}
 Section~6 of the main article selects the community bound $\beta$ for Company~A, whose stations
 hold between 8 and 2{,}575 movable products, on a seven-point grid rather than from the rule of

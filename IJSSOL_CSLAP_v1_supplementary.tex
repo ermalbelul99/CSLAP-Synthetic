@@ -21,9 +21,6 @@
 \usepackage{xcolor}
 \usepackage{tabularx}
 \usepackage{multirow}
-\usepackage{algorithmicx}
-\usepackage{algorithm}
-\usepackage{algpseudocode}
 \usepackage{url}
 \usepackage{hyperref}
 
@@ -35,7 +32,6 @@
 \renewcommand{\thesection}{S\arabic{section}}
 \renewcommand{\thetable}{S\arabic{table}}
 \renewcommand{\thefigure}{S\arabic{figure}}
-\renewcommand{\thealgorithm}{S\arabic{algorithm}}
 
 % The main article uses \tbl{} and \tabnote{} from interact.cls; supply
 % equivalents so the table bodies below are unchanged from the article.
@@ -51,17 +47,18 @@ Calibration, proofs and implementation record}
 \maketitle
 
 \noindent
-This supplement holds the material the main article references but does not carry.
-Sections~\ref{sup:capsweep} to~\ref{sup:heuristic} evaluate the design parameters of the greedy
-clustering heuristic of Section~4.1 of the main article: whether the community size bound $\beta$
-scales with catalogue size ($N$) or with station slot capacity ($\zeta$), how sensitive the
-solution is to each threshold ($\phi, \gamma, r, \beta$), the paired statistical tests behind the
-synthetic benchmark, and the pseudocode of the procedure. Section~\ref{sup:impl} gives the
-implementation, hardware and parameter record for every method; Section~\ref{sup:proofs} proves
-the two bounding claims of the main article; Section~\ref{sup:betasearch} reports the full
-industrial $\beta$ search; Section~\ref{sup:cgrecord} describes the released per-instance
-column-generation convergence record; and Section~\ref{sup:relocap} gives the column-generation
-formulation of the bounded-reassignment cap.
+This supplement holds the statistical arguments and the secondary results behind the main
+article; every definition, notation and method statement remains in the main text.
+Sections~\ref{sup:capsweep} to~\ref{sup:tests} concern the greedy clustering heuristic of
+Section~4.1 of the main article and the synthetic benchmark of its Section~5: whether the
+community size bound $\beta$ scales with catalogue size ($N$) or with station slot capacity
+($\zeta$), how sensitive the solution is to each threshold ($\phi, \gamma, r, \beta$), and the
+paired statistical tests behind the benchmark. Section~\ref{sup:impl} records the
+implementation, hardware and parameter settings of every method; Section~\ref{sup:proofs}
+proves the two bounding claims of the main article; Section~\ref{sup:instance} records the
+Company~A instance; Section~\ref{sup:betasearch} reports the full industrial $\beta$ search; and
+Section~\ref{sup:cgrecord} describes the released per-instance column-generation convergence
+record.
 
 To isolate these effects without confounding catalogue volume and station capacity (which are
 tied in the main 29-instance benchmark of Section~5 of the main article), we generated an
@@ -273,87 +270,6 @@ weaker statement than equivalence. Effect size and consistency are therefore rep
 separately: the Gap column of the main article's benchmark table quantifies the magnitude of a
 difference, and the test quantifies how reliably it recurs.
 
-\section{Pseudocode of the greedy clustering heuristic}\label{sup:heuristic}
-Algorithm~\ref{alg:heuristic} states in full the five stages that Section~4.1 of the main
-article summarises and its Figure~2 sketches. Here $|s|$ is the product count of station $s$,
-$\mathrm{cnt}_{ij}$ the co-occurrence count of a product pair, $\mathrm{cnt}_i$ the order
-frequency of product $i$, $\mathrm{load}(s)=\sum_{p\in s}L_p/V_s$ the workload of station $s$,
-and $\zeta_s$, $T_s$, $L_p$ and $V_s$ are as defined in Section~3 of the main article. In Step~5,
-$A(x,C)=\sum_{y\in C}\mathrm{cnt}_{xy}$ measures how strongly product $x$ belongs with what set $C$
-already holds, and the exchange of least broken weight is the one that lowers it least across the
-two stations once each exchanged product is removed from the set it is scored against. The four
-thresholds are restated in the input line so that the procedure can be read on its own. The
-ratio test in Step~1 normalises by the \emph{larger} of the two endpoint frequencies, so it is
-symmetric in $i$ and $j$ and reads as the confidence of the weaker association direction. In
-Step~3, $\mathrm{cnt}_{pq}$ is read on \emph{every} pair, including pairs the two filters dropped
-and pairs touching a product outside $P^{\ast}$: scoring the residue on the filtered graph instead
-would leave every product below the frequency floor with no edge at all and send the whole residue
-to the fixed-size blocks of the last line.
-
-\begin{algorithm}[H]
-\caption{Greedy product clustering and station assignment}
-\label{alg:heuristic}
-\begin{algorithmic}[1]
-\State \textbf{Input:} products $P$, orders $O$, stations $S$; filters from $N=|P|$: floor $\phi=\max(2,\lfloor N/100\rfloor)$, minimum co-occurrence $\gamma=\max(2,\lfloor N/50\rfloor)$, kept-edge ratio $r=0.1$; size bound from the slot capacity $\zeta=|P|/|S|$: $\beta=\max(5,\lfloor 0.4\,\zeta+\tfrac12\rfloor)$.
-\Statex
-\State \textbf{Step 1: preprocessing and pair generation}
-\State $P^{\ast}\gets\{\,p\in P:\mathrm{freq}(p)\ge\phi\,\}$
-\ForAll{multi-item orders $o\in O$}
-  \State form every unordered pair $\{p_i,p_j\}\subseteq P_o\cap P^{\ast}$
-\EndFor
-\State for each pair, $\mathrm{cnt}_{ij}\gets\lvert\{\,o\in O:\{p_i,p_j\}\subseteq P_o\,\}\rvert$; keep pairs with $\mathrm{cnt}_{ij}\ge\gamma$
-\State for each kept pair, $\eta_{ij}\gets\mathrm{cnt}_{ij}/\max(\mathrm{cnt}_i,\mathrm{cnt}_j)$; keep pairs with $\eta_{ij}\ge r$
-\State sort the kept pairs by decreasing $\mathrm{cnt}_{ij}$
-\Statex
-\State \textbf{Step 2: community formation}
-\State $\mathcal{C}\gets\varnothing$; mark every product unassigned
-\While{candidate pairs remain}
-  \State take the top pair $\{p_a,p_b\}$ and open a community $c\gets\{p_a,p_b\}$
-  \While{$|c|<\beta$ and an unassigned product is adjacent to $c$}
-    \State $p_x\gets$ unassigned product of highest aggregate co-occurrence with $c$
-    \State $c\gets c\cup\{p_x\}$; delete every remaining pair that contains $p_x$
-  \EndWhile
-  \State $\mathcal{C}\gets\mathcal{C}\cup\{c\}$
-\EndWhile
-\Statex
-\State \textbf{Step 3: post-processing}
-\ForAll{products $p$ left unassigned by Step~2, in catalogue order}
-  \State $\mathcal{R}\gets\{\,c\in\mathcal{C}:|c|<\beta\,\}$ \Comment{communities that still have room}
-  \If{$\mathcal{R}\neq\varnothing$ and $\max_{c\in\mathcal{R}}\sum_{q\in c}\mathrm{cnt}_{pq}>0$}
-    \State $c^{\ast}\gets\arg\max_{c\in\mathcal{R}}\sum_{q\in c}\mathrm{cnt}_{pq}$, ties to the community opened earliest
-    \State $c^{\ast}\gets c^{\ast}\cup\{p\}$
-  \EndIf
-\EndFor
-\State group any still-unassigned products into new communities of size at most $\beta$
-\Statex
-\State \textbf{Step 4: station assignment}
-\State call $s$ \emph{admissible} for a block $c$ when $|s|+|c|\le\zeta_s$ and $\mathrm{load}(s)+\sum_{p\in c}L_p/V_s\le T_s$
-\State order the communities by cumulative demand, most impactful first
-\ForAll{communities $c$ in that order}
-  \If{some station is admissible for $c$}
-    \State assign $c$ to the admissible station of highest historical preference
-    \State \Comment{ties broken by the lowest resulting load $\mathrm{load}(s)/T_s$}
-  \Else
-    \State split $c$, heaviest product first, placing each product by the same rule
-  \EndIf
-\EndFor
-\Statex
-\State \textbf{Step 5: workload repair} \Comment{$A(x,C)=\sum_{y\in C}\mathrm{cnt}_{xy}$; at most $10|P|+100$ exchanges}
-\While{some station exceeds its workload cap}
-  \State $s\gets$ the station of greatest relative overload $\mathrm{load}(s)/T_s$
-  \State $E\gets$ exchanges of one of the 50 products of $s$ of largest $L_p$ against one of the
-  \State \hskip 1.2em 50 products of smallest $L_q$ of another station $t$, admitting only pairs with
-  \State \hskip 1.2em $L_q<L_p$ that strictly lighten $s$ and keep $t$ inside its own cap
-  \State \textbf{if} $E=\varnothing$ or the exchange cap is reached \textbf{then break}
-  \State apply the $(p,q)\in E$ of least broken weight
-  \State \hskip 1.2em $A(p,s\setminus\{p\})+A(q,t\setminus\{q\})-A(p,t\setminus\{q\})-A(q,s\setminus\{p\})$,
-  \State \hskip 1.2em ties to the larger reduction in $\mathrm{load}(s)$, then to the lower product identifiers
-\EndWhile
-\State \textbf{Output:} a product-to-station assignment, feasible for $\zeta_s$ by construction and for
-\State \hskip 1.2em $T_s$ whenever the loop exited with every station inside its cap
-\end{algorithmic}
-\end{algorithm}
-
 \section{Implementation, hardware and baseline parameters}\label{sup:impl}
 This section states in full the computational setup that Section~5.2 of the main article
 summarises, together with the incremental swap evaluation of Section~4.2.3, the stage budgets of
@@ -521,9 +437,10 @@ strengthen it.
 \section{Proofs of the bounding claims}\label{sup:proofs}
 
 \subsection{Binary MILP linear relaxation floor}\label{sup:bounds_milp}
-Take any point satisfying $\sum_{s\in S} x_{ps}=1$. For an order $o \in O$ and a product
+Take any point feasible for the linear relaxation. For an order $o \in O$ and a product
 $p \in P_o$, the linking row $x_{ps}\le z_{os}$ forces $z_{os}\ge x_{ps}$ for every station, and
-summing over the stations gives $\sum_{s\in S} z_{os}\ge\sum_{s\in S} x_{ps}=1$. The objective
+summing over the stations together with the covering row $\sum_{s\in S} x_{ps}\ge 1$ gives
+$\sum_{s\in S} z_{os}\ge\sum_{s\in S} x_{ps}\ge 1$. The objective
 therefore cannot fall below $|O|$ at any feasible point, fractional or integral. That floor is
 attained: setting $x_{ps}=1/|S|$ meets the capacity rows whenever $|P|/|S|\le\zeta_s$ and the
 workload rows under the operational slack of Section~5.1 of the main article, so $z_{os}=1/|S|$ is
@@ -718,65 +635,6 @@ everywhere, from $-696$ to $-1{,}497$ at 50 SKUs and widening to $-2.3\times10^{
 The quantity that pushes the reported bound down is therefore the correction
 $|S|\cdot\mathrm{rc}_{\mathrm{lb}}$ rather than any weakness of the relaxation, and the binding
 constraint is the number of iterations reached inside the cap.
-
-\section{Column-generation formulation of the relocation cap}\label{sup:relocap}
-The bounded-reassignment limit of Section~6.2 of the main article fits the column-generation
-framework as well as the set-variable formulation. Counting, for each bundle $q$, how many of its products
-would leave their legacy station,
-\[
-d_q \;=\; \bigl|\{\, p \in q \,:\, s'(p) \neq s(q) \,\}\bigr|,
-\]
-where $s'(p)$ is the legacy station of product $p$ and $s(q)$ the station bundle $q$ is installed
-at, the cap becomes the single knapsack-style master row $\sum_q d_q\, y_q \le k$. Its dual enters
-pricing as a per-product relocation penalty, so the subproblem proposes a bundle only when the
-visits it saves outweigh the relocation budget it consumes. We have not run that variant, and the
-results reported in the main article for bounded reassignment all come from the set-variable formulation.
-
-\section{Notation}\label{sup:notation}
-Table~\ref{tab:notation} collects the symbols used throughout the main article. Every symbol is
-also defined at its first use there; the table is a reference aid rather than the definition.
-
-\begin{table}[H]
-\centering
-\tbl{Notation used throughout the main article.}
-{\begin{tabularx}{\textwidth}{@{}c@{\hspace{2em}}X@{}}
-\toprule
-Symbol & Definition \\
-\midrule
-\multicolumn{2}{@{}l}{\emph{Problem data and compact models (Sections~3 and~3.2 of the main article)}}\\
-$P,\,O,\,S$ & Sets of products (SKUs), orders, and stations (zones) \\
-$P_o$       & Set of products requested in order $o \in O$ \\
-$\zeta_s$   & Number of storage locations at station $s$ \\
-$\zeta$     & Common station capacity under homogeneous stations ($|P|/|S|$) \\
-$L_p$       & Order lines of product $p$ over the planning horizon \\
-$V_s$       & Processing rate of station $s$ (lines per unit time) \\
-$T_s$       & Workload budget of station $s$, in the units of $\sum_p L_p/V_s$ \\
-$C_s$       & Line capacity $T_s V_s$ of station $s$ over the horizon \\
-$x_{ps}$    & 1 if product $p$ is assigned to station $s$ \\
-$z_{os}$    & 1 if order $o$ visits station $s$ \\
-$\Phi_s$    & Set variable: the subset of products assigned to station $s$ \\
-\midrule
-\multicolumn{2}{@{}l}{\emph{Decomposition (Section~4.2 of the main article)}}\\
-$K_s$       & Feasible patterns for station $s$ (product subsets it could hold) \\
-$U,\,w_u$   & Distinct multi-item order supports and their order counts \\
-$Q'$        & Pool of generated bundles \\
-$c_q$       & Weighted-support cost of pattern or bundle $q$ \\
-$y_{sq},\,y_q$ & Selection of $q$ (station-indexed; aggregated) \\
-$\sigma_p,\,\mu,\,\mu_s$ & Duals of the covering, cardinality, and convexity rows \\
-$a_p,\,z_u$ & Pricing variables: membership of product $p$; touch of support $u$ \\
-$\rho,\,B$  & Workload penalty rate of the swap descent; time cap of the drive \\
-$\Pi,\,\Pi^{\ast},\,\Pi(s)$ & A layout; the incumbent; the products $\Pi$ places at station $s$ \\
-$z_{\mathrm{RMP}},\,z_{\mathrm{LP}},\,z_{\mathrm{IP}},\,\mathrm{rc}_{\mathrm{lb}}$ & Restricted-master value; full linear-master value; integer-master value; pricing dual bound \\
-\midrule
-\multicolumn{2}{@{}l}{\emph{Clustering heuristic (Section~4.1 of the main article)}}\\
-$\mathrm{cnt}_{xy}$ & Number of orders containing both products $x$ and $y$ \\
-$\mathrm{load}(s)$  & Workload $\sum_{p\in s}L_p/V_s$ of station $s$ \\
-$A(x,C)$    & Co-occurrence weight $\sum_{y\in C}\mathrm{cnt}_{xy}$ tying product $x$ to a set $C$ \\
-$\phi,\,\gamma,\,r,\,\beta$ & Frequency floor; co-occurrence floor; kept-edge ratio; community size bound \\
-\bottomrule
-\end{tabularx}}
-\label{tab:notation}
-\end{table}
 
 \bibliographystyle{apacite}
 \bibliography{IJSSOL_CSLAP_v1}

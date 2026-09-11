@@ -278,7 +278,10 @@ Algorithm~\ref{alg:heuristic} states in full the five stages that Section~4.1 of
 article summarises and its Figure~2 sketches. Here $|s|$ is the product count of station $s$,
 $\mathrm{cnt}_{ij}$ the co-occurrence count of a product pair, $\mathrm{cnt}_i$ the order
 frequency of product $i$, $\mathrm{load}(s)=\sum_{p\in s}L_p/V_s$ the workload of station $s$,
-and $\zeta_s$, $T_s$, $L_p$ and $V_s$ are as defined in Section~3 of the main article. The four
+and $\zeta_s$, $T_s$, $L_p$ and $V_s$ are as defined in Section~3 of the main article. In Step~5,
+$A(x,C)=\sum_{y\in C}\mathrm{cnt}_{xy}$ measures how strongly product $x$ belongs with what set $C$
+already holds, and the exchange of least broken weight is the one that lowers it least across the
+two stations once each exchanged product is removed from the set it is scored against. The four
 thresholds are restated in the input line so that the procedure can be read on its own. The
 ratio test in Step~1 normalises by the \emph{larger} of the two endpoint frequencies, so it is
 symmetric in $i$ and $j$ and reads as the confidence of the weaker association direction. In
@@ -355,6 +358,58 @@ to the fixed-size blocks of the last line.
 This section states in full the computational setup that Section~5.2 of the main article
 summarises, together with the incremental swap evaluation of Section~4.2.3, the stage budgets of
 the price-and-complete drive, and the parameters of the two literature baselines.
+
+\subsection{Operators of the price-and-complete drive}\label{sup:cgops}
+Section~4.2.3 of the main article describes the four operators of its Algorithm~1 in words. This
+subsection gives the rule each one applies, with $\Pi(s)$ the products a layout $\Pi$ places at
+station $s$, $\sigma_p$ and $\mu$ the duals of the covering and cardinality rows, and $B$ the time
+cap.
+
+\textsc{Descend} minimises the penalised visit count
+\[
+\Psi(\Pi)=\sum_{u \in U} w_u\,\bigl\lvert\{\,s \in S : \Pi(s) \cap u \neq \emptyset\,\}\bigr\rvert
+\;+\; \rho \sum_{s \in S} \max\bigl(0,\ \mathrm{load}(s) - T_s\bigr),
+\qquad \rho=\sum_{u\in U} w_u,
+\]
+the visits counted over the distinct multi-item supports plus $\rho$ times the total workload
+excess, so that no exchange can lower $\Psi$ by trading feasibility for visits. It exchanges two
+products held at different stations, which leaves every station's product count unchanged, and
+accepts the first exchange that lowers $\Psi$. Each sweep visits the catalogue in a fresh random
+order; a product is paired with every later product when the catalogue holds at most 300, and with
+48 partners drawn at random beyond that. The sweep restarts from the improved layout after each
+accepted exchange, and the descent stops when a full sweep improves nothing or its budget expires,
+$\min(15\,\mathrm{s},\,0.08B)$ on the warm start and $\min(2\,\mathrm{s},\,0.02B)$ on each
+completion inside the generation loop. Section~\ref{sup:swapeval} gives the incremental evaluation
+that makes one exchange cheap to score.
+
+\textsc{GreedyPrice} returns one bundle per master solve. Its candidates are the products of
+strictly positive dual price, ordered in two ways, by decreasing $\sigma_p$ and by decreasing
+$\sigma_p$ per unit of workload $L_p/V$. Along each ordering it extends a bundle while the slot and
+line limits hold, tracking the exact reduced cost after every addition, and keeps the prefix of
+least reduced cost; the better of the two prefixes is returned, and nothing is returned when
+neither is negative.
+
+\textsc{ExactPrice} solves the pricing subproblem of Section~4.2.2 of the main article as an
+integer programme under a per-call time limit. It returns the bundles found, the solver's dual
+bound $\mathrm{rc}_{\mathrm{lb}}$, which remains valid when the call is truncated, and a flag
+recording whether the call reached proven optimality.
+
+\textsc{Complete} extends a priced bundle to a full layout. It takes the remaining products in
+decreasing $L_p$ and gives each to the station that admits it under both caps and whose products
+already touch the greatest weight of supports containing it, ties going to the lowest-indexed
+station. A product no station admits under the workload cap goes to the least loaded station,
+which can leave the completion infeasible; the gate of Stage~2 then discards it.
+
+The warm start of Stage~1 seeds the pool with the LPT partition and 20 mutated variants of it.
+Each variant displaces a random 5 to 10\% of the product-to-station assignments, reinserts the
+displaced products in random order at the first station of a random permutation that admits them
+under both caps, and drops any product no station admits, so no infeasible column enters the pool.
+
+The pricing model is built once per instance: its constraint matrix does not depend on the duals,
+so each call rewrites only the objective coefficients of the $a_p$ variables and, on the
+station-indexed master, the two resource limits. The build costs about 21 seconds on a 2,000-SKU
+instance; the solves it serves dominate, and the number of pricing iterations reached inside the
+cap is what limits the method.
 
 \subsection{Incremental evaluation of the swap descent}\label{sup:swapeval}
 The descent of Section~4.2.3 of the main article keeps a support-count matrix
@@ -509,6 +564,20 @@ $\mathrm{rc}_{\min}$, only weakens the inequality, and taking $\min(0,\cdot)$ le
 $z_{\mathrm{RMP}}$ once the master has priced out. Because the covering rows relax the partition
 and the partition model reproduces the visit count exactly, the chain
 $\mathrm{LB}\le z_{\mathrm{LP}}\le z_{\mathrm{IP}}\le$ the optimal visit count holds.
+
+Stated in the form the main article reports, the bound is
+\[
+\mathrm{LB} = z_{\mathrm{RMP}} + |S|\cdot \min\bigl(0,\ \mathrm{rc}_{\mathrm{lb}}\bigr)
+\]
+on the aggregated master and
+\[
+\mathrm{LB} = z_{\mathrm{RMP}} + \sum_{s \in S} \min\bigl(0,\ \mathrm{rc}^{\mathrm{lb}}_s\bigr)
+\]
+on the station-indexed one, the same argument being applied to each convexity row in turn. Within
+the caps of the benchmark the bound is informative only at 50 SKUs, where the mean bound of 3,312
+exceeds the trivial floor of one visit per order by 63\% yet sits well below the mean of 7,590
+visits found; from 500 SKUs upward it is vacuous, for the reason Section~\ref{sup:cgrecord}
+records.
 
 Three conditions make the argument valid and the implementation meets all three. Pricing is solved
 as an exact integer programme, so its dual bound holds even when a call is truncated. The

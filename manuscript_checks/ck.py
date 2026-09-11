@@ -30,6 +30,7 @@ Every check prints PASS/FAIL lines and returns a nonzero exit on any FAIL.
 No check may invoke pdflatex or biber: no LaTeX engine exists on this machine.
 """
 from __future__ import print_function
+import collections
 import io
 import json
 import os
@@ -425,6 +426,29 @@ def numeric_index(text):
     return idx
 
 
+def sanctioned_values():
+    """Values whose movement a recorded re-run explains.
+
+    baseline/ is never refreshed -- that is what makes unintended drift
+    detectable -- so a legitimate re-run is declared here instead, value by
+    value with a reason. A changed context passes as a note only when every
+    value that moved in it is declared; anything else still fails.
+    """
+    path = os.path.join(WORK, "allowed_value_changes.tsv")
+    vals = set()
+    if not os.path.exists(path):
+        return vals
+    for line in read(path).splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        for cell in s.split("\t")[:2]:
+            cell = cell.strip()
+            if cell:
+                vals.add(cell)
+    return vals
+
+
 def t4():
     print("[T4] numeric invariance")
     for cur_path, base_name in ((MAIN, "IJSSOL_CSLAP_v1.tex"),
@@ -441,9 +465,26 @@ def t4():
                 changed.append((k, a[k], b[k]))
         removed = [k for k in a if k not in b]
         added = [k for k in b if k not in a]
-        if changed:
-            for (k, av, bv) in changed[:25]:
+        allowed = sanctioned_values()
+        # A context key is the 40 characters either side with digits stripped,
+        # so editing a table row can merge two rows onto one key and make an
+        # untouched value look like it moved. A value whose total count in the
+        # file is unchanged did not change; it relocated.
+        base_tally = collections.Counter(NUM.findall(strip_comments(read(base_path))))
+        cur_tally = collections.Counter(NUM.findall(strip_comments(read(cur_path))))
+        unexplained = []
+        for (k, av, bv) in changed:
+            moved = {v for v in set(av) ^ set(bv)
+                     if base_tally[v] != cur_tally[v]}
+            if not moved or moved <= allowed:
+                continue
+            unexplained.append((k, av, bv))
+        if unexplained:
+            for (k, av, bv) in unexplained[:25]:
                 bad("T4", "value changed %s -> %s  in ...%s..." % (av, bv, k[:70]))
+        elif changed:
+            ok("T4", "%s: %d changed contexts, every moved value declared in "
+               "allowed_value_changes.tsv" % (base_name, len(changed)))
         else:
             ok("T4", "%s: no numeric literal changed in a surviving context" % base_name)
         note("T4", "%s: %d numeric contexts removed, %d added (expected where text moved)"
@@ -469,6 +510,34 @@ def abstract_words():
     return len([w for w in a.split() if re.search(r"[A-Za-z0-9]", w)])
 
 
+def _plain_words(s):
+    s = re.sub(r"\\[a-zA-Z@]+\*?", " ", s)
+    s = re.sub(r"[{}$&\\\[\]~^_]", " ", s)
+    return len([w for w in s.split() if re.search(r"[A-Za-z0-9]", w)])
+
+
+def _float_words(path):
+    r"""Words the journal counts but texcount's body total omits.
+
+    IJSSOL counts 12,000 "including all manuscript elements", and desk-rejects
+    for length. texcount's "words in text" excludes the body of every tabular
+    environment, and it cannot see \tbl{} / \tabnote{}, which are interact.cls
+    macros rather than \caption{}. On this manuscript those omissions are worth
+    about 1,400 words, so counting only the body total reports spare capacity
+    that does not exist.
+    """
+    t = re.sub(r"(?<!\\)%.*", "", read(path))
+    total = 0
+    for _name, body in re.findall(
+            r"\\begin\{(tabular[*x]?)\}(.*?)\\end\{tabular[*x]?\}", t, re.S):
+        total += _plain_words(body)
+    for line in t.splitlines():
+        s = line.strip()
+        if s.startswith("\\tabnote{") or s.startswith("\\tbl{"):
+            total += _plain_words(line)
+    return total
+
+
 def t5():
     print("[T5] word budget")
     aw = abstract_words()
@@ -480,24 +549,37 @@ def t5():
         ok("T5", "abstract %d words (limit %d, %d spare)"
            % (aw, ABSTRACT_LIMIT, ABSTRACT_LIMIT - aw))
 
-    total = None
+    parts = None
     if os.path.exists(TEXCOUNT):
         try:
-            out = subprocess.check_output([TEXCOUNT, "-total", "-1", MAIN],
+            out = subprocess.check_output([TEXCOUNT, "-sub=none", MAIN],
                                           stderr=subprocess.STDOUT)
-            total = int(out.decode("utf-8", "replace").strip().split("+")[0].split()[0])
+            txt = out.decode("utf-8", "replace")
+
+            def grab(label):
+                m = re.search(label + r"\s*:\s*(\d+)", txt)
+                return int(m.group(1)) if m else 0
+
+            parts = (grab("Words in text"), grab("Words in headers"),
+                     grab(r"Words outside text \(captions, etc\.\)"))
         except Exception as e:  # noqa
             note("T5", "texcount failed: %s" % e)
-    if total is None:
+    if parts is None:
         note("T5", "texcount unavailable; body count skipped")
         return
+    body, heads, caps = parts
+    floats = _float_words(MAIN)
     ncites = len(set(re.findall(r"@\w+\{([^,]+),", read(BIB))))
-    est = total + ncites * BIB_WORDS_PER_ENTRY + 70
+    bib = ncites * BIB_WORDS_PER_ENTRY
+    est = body + heads + caps + floats + bib + 70
+    detail = ("text %d + headers %d + captions %d + tables %d + refs ~%d + tikz ~70"
+              % (body, heads, caps, floats, bib))
     if est > WORD_CEILING:
-        bad("T5", "estimated submission count %d exceeds %d" % (est, WORD_CEILING))
+        bad("T5", "submission count ~%d exceeds %d by %d  [%s]"
+            % (est, WORD_CEILING, est - WORD_CEILING, detail))
     else:
-        ok("T5", "texcount %d + refs ~%d + tikz ~70 = ~%d (ceiling %d, %d spare)"
-           % (total, ncites * BIB_WORDS_PER_ENTRY, est, WORD_CEILING, WORD_CEILING - est))
+        ok("T5", "%s = ~%d (ceiling %d, %d spare)"
+           % (detail, est, WORD_CEILING, WORD_CEILING - est))
 
 
 # --------------------------------------------------------------------------
@@ -1035,11 +1117,84 @@ def t13():
                % (name, lab, len(new)))
 
 
+# --------------------------------------------------------------------------
+# T14 -- first-use notation audit
+# --------------------------------------------------------------------------
+#
+# The governing rule from the pre-submission review: a reviewer must be able to
+# understand and evaluate every headline contribution from the main article
+# alone. A symbol defined only in the supplement fails that, and so does a
+# symbol given a formula but no meaning. sup:notation asserts that every symbol
+# is defined at its first use in the main article; this is what makes that
+# assertion checkable rather than aspirational.
+#
+# (label, first-use pattern, definition pattern)
+NOTATION = [
+    ("cnt_xy", r"\\mathrm\{cnt\}",
+     r"\\mathrm\{cnt\}_\{xy\}\$ for the number of orders containing both"),
+    ("load(s)", r"\\mathrm\{load\}",
+     r"\\mathrm\{load\}\(s\)\s*=\s*\\sum"),
+    ("A(x,C)", r"\bA\(",
+     r"A\(x,C\)\s*=\s*\\sum_\{y\\in C\}"),
+    ("z_LP", r"z_\{\\mathrm\{LP\}\}",
+     r"the value of the linear master over every feasible bundle"),
+    ("Q^g / Q^e / opt", r"Q\^\{g\}",
+     r"writes \$Q\^\{g\}\$ and \$Q\^\{e\}\$ for the bundles"),
+    ("LPT", r"\bLPT\b",
+     r"longest-processing-time \(LPT\)"),
+    # Algorithm 1 defines rho with \gets, the prose with =; either counts.
+    ("rho", r"\\rho",
+     r"\\rho\s*(?:\\gets|=)\s*\\sum_?\{?u\s*\\?i?n?\s*\\?i?n? ?U\}?\s*w_u"),
+]
+
+
+def t14():
+    print("[T14] first-use notation audit")
+    txt = strip_comments(read(MAIN))
+    pars = list(paragraphs(txt))
+    offs = []
+    pos = 0
+    for (ln, body) in pars:
+        i = txt.find(body, pos)
+        offs.append(i if i >= 0 else pos)
+        pos = offs[-1] + len(body)
+
+    def par_of(off):
+        k = 0
+        for j, o in enumerate(offs):
+            if o <= off:
+                k = j
+            else:
+                break
+        return k
+
+    clean = 0
+    for (label, use_re, def_re) in NOTATION:
+        um = re.search(use_re, txt)
+        if not um:
+            note("T14", "%s: never used in the main article" % label)
+            continue
+        dm = re.search(def_re, txt)
+        if not dm:
+            bad("T14", "%s used at line %d but never defined in the main article"
+                % (label, txt[:um.start()].count("\n") + 1))
+            continue
+        up, dp = par_of(um.start()), par_of(dm.start())
+        if dp > up:
+            bad("T14", "%s used in paragraph at line %d, defined only later at line %d"
+                % (label, pars[up][0], pars[dp][0]))
+        else:
+            clean += 1
+    if clean == len(NOTATION):
+        ok("T14", "all %d tracked symbols defined at or before first use" % clean)
+
+
 CHECKS = dict(t0=t0, t1=t1, t2=t2, t3=t3, t4=t4, t5=t5, t6=t6, t7=t7,
-              t8=t8, t9=t9, t10=t10, t11=t11, t12=t12, t13=t13, remap=remap)
+              t8=t8, t9=t9, t10=t10, t11=t11, t12=t12, t13=t13, t14=t14,
+              remap=remap)
 GATE = ["t0", "t1", "t2", "t10", "t12", "t9"]
 ALL = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10",
-       "t11", "t12", "t13"]
+       "t11", "t12", "t13", "t14"]
 
 
 def main():

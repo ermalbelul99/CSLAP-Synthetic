@@ -1,0 +1,37 @@
+# Numeric changes sanctioned by a recorded re-run.
+#
+# The baseline in baseline/ is NEVER refreshed -- that is what makes unintended
+# numeric drift detectable. This file instead records, value by value, which
+# changes a re-run legitimately produced and why. T4 reports a context as a note
+# when every value that moved in it appears here, and still FAILS otherwise.
+#
+# old	new	reason
+#
+# --- Heuristic rows of tab:reliability and the prose citing them.
+# Two code corrections, both re-run on 2026-09-11 over all 29 instances with
+# PYTHONHASHSEED pinned (exp02a_results_afffix/heuristic_benchmark.csv):
+#   (1) Step 3 swept the residue into existing communities by co-occurrence, as
+#       Algorithm S1 already described; the published numbers predate it (code
+#       2026-09-04, results 2026-08-11) and came from the fixed-size-block code.
+#   (2) The swap-repair score double-subtracted cnt_pq, so it did not compute
+#       the broken co-occurrence weight the article claims.
+# Win counts are unchanged (0/0/0/3), so supplement tab:tests needs no edit.
+8{,}142	8{,}084	heuristic mean visits, 50 SKUs
+7{,}278	7{,}268	heuristic interval low, 50 SKUs
+9{,}006	8{,}900	heuristic interval high, 50 SKUs
+7.6	6.9	heuristic gap, 50 SKUs
+78{,}197	78{,}071	heuristic mean visits, 500 SKUs
+70{,}083	70{,}047	heuristic interval low, 500 SKUs
+86{,}311	86{,}095	heuristic interval high, 500 SKUs
+2.5	2.3	heuristic gap, 500 SKUs
+194{,}883	194{,}955	heuristic mean visits, 1000 SKUs
+153{,}380	153{,}736	heuristic interval low, 1000 SKUs
+236{,}386	236{,}174	heuristic interval high, 1000 SKUs
+477{,}626	476{,}809	heuristic mean visits, 2000 SKUs
+408{,}052	407{,}713	heuristic interval low, 2000 SKUs
+555{,}991	555{,}412	heuristic interval high, 2000 SKUs
+1.3	1.5	heuristic gap, 2000 SKUs (and the fig:crossover caption)
+4	1	heuristic mean time, 50 SKUs
+25	9	heuristic mean time, 500 SKUs
+54	24	heuristic mean time, 1000 SKUs
+119	47	heuristic mean time, 2000 SKUs

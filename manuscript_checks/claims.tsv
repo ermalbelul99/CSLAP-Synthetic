@@ -1,0 +1,24 @@
+# IJSSOL claims ledger -- the referent for R-CAV (caveat propagation, check T2).
+# Tab-separated. Eight columns:
+#   claim_id  tier  body_sites  derived_anchors  trigger  required_qualifier  forbidden_phrase  evidence
+#
+# derived_anchors: "~~"-separated VERBATIM anchor regexes, each of which must match exactly one
+#                  paragraph of the main .tex. Anchoring on text rather than a line number keeps
+#                  the ledger valid across every wave that moves lines. body_sites are informational.
+# trigger:         regex saying "this claim is made in that paragraph". Empty = always enforce.
+#                  The qualifier is demanded only where the trigger matches, so dropping a claim
+#                  from a site is a legitimate fix; re-adding it unqualified is not.
+# required:        regex that MUST match a triggered derived paragraph.
+# forbidden:       "|"-separated regexes, none of which may appear in a derived paragraph.
+# Tiers: assumed | designed | measured | observed | hypothesised-mechanism | recommended
+claim_id	tier	body_sites	derived_anchors	trigger	required_qualifier	forbidden_phrase	evidence
+C-WLBAL	measured	industrial S6	In automated pick-and-pass warehouses the conveyor	workload|balance	(within|inside|remaining inside)[^.]{0,40}(toleran|cap|budget|limit)	strictly preserv|balance across all	results_industrial_heuristic_per_station.csv
+C-THRU	hypothesised-mechanism	S6,S7,S8	In automated pick-and-pass warehouses the conveyor	throughput	(unmeasured|per unit|discrete-event|assum|planning figure)	throughput is governed|throughput improvement	none -- no queueing model was run
+C-BASE	designed	S5.3	In automated pick-and-pass warehouses the conveyor	metaheuristic|genetic algorithm|simulated annealing	(in-house|our own|one run per cell|one protocol|29 (?:benchmark )?instances)	consistently outperform	supplement sup:hardware
+C-CROSS	observed	S5.3	Mean gap to the set-variable~~We posed the correlated storage	(cross(es|ing)?|overtakes?|leads?) the reference|leads at 2|ranking revers|between 1,000 and 2,000	(three instances|n\s*=\s*3|on this benchmark|rather than a threshold)	should therefore follow the catalogue size	3 instances only at 2000 SKUs
+C-REPAIR	hypothesised-mechanism	S5.3,S6	We posed the correlated storage	7\.8|repair burden	(we attribute|the reading|not instrumented|consistent with)	so the difference lies in|What separates them is not	none -- Hexaly internals not instrumented
+C-TIMEART	designed	S6.2	Bounded re-slotting returns benefit	shortfall|sub-proportion	(exhausted|did not converge|none converged|not measured here|cannot separate)	Nor is the shortfall a time artefact	results_reassignment_ksweep_v2.csv
+C-CADENCE	recommended	S6.1	Run the layout as a lifecycle	cadence|8 to 10 weeks|re-optimis	(did not vary|we did not test|not tested|windows of this length|starting point)	re-optimising at that cadence keeps it current	none -- cadence never varied
+C-TRAINEVAL	designed	S6.1	All layouts are produced by the set-variable	training window|train	(training and evaluation|both windows|evaluation window)	the only thing that changes	L495 design statement
+C-WLBUDGET	designed	S6	Here the workload row	legacy load	(complete|its own) legacy load	movable products carried under the legacy	results_industrial_heuristic_per_station.csv
+C-NPHARD	assumed	S3.2	Storage assignment under hard synchronisation	NP-hard|polynomial|hard	(structure of|carries the structure|we expect|claim no reduction)	is NP-hard	none -- no reduction given

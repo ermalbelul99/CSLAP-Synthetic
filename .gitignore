@@ -38,3 +38,6 @@ graphify-out/
 
 # ---- Scratch run output ----
 *_backup/
+
+# generated check reports
+manuscript_checks/out/

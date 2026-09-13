@@ -46,6 +46,7 @@ Outputs: ``results.csv``, ``calibration.csv``, ``per_station.csv``, layout and
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import os
@@ -441,10 +442,14 @@ def main() -> None:
                         help="HiGHS feasibility-probe seconds when the "
                              "constructive pipeline finds no layout")
     parser.add_argument("--backend", type=str, default="cplex",
-                        choices=["highs", "cplex"],
+                        choices=["highs", "cplex", "hexaly"],
                         help="MILP backend for the placement solve/polish. "
                              "'cplex' (docplex) is exact -> removes the HiGHS "
-                             "symmetry-stall gap; everything else is identical.")
+                             "symmetry-stall gap; everything else is identical. "
+                             "'hexaly' additionally re-encodes the workload as "
+                             "one row per (station, training day) using that "
+                             "day's actual lines (A1), instead of the mean-day "
+                             "row the other two backends use.")
     parser.add_argument("--out", type=str,
                         default=os.path.join(RESULTS, "experiment"))
     parser.add_argument("--lhat-mode", type=str, default="auto",
@@ -452,6 +457,33 @@ def main() -> None:
                         help="Deviation calibration. 'auto' reads "
                              "fold_meta.json and uses real days on daily "
                              "folds, order-rank blocks otherwise.")
+    parser.add_argument("--share-z", type=float, default=None,
+                        help="Hexaly backend only: use the volume-normalised "
+                             "share band W_s(d) <= (mu_s + z*sigma_s)*L(d) "
+                             "instead of a frozen per-station ceiling. mu_s "
+                             "and sigma_s are the mean and sd of station s's "
+                             "SHARE of daily lines, fitted on TRAINING days "
+                             "under the incumbent. Both sides scale with the "
+                             "day's volume, so warehouse-wide drift is "
+                             "absorbed and Gamma insures only the "
+                             "idiosyncratic part. Defensible window on this "
+                             "site is z in [2.7, 6.07]; see GATES_z_contract.md.")
+    parser.add_argument("--day-coverage", type=str, default=None,
+                        choices=["p90", "p95", "max"],
+                        help="Hexaly backend only: share of TRAINING DAYS the "
+                             "layout must keep under the ceiling. 'max' "
+                             "requires every day; 'p95'/'p90' admit the worst "
+                             "5%%/10%% of days. Use with --tcap-quantile max: "
+                             "holding T_s at a sub-max quantile while "
+                             "requiring every day to fit is provably "
+                             "infeasible (sum_s T_s*V_s < busiest day), so the "
+                             "A2 sweep is expressed as coverage instead.")
+    parser.add_argument("--solver-seed", type=int, default=None,
+                        help="Hexaly backend only: fix the local-search seed. "
+                             "Varying it across otherwise identical runs "
+                             "measures the run-to-run spread of a single arm, "
+                             "which is what separates a model effect from "
+                             "where the search happened to stop.")
     parser.add_argument("--tcap-quantile", type=str, default=None,
                         choices=["p90", "p95", "max"],
                         help="Daily folds only: re-derive T_s from "
@@ -460,6 +492,19 @@ def main() -> None:
                              "with.")
     args = parser.parse_args()
 
+    # --share-z only reaches the model through the Hexaly per-day path. On any
+    # other backend the gamma arms would silently solve the LEGACY
+    # revealed-peak ceiling, persist rows that look identical to share-contract
+    # rows (results.csv records neither z nor the contract), and only then fail
+    # on the beta arm. Refuse the combination outright.
+    if args.share_z is not None and args.backend != "hexaly":
+        raise SystemExit(
+            f"--share-z is implemented only for --backend hexaly; got "
+            f"--backend {args.backend}. Other backends would silently solve "
+            f"the legacy revealed-peak contract instead.")
+    if args.solver_seed is not None and args.backend != "hexaly":
+        raise SystemExit("--solver-seed applies only to --backend hexaly")
+
     # Backend dispatch: rebinding the solver name routes ALL four solve sites
     # (gamma main/probe, beta main/probe) to CPLEX with zero other changes, so
     # the two backends are paired arm-for-arm on identical inputs.
@@ -467,6 +512,10 @@ def main() -> None:
     if args.backend == "cplex":
         from milp_cplex_robust import run_milp_cplex
         run_milp_highs = run_milp_cplex
+    elif args.backend == "hexaly":
+        from milp_hexaly_robust import run_milp_hexaly
+        run_milp_highs = run_milp_hexaly
+    base_solver = run_milp_highs
     print(f"[run_bs_robust_experiment] backend={args.backend}", flush=True)
 
     folds = [int(f) for f in args.folds.split(",")]
@@ -487,7 +536,19 @@ def main() -> None:
 
     def persist() -> None:
         """Crash-safe incremental persistence (after every arm)."""
-        pd.DataFrame(rows).to_csv(os.path.join(args.out, "results.csv"), index=False)
+        df = pd.DataFrame(rows)
+        # Stamp the contract onto every row. Without this, results.csv records
+        # neither the contract nor its z, so a z=3 layout scored at z=4 (or a
+        # revealed-peak row sitting beside a share-band row) is undetectable.
+        if len(df):
+            df["contract"] = ("share-band(lines)" if args.share_z is not None
+                              else "revealed-peak(time)")
+            df["share_z"] = (float(args.share_z) if args.share_z is not None
+                             else np.nan)
+            df["solver_seed"] = (int(args.solver_seed)
+                                 if args.solver_seed is not None else np.nan)
+            df["backend"] = args.backend
+        df.to_csv(os.path.join(args.out, "results.csv"), index=False)
         pd.DataFrame(cal_rows).to_csv(
             os.path.join(args.out, "calibration.csv"), index=False
         )
@@ -567,6 +628,67 @@ def main() -> None:
         })
         print(f"[fold {f}] c_q90={c_fit:.3f} T_s={t_s:.0f} "
               f"lhat_max={lhat_v[0]:.1f}", flush=True)
+
+        # A1: the Hexaly backend constrains every observed training day, so it
+        # needs that day's realised lines per product. Built here because only
+        # the driver holds the dated train orders.
+        if args.backend == "hexaly":
+            date_col = next((c for c in ("DELIVERY_DATE", "DATE")
+                             if c in tr_orders.columns), None)
+            if date_col is None:
+                raise SystemExit(
+                    f"[fold {f}] hexaly backend needs a date column on "
+                    f"{tr_prefix}_orders.csv; found {list(tr_orders.columns)}")
+            piv = (tr_orders.assign(_P=tr_orders["PRODUCT"].astype(str))
+                   .groupby([date_col, "_P"]).size().unstack(fill_value=0))
+            piv = piv.reindex(columns=[str(p) for p in products], fill_value=0)
+            daily = piv.to_numpy(dtype=float)
+            cov = {"max": 1.0, "p95": 0.95, "p90": 0.90}.get(
+                args.day_coverage or "max", 1.0)
+            allowance = int(math.floor((1.0 - cov) * daily.shape[0] + 1e-9))
+            print(f"[fold {f}] per-day rows: {daily.shape[0]} days x "
+                  f"{len(stations)} stations = "
+                  f"{daily.shape[0] * len(stations)} workload rows; "
+                  f"matrix lines={daily.sum():.0f}; coverage="
+                  f"{args.day_coverage or 'max'} -> at most {allowance} of "
+                  f"{daily.shape[0]} days may breach", flush=True)
+            solver_kw = {"daily_lines": daily, "day_allowance": allowance}
+            if args.solver_seed is not None:
+                solver_kw["seed"] = int(args.solver_seed)
+
+            # Volume-normalised share band (A2 restated). mu and sigma are
+            # fitted on TRAINING days under the INCUMBENT and then frozen; only
+            # L(d) varies. Both sides of the row scale with L(d), so
+            # warehouse-wide drift is absorbed and Gamma is left insuring the
+            # idiosyncratic part -- the only form under which A4 can hold.
+            if args.share_z is not None:
+                from share_contract import (allowance_lines, check_identities,
+                                            fit_share_band,
+                                            onehot_from_assignment)
+                if not warm_start:
+                    raise SystemExit(
+                        f"[fold {f}] --share-z needs the incumbent layout to "
+                        f"fit mu and sigma, but no warm start was built")
+                oh0 = onehot_from_assignment(
+                    warm_start, products, [str(s["STATION_ID"])
+                                           for s in stations])
+                mu_s, sd_s, shares = fit_share_band(daily, oh0)
+                check_identities(mu_s, sd_s, args.share_z, shares)
+                rhs = allowance_lines(mu_s, sd_s, args.share_z,
+                                      daily.sum(axis=1), beta=1.0)
+                inc_over = int(((daily @ oh0) > rhs + 1e-9).any(axis=1).sum())
+                print(f"[fold {f}] share band z={args.share_z:g}: "
+                      f"sum(mu)={mu_s.sum():.6f} sum(sigma)={sd_s.sum():.4f} "
+                      f"total permission={1 + args.share_z * sd_s.sum():.3f}x; "
+                      f"INCUMBENT breaches {inc_over}/{daily.shape[0]} train "
+                      f"days at this z (reference line, not a target)",
+                      flush=True)
+                solver_kw["rhs_lines"] = rhs
+                share_band = (mu_s, sd_s)   # kept for the beta arm (Phase 3)
+
+            run_milp_highs = functools.partial(base_solver, **solver_kw)
+        else:
+            run_milp_highs = base_solver
 
         base_v_tr: Optional[float] = None
         base_v_te: Optional[float] = None
@@ -661,13 +783,40 @@ def main() -> None:
         speed0 = float(stations[0]["SPEED"])
         n_st = len(stations)
         for beta in betas:
-            t_beta = math.ceil(beta * total_lbar / (speed0 * n_st))
-            stations_beta = [dict(s, TIME_CAPACITY=t_beta) for s in stations]
+            # Under the share band, beta tightens exactly the object Gamma
+            # protects: the allowance becomes (mu_s + z*sigma_s)/beta. Gamma
+            # and beta then act on the same quantity, which is what makes A4
+            # ("complements, not rivals") answerable at all.
+            #
+            # The legacy formula below is kept only for the non-share path. It
+            # rebuilt ONE flat ceiling from stations[0]["SPEED"] for every
+            # station -- a homogeneous-speed formula on a site whose speeds
+            # span 1677x -- giving a flat 13 against revealed ceilings spanning
+            # 0.015 to 87, and it ignored --tcap-quantile entirely.
+            beta_kw = {}
+            if args.share_z is not None:
+                mu_s, sd_s = share_band
+                rhs_b = allowance_lines(mu_s, sd_s, args.share_z,
+                                        daily.sum(axis=1), beta=beta)
+                beta_kw["rhs_lines"] = rhs_b
+                stations_beta = stations
+                t_beta = float((mu_s + args.share_z * sd_s).sum() / beta)
+                inc_b = int(((daily @ oh0) > rhs_b + 1e-9).any(axis=1).sum())
+                print(f"[fold {f}] beta={beta}: band tightened to "
+                      f"{t_beta:.4f}x total permission "
+                      f"(vs {1 + args.share_z * sd_s.sum():.4f}x at beta=1); "
+                      f"INCUMBENT breaches {inc_b}/{daily.shape[0]} train days",
+                      flush=True)
+            else:
+                t_beta = math.ceil(beta * total_lbar / (speed0 * n_st))
+                stations_beta = [dict(s, TIME_CAPACITY=t_beta)
+                                 for s in stations]
             assignment, obj, elapsed, _uv, _mu, cb, wb, bound = run_milp_highs(
                 tr_op, stations_beta, products, lbar,
                 lhat=None, gamma=0.0,
                 time_limit=args.time, top_n=args.topn, mip_rel_gap=0.005,
                 ls_time=args.ls_time, start_assignment=warm_start, verbose=True,
+                **beta_kw,
             )
             if assignment is None and args.time <= 0:
                 print(f"[fold {f} beta={beta}] greedy failed -> HiGHS "
@@ -676,7 +825,7 @@ def main() -> None:
                     tr_op, stations_beta, products, lbar,
                     lhat=None, gamma=0.0,
                     time_limit=180, top_n=args.topn, mip_rel_gap=0.005,
-                    ls_time=0.0, verbose=True,
+                    ls_time=0.0, verbose=True, **beta_kw,
                 )
             row = {
                 "fold": f, "arm": f"tight{beta}", "gamma": np.nan,

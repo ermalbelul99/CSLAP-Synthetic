@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "C:\Users\ebelul\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "C:\Users\ebelul\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic\Baselines\horizon_robustness\runner.py", line 683, in <module>
+    main()
+  File "C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic\Baselines\horizon_robustness\runner.py", line 674, in main
+    _write_new(Path(args["result"]), run(request["manifest"], **request["options"]))
+  File "C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic\Baselines\horizon_robustness\runner.py", line 574, in run
+    native, reused = _terminal_solve(root_out, problem, case, manifest, attempt_id, retry_reason, remaining, executor)
+  File "C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic\Baselines\horizon_robustness\runner.py", line 402, in _terminal_solve
+    _write_new(base / "request.json", request)
+  File "C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic\Baselines\horizon_robustness\runner.py", line 50, in _write_new
+    with temporary.open("xb") as handle:
+  File "C:\Users\ebelul\AppData\Local\Programs\Python\Python310\lib\pathlib.py", line 1119, in open
+    return self._accessor.open(self, mode, buffering, encoding, errors,
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\ermal\\CSLAP_Full_Project\\CSLAP-Synthetic\\reports\\horizon_robustness_results\\campaigns\\twosided_screen_d02_20260912\\solves\\8e1badad721d67a0b2262103ae06f8f82da8d7f8d8e744fcb8cab32f6b69c3e5\\attempts\\primary\\request.json.partial-a64803da8f594d78b11c0812b63f61a4'

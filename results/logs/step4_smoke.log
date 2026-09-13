@@ -1,0 +1,15 @@
+[run_bs_robust_experiment] backend=cplex
+[fold 0] T_s re-derived at q=max (A2): median 3.9
+[fold 0] warm start: 2000 products seeded
+[fold 0] lhat mode=daily
+[fold 0] c_q90=4.552 T_s=4 lhat_max=96.4
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=17327 start_feasible=True warm=187.4s build=6.4s
+[milp_cplex_robust] gamma=0 obj=17327 bound=0.0 gap=100.00% status='time limit exceeded' elapsed=314.9s cap_broken=0 wl_broken=0
+[fold 0 gamma=0] V_tr=381863 V_te=67607 PoR=0.00% G=0.00% viol_norm=24 max_ratio=44.30 robust_ok=True (315s)
+[milp_cplex_robust] gamma=1 vars~120000 start_obj=17410 start_feasible=True warm=188.8s build=8.8s
+[milp_cplex_robust] gamma=1 obj=17410 bound=0.0 gap=100.00% status='time limit exceeded' elapsed=318.8s cap_broken=0 wl_broken=0
+[fold 0 gamma=1] V_tr=383033 V_te=67931 PoR=0.31% G=-0.48% viol_norm=24 max_ratio=40.29 robust_ok=True (319s)
+[milp_cplex_robust] gamma=0 vars~120000 start_obj=inf start_feasible=False warm=100.1s build=6.7s
+[milp_cplex_robust] gamma=0 NO incumbent and greedy infeasible (status='time limit exceeded, no integer solution') elapsed=227.9s
+[fold 0 beta=1.02] INFEASIBLE
+[run_bs_robust_experiment] DONE: 3 rows -> results/daily_smoke

@@ -26,6 +26,20 @@ venv/
 *.toc
 *.log
 
+# Experiment console logs are EVIDENCE, not build noise. They are excluded by
+# the LaTeX `*.log` rule above, which once cost a full run's logs: `git stash
+# --include-untracked` skips ignored files, so an uncommitted results/logs/ was
+# deleted with its worktree. Keep them.
+!results/logs/
+!results/logs/**/*.log
+!results/**/logs/*.log
+
+# ---- Derived folds (~1 GB, regenerable in ~10 min from the two adapters) ----
+# python Baselines/berner_daily_adapter.py --out data/derived/berner_daily_folds --top-n 2000 --tcap-quantile max
+# python Baselines/exp02a_daily_adapter.py --out data/derived/exp02a_daily_folds --sizes 500 1000 --drift 0.0  --suffix _d00
+# python Baselines/exp02a_daily_adapter.py --out data/derived/exp02a_daily_folds --sizes 500 1000 --drift 0.30 --suffix _d30
+data/derived/
+
 # ---- Capacity-sweep instances (557 MB, kept on disk, not in git) ----
 # EXP-02c geometry study, withdrawn from the manuscript (changelog B4ter).
 # Regenerate exactly: python Baselines/make_capsweep_instances.py  (seeds 2001-2010)
@@ -41,3 +55,34 @@ graphify-out/
 
 # generated check reports
 manuscript_checks/out/
+
+# ---- Campaign supervisor logs are EVIDENCE (see the results/logs/ note above) ----
+# The `*.log` rule swallowed all seven horizon-robustness supervisor logs: the
+# negations above are rooted at `results/`, and this campaign family writes to
+# `reports/<study>_results/logs/`. Same trap, different directory. Keep them.
+!reports/**/logs/*.log
+
+# ---- Campaign runner byproducts (1.26 GB, not in git) ----
+# Two classes, both recoverable, excluded after checking the content:
+#   supervision/*/terminal.json  - `["cases"]` is byte-identical to result.json
+#   supervision/*/result.json    - the aggregate of the campaign's cases/*.json
+# cases/ is the canonical per-case record and IS committed, so nothing unique
+# is dropped. supervision/{request,child}.json and stdout/stderr stay tracked:
+# tools/horizon_robustness/verify_campaign.py reads request.json (A19 check).
+**/campaigns/*/supervision/*/result.json
+**/campaigns/*/supervision/*/terminal.json
+# solves/ holds solver INPUT (input_hash + options + problem), rebuilt by
+# Baselines/horizon_robustness/runner.py from the committed manifest.json:
+#   python -m Baselines.horizon_robustness.runner run <campaign>/manifest.json \
+#       --approved-manifest-hash <manifest_hash> \
+#       --solver-budget-seconds <quoted> --wall-cutoff-seconds <cutoff>
+# The hash and both budgets are recorded in each campaigns/*/invocations/*.json.
+**/campaigns/*/solves/
+
+# ---- Campaign runtime mutex state (meaningless outside a live run) ----
+**/campaigns/*/.campaign.lock
+**/campaigns/*/.supervisor-owner/
+
+# ---- Stray PowerShell session transcripts ----
+20260908/
+PowerShell_transcript.*.txt

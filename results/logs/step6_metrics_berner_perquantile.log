@@ -1,0 +1,83 @@
+
+=== training quantile max ===
+[daily_metrics] 120 rows -> C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\metrics_train_max.csv
+
+TEST-window summary (all folds pooled)
+      arm tcap_quantile  days_viol  days    worst  mean_ratio
+       g0           max         10    18 2.241422    1.099135
+       g0           p90         16    18 2.394292    1.367740
+       g0           p95         15    18 2.285679    1.288954
+       g1           max         10    18 2.234987    1.073251
+       g1           p90         14    18 2.756400    1.372089
+       g1           p95         14    18 2.597678    1.285097
+       g2           max         11    18 2.198529    1.076428
+       g2           p90         14    18 2.348475    1.326721
+       g2           p95         14    18 2.241940    1.253511
+       g4           max         10    18 2.149510    1.035072
+       g4           p90         14    18 2.296112    1.280446
+       g4           p95         14    18 2.191952    1.213492
+incumbent           max          5    18 1.439665    0.799799
+incumbent           p90         10    18 1.570572    1.010646
+incumbent           p95          6    18 1.507852    0.938792
+
+=== training quantile p95 ===
+[daily_metrics] 120 rows -> C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\metrics_train_p95.csv
+
+TEST-window summary (all folds pooled)
+      arm tcap_quantile  days_viol  days    worst  mean_ratio
+       g0           max          8    18 2.203431    1.041159
+       g0           p90         14    18 2.353711    1.292165
+       g0           p95         12    18 2.246938    1.192428
+       g1           max          8    18 2.139706    0.985138
+       g1           p90         13    18 2.285639    1.196095
+       g1           p95         11    18 2.181955    1.101838
+       g2           max          8    18 2.147059    0.988610
+       g2           p90         13    18 2.293494    1.233268
+       g2           p95         11    18 2.189453    1.130266
+       g4           max          7    18 1.842037    0.944255
+       g4           p90         12    18 2.271776    1.192918
+       g4           p95         10    18 2.140960    1.101422
+incumbent           max          5    18 1.439665    0.799799
+incumbent           p90         10    18 1.570572    1.010646
+incumbent           p95          6    18 1.507852    0.938792
+
+=== training quantile p90 ===
+[daily_metrics] 102 rows -> C:\Users\ebelul\AppData\Local\Temp\2\claude\c--ermal-CSLAP-Full-Project-CSLAP-Synthetic\6f5eb64b-99e3-4daa-9b47-d254dae08cd2\scratchpad\metrics_train_p90.csv
+
+TEST-window summary (all folds pooled)
+      arm tcap_quantile  days_viol  days    worst  mean_ratio
+       g0           max          7    18 1.916449    0.944041
+       g0           p90         11    18 2.363549    1.161580
+       g0           p95          9    18 2.227449    1.092868
+       g1           max          6    18 2.172794    0.946387
+       g1           p90         10    18 2.320984    1.141469
+       g1           p95         10    18 2.215696    1.085569
+       g2           max          5    18 1.814621    0.927791
+       g2           p90         12    18 2.237965    1.132448
+       g2           p95         10    18 2.109096    1.063169
+       g4           max          4     5 1.919118    1.392845
+       g4           p90          5     5 2.050007    1.523604
+       g4           p95          5     5 1.957011    1.461476
+incumbent           max          5    18 1.439665    0.799799
+incumbent           p90         10    18 1.570572    1.010646
+incumbent           p95          6    18 1.507852    0.938792
+
+[rescore] wrote 342 rows -> C:\ermal\CSLAP_Full_Project\CSLAP-Synthetic-robustness\results\daily_metrics_berner.csv
+[rescore] arms per train quantile:
+train_tcap_quantile  arm      
+max                  g0           24
+                     g1           24
+                     g2           24
+                     g4           24
+                     incumbent    24
+p90                  g0           24
+                     g1           24
+                     g2           24
+                     g4            6
+                     incumbent    24
+p95                  g0           24
+                     g1           24
+                     g2           24
+                     g4           24
+                     incumbent    24
+dtype: int64

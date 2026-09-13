@@ -1,0 +1,13 @@
+# Solver interface for the approved implementation
+
+Both new modules expose `solve(problem, *, seed=11, threads=1, time_limit=120, solve_mode="visits", warm_start=None, log_output=False) -> SolveResult`. `problem` is immutable `TrainingProblem`; `warm_start` is a complete tuple of station indices, defaulting to the reference when usable. No backend reads raw data or future orders. Bad API inputs fail explicitly with `ContractError`; unavailable/native errors are reported honestly and never as infeasibility proofs.
+
+Implement all four arms and `min_slack` mode. The latter replaces workload ceilings by b_s + eta, eta >= 0, minimizing eta without altering the input delta or future scoring ceilings. Full catalogue storage and frozen locations apply in both modes. Use every weighted support including small/fixed-only orders. Fixed items may be eliminated from binary variables but never from workload/visit expressions or returned layouts. Hexaly uses a whole-catalogue set partition.
+
+Use the exact finite counterpart in the plan. Solver coefficients may use floating point, but returned layouts must pass the independent validator at its stated absolute 1e-8 model tolerance. Record exact-feasibility diagnostics separately. Set native feasibility/integrality tolerances sufficiently tight where supported; invalid returned layouts cannot be reported as accepted feasible. Do not claim exact arithmetic proof from a floating-point solver.
+
+Preserve native statuses in `native_status` and normalized enum status in `status`. A time limit without an incumbent is not infeasibility. Unavailable/nonfinite bounds or gaps are null. Bounds have explicit provenance. A failed post-validation result must have a non-success status and no accepted assignment, with the failure retained in audit. Never hide exceptions, drop supports, clip bad bounds into plausible ones, or reuse secrets from older solver modules.
+
+Record installed solver version, representation, input/model hashes, seed, threads, configured time limit, build/solve seconds, native status, objective, bound and gap. Keep auxiliary implementation facts as string-valued audit entries. Release native resources after extraction. License smoke checks already succeeded with the provided interpreters; no license changes are authorized or needed.
+
+Leaf tests use tiny hand-worked fixtures only, checked against independent enumeration and the already separately verified uncertainty LP. Per-fixture solver caps should normally be 5 seconds; do not run empirical benchmark or industrial optimization during backend development. CPLEX and Hexaly must agree on objective values/status-qualified bounds, not necessarily tied allocations. Preserve all user data, submitted articles, and unrelated work.

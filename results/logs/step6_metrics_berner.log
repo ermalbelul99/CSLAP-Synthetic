@@ -1,0 +1,19 @@
+[daily_metrics] 120 rows -> results/daily_metrics_berner.csv
+
+TEST-window summary (all folds pooled)
+      arm tcap_quantile  days_viol  days    worst  mean_ratio
+       g0           max          9    18 2.241422    1.034608
+       g0           p90         14    18 2.394292    1.273146
+       g0           p95         12    18 2.285679    1.179531
+       g1           max          8    18 2.234987    0.990887
+       g1           p90         13    18 2.756400    1.249343
+       g1           p95         11    18 2.597678    1.145884
+       g2           max          8    18 2.147059    0.988610
+       g2           p90         13    18 2.293494    1.233268
+       g2           p95         11    18 2.189453    1.130266
+       g4           max          7    18 1.842037    0.944255
+       g4           p90         12    18 2.271776    1.192918
+       g4           p95         10    18 2.140960    1.101422
+incumbent           max          5    18 1.439665    0.799799
+incumbent           p90         10    18 1.570572    1.010646
+incumbent           p95          6    18 1.507852    0.938792

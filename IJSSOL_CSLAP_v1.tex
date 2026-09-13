@@ -491,86 +491,71 @@ Every method is run on all 29 instances of Table~\ref{tab:families}, each genera
 
 The set-variable formulation is the per-instance reference because it is the form deployed on the industrial site (Section~\ref{sec:industrial}). Every method returned a feasible layout on all 29 instances, holding both the slot capacity and the workload cap, so the comparison below is one of quality and time alone.
 
-Instances differ by two orders of magnitude in difficulty, so a comparison of averages would confound the difference between methods with the difference between instances. We therefore compare them instance by instance under the two-sided exact Wilcoxon signed-rank test \citep{wilcoxon1945}, the standard choice across benchmark instances \citep{demsar2006}; the Gap column of Table~\ref{tab:reliability} carries the size of a difference and the test how reliably it recurs, with the full test table in Supplementary Section~S3. Reporting follows the conventions for computational experiments with heuristics \citep{barr1995designing, hooker1995testing}.
+Instances differ by two orders of magnitude in difficulty, so a comparison of averages would confound the difference between methods with the difference between instances. We therefore compare them instance by instance under the two-sided exact Wilcoxon signed-rank test \citep{wilcoxon1945}, the standard choice across benchmark instances \citep{demsar2006}, read at the 5\% level. Tests are reported without correction for multiple comparisons, and Supplementary Section~S3 gives the full test table together with the effect of applying one. The Gap column of Table~\ref{tab:reliability} carries the size of a difference and the test how reliably it recurs. Reporting follows the conventions for computational experiments with heuristics \citep{barr1995designing, hooker1995testing}.
 
 
 
 % =====================================================================
 \subsection{Results across the instance distribution}\label{sec:reliability}
 % =====================================================================
-Every method is compared on mean visits, the gap to the reference, running time and workload feasibility at each of the four catalogue sizes (Table~\ref{tab:reliability}).
+Table~\ref{tab:reliability} reports mean visits, the spread across instances, the gap to the reference and running time at each of the four catalogue sizes.
 
 \begin{table}[H]
 \centering
-\tbl{Synthetic benchmark over 29 instances, with the set-variable formulation as the per-instance reference. The lowest-visit method in each block is set in bold and shaded.}
-{\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrcrrr@{}}
+\tbl{Synthetic benchmark over 29 instances, with the set-variable formulation as the per-instance reference.}
+{\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrcrr@{}}
 \toprule
-Method & Mean visits & Interval & Gap vs.\ ref (\%) & Time (s) & WL viol. \\
+Method & Mean visits & Spread & Gap vs.\ ref (\%) & Time (s) \\
 \midrule
 \rowcolor{black}
-\multicolumn{6}{@{}l}{\color{white}\emph{50 SKUs, 5 stations, 2{,}036 mean orders, $n=12$}}\\
-Set-variable formulation & 7{,}555 & [6{,}825, 8{,}285] & (ref) & 120 & 0\% \\
-\rowcolor{green!20}
-Binary MILP & \textbf{7{,}554} & [6{,}823, 8{,}285] & $-0.0$\% & 120 & 0\% \\
-CG & 7{,}590 & [6{,}857, 8{,}322] & $+0.5$\% & 86 & 0\% \\
-Heuristic & 8{,}084 & [7{,}268, 8{,}900] & $+6.9$\% & 1 & 0\% \\
-GA & 7{,}767 & [7{,}022, 8{,}513] & $+2.8$\% & 48 & 0\% \\
-SA-C & 7{,}632 & [6{,}889, 8{,}376] & $+1.0$\% & 54 & 0\% \\
-LPT start & 8{,}857 & [8{,}054, 9{,}661] & $+17.5$\% & $<0.1$ & 0\% \\
+\multicolumn{5}{@{}l}{\color{white}\emph{50 SKUs, 5 stations, 2{,}036 mean orders, $n=12$}}\\
+Set-variable formulation & 7{,}555 & [6{,}825, 8{,}285] & (ref) & 120 \\
+Binary MILP & 7{,}554 & [6{,}823, 8{,}285] & $-0.0$\% & 120 \\
+CG & 7{,}590 & [6{,}857, 8{,}322] & $+0.5$\% & 86 \\
+Heuristic & 8{,}084 & [7{,}268, 8{,}900] & $+6.9$\% & 1 \\
+GA & 7{,}767 & [7{,}022, 8{,}513] & $+2.8$\% & 48 \\
+SA-C & 7{,}632 & [6{,}889, 8{,}376] & $+1.0$\% & 54 \\
+LPT start & 8{,}857 & [8{,}054, 9{,}661] & $+17.5$\% & $<0.1$ \\
 \rowcolor{black}
-\multicolumn{6}{@{}l}{\color{white}\emph{500 SKUs, 5 stations, 20{,}832 mean orders, $n=10$}}\\
-Set-variable formulation & 76{,}330 & [68{,}286, 84{,}373] & (ref) & 300 & 0\% \\
-\rowcolor{green!20}
-Binary MILP & \textbf{75{,}976} & [68{,}054, 83{,}897] & $-0.4$\% & 300 & 0\% \\
-CG & 76{,}681 & [68{,}658, 84{,}704] & $+0.5$\% & 256 & 0\% \\
-Heuristic & 78{,}071 & [70{,}047, 86{,}095] & $+2.3$\% & 9 & 0\% \\
-GA & 85{,}363 & [76{,}202, 94{,}523] & $+11.8$\% & 300 & 0\% \\
-SA-C & 88{,}689 & [79{,}245, 98{,}132] & $+16.2$\% & 300 & 0\% \\
-LPT start & 90{,}177 & [80{,}419, 99{,}936] & $+18.1$\% & $<0.1$ & 0\% \\
+\multicolumn{5}{@{}l}{\color{white}\emph{500 SKUs, 5 stations, 20{,}832 mean orders, $n=10$}}\\
+Set-variable formulation & 76{,}330 & [68{,}286, 84{,}373] & (ref) & 300 \\
+Binary MILP & 75{,}976 & [68{,}054, 83{,}897] & $-0.4$\% & 300 \\
+CG & 76{,}681 & [68{,}658, 84{,}704] & $+0.5$\% & 256 \\
+Heuristic & 78{,}071 & [70{,}047, 86{,}095] & $+2.3$\% & 9 \\
+GA & 85{,}363 & [76{,}202, 94{,}523] & $+11.8$\% & 300 \\
+SA-C & 88{,}689 & [79{,}245, 98{,}132] & $+16.2$\% & 300 \\
+LPT start & 90{,}177 & [80{,}419, 99{,}936] & $+18.1$\% & $<0.1$ \\
 \rowcolor{black}
-\multicolumn{6}{@{}l}{\color{white}\emph{1{,}000 SKUs, 10 stations, 38{,}743 mean orders, $n=4$}}\\
-\rowcolor{green!20}
-Set-variable formulation & \textbf{192{,}276} & [150{,}483, 234{,}068] & (ref) & 600 & 0\% \\
-Binary MILP & 192{,}939 & [150{,}350, 235{,}528] & $+0.3$\% & 600 & 0\% \\
-CG & 192{,}452 & [149{,}959, 234{,}945] & $+0.1$\% & 600 & 0\% \\
-Heuristic & 194{,}955 & [153{,}736, 236{,}174] & $+1.4$\% & 24 & 0\% \\
-GA & 235{,}208 & [186{,}297, 284{,}118] & $+22.4$\% & 600 & 0\% \\
-SA-C & 240{,}693 & [191{,}894, 289{,}492] & $+25.4$\% & 600 & 0\% \\
-LPT start & 245{,}228 & [195{,}489, 294{,}967] & $+27.7$\% & $<0.1$ & 0\% \\
+\multicolumn{5}{@{}l}{\color{white}\emph{1{,}000 SKUs, 10 stations, 38{,}743 mean orders, $n=4$}}\\
+Set-variable formulation & 192{,}276 & [150{,}483, 234{,}068] & (ref) & 600 \\
+Binary MILP & 192{,}939 & [150{,}350, 235{,}528] & $+0.3$\% & 600 \\
+CG & 192{,}452 & [149{,}959, 234{,}945] & $+0.1$\% & 600 \\
+Heuristic & 194{,}955 & [153{,}736, 236{,}174] & $+1.4$\% & 24 \\
+GA & 235{,}208 & [186{,}297, 284{,}118] & $+22.4$\% & 600 \\
+SA-C & 240{,}693 & [191{,}894, 289{,}492] & $+25.4$\% & 600 \\
+LPT start & 245{,}228 & [195{,}489, 294{,}967] & $+27.7$\% & $<0.1$ \\
 \rowcolor{black}
-\multicolumn{6}{@{}l}{\color{white}\emph{2{,}000 SKUs, 20 stations, 78{,}698 mean orders, $n=3$\ \ [min, max]}}\\
-Set-variable formulation & 484{,}535 & [412{,}372, 571{,}164] & (ref) & 1{,}200 & 0\% \\
-Binary MILP & 487{,}357 & [412{,}969, 576{,}006] & $+0.5$\% & 1{,}200 & 0\% \\
-\rowcolor{green!20}
-CG & \textbf{476{,}692} & [406{,}962, 560{,}599] & $-1.6$\% & 1{,}200 & 0\% \\
-Heuristic & 476{,}809 & [407{,}713, 555{,}412] & $-1.5$\% & 47 & 0\% \\
-GA & 608{,}867 & [522{,}402, 732{,}053] & $+25.5$\% & 1{,}200 & 0\% \\
-SA-C & 615{,}490 & [528{,}303, 741{,}011] & $+26.9$\% & 1{,}200 & 0\% \\
-LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+28.0$\% & $<0.1$ & 0\% \\
+\multicolumn{5}{@{}l}{\color{white}\emph{2{,}000 SKUs, 20 stations, 78{,}698 mean orders, $n=3$\ \ [min, max]}}\\
+Set-variable formulation & 484{,}535 & [412{,}372, 571{,}164] & (ref) & 1{,}200 \\
+Binary MILP & 487{,}357 & [412{,}969, 576{,}006] & $+0.5$\% & 1{,}200 \\
+CG & 476{,}692 & [406{,}962, 560{,}599] & $-1.6$\% & 1{,}200 \\
+Heuristic & 476{,}809 & [407{,}713, 555{,}412] & $-1.5$\% & 47 \\
+GA & 608{,}867 & [522{,}402, 732{,}053] & $+25.5$\% & 1{,}200 \\
+SA-C & 615{,}490 & [528{,}303, 741{,}011] & $+26.9$\% & 1{,}200 \\
+LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+28.0$\% & $<0.1$ \\
 \bottomrule
 \end{tabular*}}
-\tabnote{Both representations are solved with Hexaly, the column generation with CPLEX\@. Gap is the mean of the per-instance percentage gaps, not the gap between the two Mean visits columns, so it does not reproduce from those columns; a negative gap means fewer visits than the reference. Intervals are 95\% $t$ confidence intervals for the mean, except at 2,000 SKUs where three instances are too few and the observed [min, max] range is given. They are wide because the instances differ in difficulty, and they are not a basis for comparing methods, which the paired tests carry. Time is the per-size cap where a method exhausted it, otherwise the measured mean. WL viol.\ is the share of instances on which any station exceeded its workload cap.}
+\tabnote{Both representations are solved with Hexaly, the column generation with CPLEX\@. Gap is the mean of the per-instance percentage gaps, not the gap between the two Mean visits columns, so it does not reproduce from those columns; a negative gap means fewer visits than the reference. Spread is the 95\% $t$ confidence interval for the mean, except at 2,000 SKUs, where three instances are too few and the observed range is given instead. It measures how much the instances differ from one another, not how much the methods differ, which the paired tests carry. Time is the per-size cap where a method exhausted it, otherwise the measured mean.}
 \label{tab:reliability}
 \end{table}
 
 
 
-\textbf{The paired tests separate the methods at the two smaller sizes only.} The intervals in Table~\ref{tab:reliability} span 10 to 20\% because the instances differ that much in difficulty, whereas the differences between methods are 0.5 to 2\%, so the paired tests carry the comparison (Supplementary Section~S3). Both literature baselines and the clustering heuristic separate from the reference at 50 and 500 SKUs, the column generation at 50 SKUs only, and the two MILP representations nowhere once the tests are corrected for multiplicity. At 1{,}000 and 2{,}000 SKUs four and three paired instances cannot reach $p<0.05$ whatever the outcome, so the win counts carry the evidence there.
+\textbf{The three optimisation strategies are not separable on this benchmark.} The set-variable formulation, the binary encoding and the column generation stay within a point of one another up to 1,000 SKUs and within about two points at 2,000, and no ordering among them survives the paired tests. The binary form returns the lower mean at 50 SKUs while winning only 4 of the 12 instances, and at 1,000 SKUs the three separate by 0.3\% (Supplementary Section~S3). Nothing on this benchmark recommends one representation over another, which is worth stating plainly, because Section~\ref{sec:industrial} is where that ceases to hold.
 
-\textbf{The binary and set-variable forms are not separable on this family.} Given the same solver and cap, the two representations land within 0.6\% of each other at every scale, the binary form returning fewer visits on 13 of the 29 instances. The largest synthetic instance declares a $2{,}000 \times 20$ assignment matrix, small enough that whatever the set encoding saves by never repairing constraint~\eqref{eq:assign} stays inside run-to-run noise; the industrial instance, an order of magnitude larger, is where the two forms separate (Section~\ref{sec:industrial}).
+\textbf{The clustering heuristic trades quality for time, and the trade improves with scale.} It is the weakest method at 50 SKUs, where it wins no paired instance, and it closes to within a point and a half at 1,000. At 2,000 it returns fewer visits than the reference on all three instances, in 47 seconds against the 1,200 the optimising methods spend. The reversal is consistent with its unit of change, a community of co-ordered products committed to a station in one step, which can strip an order's last product from a station where a single-product swap cannot. Three instances carry it, so we report it as observed here rather than as a size beyond which the heuristic leads.
 
-\textbf{The column generation overtakes the reference as the catalogue grows.} It trails at the two smaller sizes, matches the reference at 1,000 and leads at 2,000, where it returns fewer visits on every instance (Figure~\ref{fig:crossover}). The mechanism is the bundle-sized unit of change of Section~\ref{sec:cg}, worth little on a small catalogue and decisive on a large one. The 2,000-SKU block holds three instances, so the crossing is an observation on this benchmark and not a threshold we can locate; pooling across sizes does not settle it either, since the mean per-instance gap and the summed visits rank the two methods in opposite orders.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.86\linewidth]{Images_CSLAP/gap_vs_size_crossover.png}
-\caption{Mean gap to the set-variable formulation reference against catalogue size; the reference is the horizontal line at zero, so a curve below it marks a method using fewer station visits. The 2,000-SKU block holds three instances.}
-\label{fig:crossover}
-\end{figure}
-
-\textbf{Both literature baselines trail, and the objective is one plausible explanation.} Their gap to the reference widens with size (Table~\ref{tab:reliability}), and neither returns fewer visits than the reference on a single instance. Objective, initialisation, constraint handling and implementation are not isolated here: the baselines keep their own prescribed starts, reach feasibility through a penalty and not structurally, and are our own Python implementations against two commercial engines, so part of the deficit may be ours rather than theirs. What weakens with scale is the conversion between the surrogate and the visit count, since a swap changes that count only when it removes an order's last product from a station or carries its first to a new one, and most swaps do neither.
-
-\textbf{The heuristic's trade of quality for time reverses at 2,000 SKUs.} It trails at 50 SKUs and at 2,000 returns fewer visits than the reference on all three instances, in under a minute against twenty. The composition of the move explains it: the heuristic commits a whole community of co-ordered products to a station in one step, so a single step can remove an order's last product from a station, whereas the genetic algorithm's crossover copies a block drawn without reference to co-occurrence and repaired for capacity, which buys no more of this objective than a single-product swap. The same three-instance caveat as above applies.
+\textbf{The literature baselines lose most of the available gain as the catalogue grows.} What is available is set by the correlation-blind start of Section~\ref{sec:init}, which costs 17.5\% more visits than the reference at 50 SKUs and 28.0\% at 2,000. Measured as the share of that margin each method recovers, the genetic algorithm takes 84\% at 50 SKUs and 9\% at 2,000, and simulated annealing 94\% and 4\%, while the heuristic moves the other way, from 59\% to the whole of it. At the largest size the two baselines are therefore nearer to leaving the catalogue unslotted than to the layouts the other methods reach. Their deficit is consistent with the objective, since a swap changes the visit count only when it removes an order's last product from a station or carries its first to a new one, though initialisation, constraint handling and our own implementation are not separated from that here. Paired tests separate the methods at 50 and 500 SKUs; at 1,000 and 2,000 SKUs four and three instances cannot resolve anything, so the win counts carry the evidence (Supplementary Section~S3).
 
 
 % =====================================================================

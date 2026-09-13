@@ -52,3 +52,34 @@ graphify-out/
 
 # ---- Scratch run output ----
 *_backup/
+
+# ---- Campaign supervisor logs are EVIDENCE (see the results/logs/ note above) ----
+# The `*.log` rule swallowed all seven horizon-robustness supervisor logs: the
+# negations above are rooted at `results/`, and this campaign family writes to
+# `reports/<study>_results/logs/`. Same trap, different directory. Keep them.
+!reports/**/logs/*.log
+
+# ---- Campaign runner byproducts (1.26 GB, not in git) ----
+# Two classes, both recoverable, excluded after checking the content:
+#   supervision/*/terminal.json  - `["cases"]` is byte-identical to result.json
+#   supervision/*/result.json    - the aggregate of the campaign's cases/*.json
+# cases/ is the canonical per-case record and IS committed, so nothing unique
+# is dropped. supervision/{request,child}.json and stdout/stderr stay tracked:
+# tools/horizon_robustness/verify_campaign.py reads request.json (A19 check).
+**/campaigns/*/supervision/*/result.json
+**/campaigns/*/supervision/*/terminal.json
+# solves/ holds solver INPUT (input_hash + options + problem), rebuilt by
+# Baselines/horizon_robustness/runner.py from the committed manifest.json:
+#   python -m Baselines.horizon_robustness.runner run <campaign>/manifest.json \
+#       --approved-manifest-hash <manifest_hash> \
+#       --solver-budget-seconds <quoted> --wall-cutoff-seconds <cutoff>
+# The hash and both budgets are recorded in each campaigns/*/invocations/*.json.
+**/campaigns/*/solves/
+
+# ---- Campaign runtime mutex state (meaningless outside a live run) ----
+**/campaigns/*/.campaign.lock
+**/campaigns/*/.supervisor-owner/
+
+# ---- Stray PowerShell session transcripts ----
+20260908/
+PowerShell_transcript.*.txt

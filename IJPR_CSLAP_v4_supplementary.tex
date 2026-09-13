@@ -120,9 +120,11 @@ $\zeta$ & $N$ & $|S|$ & $\beta^\ast$ & $\beta^\ast/\zeta$ & $\Delta$ visits vs.\
 
 At a fixed slot capacity $\beta^\ast$ is the same at both catalogue sizes in all four cells,
 whereas at a fixed catalogue size it moves with $\zeta$ across the whole range. Over the eight
-cells the rank correlation between $\beta^\ast$ and $\zeta$ is $0.962$, and between
-$\beta^\ast$ and $N$ it is $0.000$. This confirms that the bound scales with the slot capacity
-of a station and is insensitive to the length of the catalogue.
+cells the Spearman rank correlation between $\beta^\ast$ and $\zeta$ is $1.000$: the two
+orderings agree exactly. The Pearson correlation on the raw values is $0.962$, the shortfall
+measuring only that the dependence is not linear, as the next paragraph shows. Against $N$
+both measures return $0.000$. The bound therefore scales with the slot capacity of a station
+and is insensitive to the length of the catalogue.
 
 The dependence is monotone but not proportional. The minimising ratio $\beta^\ast/\zeta$ is
 $0.60$ at $\zeta\le 50$ and falls to $0.40$ at $\zeta=100$, so a single coefficient cannot be
@@ -130,20 +132,27 @@ optimal everywhere. We adopt $0.4$ for two reasons. It is the minimising value a
 the capacity of every benchmark instance of 500 SKUs and above and of the sizes at which the
 method is intended to be used. Where it is not the minimiser it errs low, which matters because
 larger communities are harder to place within the workload constraint, as Section~6 of the main
-article shows on a site whose stations are not interchangeable. The price of that choice is nil
-at $\zeta=100$, where $0.4\zeta$ is the minimiser, and between $0.15$ and $1.03$\% of visits in
-the six cells below it.
+article shows on a site whose stations are not interchangeable. The price of that choice is the
+excess of the layout built at $\beta=\lfloor 0.4\zeta+\tfrac12\rfloor$ over the layout built at
+the cell's own $\beta^\ast$, paired instance by instance and averaged over the ten instances of
+the cell. It is nil at $\zeta=100$, where $0.4\zeta$ is itself the minimiser, and runs from
+$0.15$\% at $\zeta=50$, $N=500$ to $1.03$\% at $\zeta=25$, $N=500$ across the six cells below
+it. That quantity is not the last column of Table~\ref{tab:capsweep}, which measures $\beta^\ast$
+against the fixed value 15 rather than against the rule.
 
 \section{Threshold sensitivity of the clustering heuristic}\label{sup:sensitivity}
 Table~\ref{tab:sensitivity} rescales each of the four thresholds of Section~4.1 of the main
 article from half to twice its nominal value, one at a time and then all four together, on the
 twelve 50-SKU and ten 500-SKU instances. The 1,000- and 2,000-SKU instances are omitted because
 four and three instances are too few for an informative interval, although the ordering of the
-effects there agrees with what follows. Multipliers apply to the effective nominal value on the
-instance, after the floor of 5 (for the three filters that value is set by $N$ and for the
-community bound by $\zeta$). At 50 SKUs both frequency floors already sit on their clamp floor
-of 2, and the community bound sits on its floor of 5, so only the upward settings are distinct
-there. Entries are paired mean changes against the nominal setting on the same instance. The
+effects there agrees with what follows. A multiplier applies to the effective nominal value on
+the instance, that is, after the threshold's own clamp has been taken (the pre-clamp value comes
+from $N$ for the three filters and from $\zeta$ for the community bound), and the scaled result
+is clamped again, at 1 for the two frequency floors and at 2 for the community bound. At 50 SKUs
+both frequency floors already sit on their clamp of 2, so $\times0.75$ leaves them there and
+$\times0.5$ only lowers them to 1; the community bound sits on its clamp of 5, put there by the
+floor rather than by $0.4\zeta$, and its downward settings do move it, to 4 and to 2.
+Entries are paired mean changes against the nominal setting on the same instance. The
 procedure is deterministic: repeating the nominal setting under five hash seeds returns an
 identical layout on every instance, so any difference is a real threshold effect and not
 run-to-run variation. Reporting follows the conventions for computational experiments with
@@ -245,11 +254,15 @@ Heuristic vs.\ reference   & 50      & 12 & 0  & 0.0005 & 0.0005 \\
 \label{tab:tests}
 \end{table}
 
-The tests saturate at the two larger sizes. The resolution of the test is bounded by the number
-of instances available, and on this benchmark that bound is binding: at 1{,}000 and 2{,}000
-SKUs no result, however unanimous, can reach the conventional 0.05 threshold. At those two
-sizes we therefore treat the win count as the primary evidence, which is the form in which the
-main article states them.
+No test at the two larger sizes can resolve anything. The resolution of a signed-rank test is
+bounded by the number of instances available, and on this benchmark that bound is binding: with
+four and three paired instances the smallest attainable two-sided $p$ is $0.125$ and $0.25$, so
+at 1{,}000 and 2{,}000 SKUs no result, however unanimous, reaches the conventional 0.05
+threshold. Not every cell there is even saturated: the two rows at $p=0.38$ and $p=1.00$, both
+at 1{,}000 SKUs, sit above their floor of $0.125$ because the instances are split rather than
+unanimous, whereas a cell that does attain its floor is as decisive as its sample permits. At
+both sizes we therefore treat the win count as the primary evidence, which is the form in which
+the main article states them.
 
 The separations are reported without correction for multiplicity. Of the seven separations
 below 0.05 that the table shows, the five at $p \le 0.0020$ survive a Bonferroni, Holm or
@@ -268,7 +281,11 @@ frequency of product $i$, $\mathrm{load}(s)=\sum_{p\in s}L_p/V_s$ the workload o
 and $\zeta_s$, $T_s$, $L_p$ and $V_s$ are as defined in Section~3 of the main article. The four
 thresholds are restated in the input line so that the procedure can be read on its own. The
 ratio test in Step~1 normalises by the \emph{larger} of the two endpoint frequencies, so it is
-symmetric in $i$ and $j$ and reads as the confidence of the weaker association direction.
+symmetric in $i$ and $j$ and reads as the confidence of the weaker association direction. In
+Step~3, $\mathrm{cnt}_{pq}$ is read on \emph{every} pair, including pairs the two filters dropped
+and pairs touching a product outside $P^{\ast}$: scoring the residue on the filtered graph instead
+would leave every product below the frequency floor with no edge at all and send the whole residue
+to the fixed-size blocks of the last line.
 
 \begin{algorithm}[H]
 \caption{Greedy product clustering and station assignment}
@@ -297,9 +314,11 @@ symmetric in $i$ and $j$ and reads as the confidence of the weaker association d
 \EndWhile
 \Statex
 \State \textbf{Step 3: post-processing}
-\ForAll{products $p$ with $\mathrm{freq}(p)<\phi$}
-  \If{some community $c$ has room ($|c|<\beta$)}
-    \State add $p$ to the community of highest co-occurrence with $p$
+\ForAll{products $p$ left unassigned by Step~2, in catalogue order}
+  \State $\mathcal{R}\gets\{\,c\in\mathcal{C}:|c|<\beta\,\}$ \Comment{communities that still have room}
+  \If{$\mathcal{R}\neq\varnothing$ and $\max_{c\in\mathcal{R}}\sum_{q\in c}\mathrm{cnt}_{pq}>0$}
+    \State $c^{\ast}\gets\arg\max_{c\in\mathcal{R}}\sum_{q\in c}\mathrm{cnt}_{pq}$, ties to the community opened earliest
+    \State $c^{\ast}\gets c^{\ast}\cup\{p\}$
   \EndIf
 \EndFor
 \State group any still-unassigned products into new communities of size at most $\beta$

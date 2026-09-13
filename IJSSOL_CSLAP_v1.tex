@@ -487,18 +487,11 @@ Correlation strength (conditional order frequency within the 1\% most frequent p
 \end{table}
 
 \subsection{Protocol and metrics}\label{sec:protocol}
-A single instance cannot tell whether a ranking reflects method quality or one favourable draw of the generator, so we evaluate every method over the 29 independently generated instances of Table~\ref{tab:families}, on distinct seeds. All optimising methods run under the common per-size cap of that table, so every ranking is conditional on that cap. The genetic algorithm is stochastic, and so is the column-generation drive, which mutates its warm start and samples swap partners; with a single run per instance their algorithmic variance is not measured here, so any difference at a size carrying few instances rests on single draws. The computational setup is common to every method:
-\begin{itemize}
-\item one 16-core host under one Python 3.10 environment, each method receiving the same four-thread allocation;
-\item the column generation on CPLEX 22.1.1, the two MILP representations on Hexaly 13.0;
-\item the two baselines as our own Python implementations of the published operators;
-\item one run per instance in every cell.
-\end{itemize}
-Supplementary Section~S4 states the setup, stage budgets, baseline parameters and seeds in full.
+Every method is run on all 29 instances of Table~\ref{tab:families}, each generated on its own seed, under that table's per-size time cap, so every ranking below is conditional on that cap. One run is reported per instance. The genetic algorithm and the column-generation drive are both stochastic, so their run-to-run variance is not measured here, and a difference at the two larger sizes, where the instances are few, rests on single draws. All runs were produced on one 16-core host under one Python 3.10 environment, each method receiving four threads: the column generation on CPLEX 22.1.1, the two MILP representations on Hexaly 13.0, and the two baselines as our own Python implementations of the published operators. Supplementary Section~S4 states the setup, stage budgets, baseline parameters and seeds in full.
 
 The set-variable formulation is the per-instance reference because it is the form deployed on the industrial site (Section~\ref{sec:industrial}). Every method returned a feasible layout on all 29 instances, holding both the slot capacity and the workload cap, so the comparison below is one of quality and time alone.
 
-Instances differ by two orders of magnitude in difficulty, so comparing methods on their averages would confound the between-method difference with the between-instance variance. We therefore also compare them instance by instance under the two-sided exact Wilcoxon signed-rank test \citep{wilcoxon1945}, the standard choice across benchmark instances \citep{demsar2006}, reporting effect size and consistency separately: the Gap column of Table~\ref{tab:reliability} carries the magnitude and the test how reliably it recurs, with the full test table in Supplementary Section~S3. Reporting follows the conventions for computational experiments with heuristics \citep{barr1995designing, hooker1995testing}.
+Instances differ by two orders of magnitude in difficulty, so a comparison of averages would confound the difference between methods with the difference between instances. We therefore compare them instance by instance under the two-sided exact Wilcoxon signed-rank test \citep{wilcoxon1945}, the standard choice across benchmark instances \citep{demsar2006}; the Gap column of Table~\ref{tab:reliability} carries the size of a difference and the test how reliably it recurs, with the full test table in Supplementary Section~S3. Reporting follows the conventions for computational experiments with heuristics \citep{barr1995designing, hooker1995testing}.
 
 
 

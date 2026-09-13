@@ -89,7 +89,7 @@ The binary encoding of the same model runs alongside them as a representation co
 We make three contributions.
 \begin{enumerate}
 \item We pose CSLAP for pick-and-pass systems with station visits as the objective under hard per-station capacity and workload limits, replacing the travel-distance objective the correlated storage literature inherits from manual picking, and give the model in a binary and a set-variable form (Section~\ref{sec:model}).
-\item We build the three strategies above on the structure of that objective and benchmark them on 29 instances under one protocol against GA and SA-C, with the binary encoding kept as a representation control (Sections~\ref{sec:methods} and~\ref{sec:experiments}).
+\item We build the three strategies above on the structure of that objective and benchmark them on 29 instances under one protocol. Neither the genetic algorithm nor simulated annealing returns fewer visits than the reference on a single instance, and both lose most of the available gain as the catalogue grows, while the binary encoding, kept as a representation control, stays indistinguishable from the set-variable form at this scale (Sections~\ref{sec:methods} and~\ref{sec:experiments}).
 \item We validate on an operating warehouse of 21,874 products and 26 stations, where the reduction holds on weeks the layout was not fitted to and every station stays inside its own workload budget, and add a bounded reassignment extension so the gain can be taken in stages (Section~\ref{sec:industrial}).
 \end{enumerate}
 
@@ -565,14 +565,19 @@ LPT start & 621{,}096 & [533{,}942, 748{,}257] & $+28.0$\% & $<0.1$ \\
 % =====================================================================
 \section{Industrial application}\label{sec:industrial}
 % =====================================================================
-We validate the framework on a real warehouse, Company~A. Its decision pool is as follows.
-\begin{itemize}
-\item 26 stations, of which 24 are evaluated. Stations S25 and S26 hold 1 and 2 locations, too few for a reassignment to change the visit count and too few to leave the workload anywhere to move, so they are left as they stand.
-\item $|P| = 21{,}874$ products on the 24 evaluated stations, all of which enter the evaluation.
-\item $5{,}899$ products frozen in place. A product keeps the location the site has already given it when it appears in at most five orders \emph{and} sits at one of the three static-shelving stations, whose slotting is not re-planned; a further 171 products, which survive only in orders the extract does not retain, are pinned the same way.
-\item $15{,}975$ products free to relocate, the pool the solvers receive.
-\end{itemize}
-Frozen products keep their slots and their workload share, so the solver receives only the remaining tolerance while the evaluation charges every station with its complete load on the complete order stream; the reductions below are therefore not inflated by the reduced decision pool. Supplementary Section~S6 records the dataset, the residual resources and the site rules that fix them.
+We validate the framework on a real warehouse, Company~A, with
+21{,}874 products and 26 picking stations. We evaluate 24 stations;
+S25 and S26 contain only 1 and 2 storage locations, respectively, and
+are therefore left unchanged because reassignment there cannot
+meaningfully affect the station-visit objective.
+
+To reduce the size of the industrial optimisation, products expected
+to have little influence on the objective are fixed at their current
+locations, including very-low-frequency products appearing in at most
+five orders. This leaves 15{,}975 products available for reassignment
+and 5{,}899 fixed. All 21{,}874 products remain in the evaluation and
+in the station workload calculations, so the reduced decision pool
+does not artificially improve the reported performance. Supplementary Section~S6 records the dataset, the residual resources and the site rules that fix them.
 
 The Company~A extract is a non-public dataset. It consists of anonymised commercial operational records, order lines and station assignments, supplied by the partner company and used with its permission. It contains no personal data, and the study is non-interventional and involves no human or animal subjects, so no ethics approval was required.
 
@@ -586,7 +591,7 @@ Workload is measured as load, the lines a station handles divided by its own cal
 Method & Visits & Reduction (\%) & Gap vs.\ ref (\%) & Time (s) & Max WL & Util.\ SD (\%) & Viol. \\
 \midrule
 \rowcolor{yellow!50!black}
-\textcolor{white}{Original layout (A)} & \textcolor{white}{1{,}062{,}507} & \textcolor{white}{--} & \textcolor{white}{15.81} & \textcolor{white}{0} & \textcolor{white}{9{,}923} & \textcolor{white}{0.00} & \textcolor{white}{None} \\
+\textcolor{white}{Original layout (A)} & \textcolor{white}{1{,}062{,}507} & \textcolor{white}{--} & \textcolor{white}{15.81} & \textcolor{white}{--} & \textcolor{white}{9{,}923} & \textcolor{white}{0.00} & \textcolor{white}{None} \\
 Set-variable formulation & \textcolor{green!60!black}{\textbf{917{,}465}} & \textcolor{green!60!black}{\textbf{13.65}} & 0.00 & 36{,}000 & 10{,}467 & 4.48 & None \\
 Binary MILP & \textcolor{orange!90!black}{\textbf{989{,}320}} & \textcolor{orange!90!black}{\textbf{6.89}} & 7.83 & 36{,}000 & 10{,}356 & \textcolor{orange!90!black}{\textbf{3.44}} & None \\
 Heuristic & 996{,}448 & 6.22 & 8.61 & \cellcolor{blue!12}\textbf{790} & 10{,}915 & 27.37 & None \\
@@ -595,7 +600,7 @@ GA & 1{,}046{,}071 & 1.55 & 14.02 & 19{,}358 & \textcolor{red}{\textbf{10{,}972}
 SA-C & 1{,}058{,}563 & 0.37 & 15.38 & 36{,}000 & 10{,}811 & 12.14 & \textcolor{red}{\textbf{WL}} \\
 \bottomrule
 \end{tabular*}}
-\tabnote{Reduction is against the original layout, Gap vs.\ ref against the set-variable formulation. Util.\ SD is the standard deviation of each station's realised load against its own legacy load (\%). Max WL is the realised busiest-station load $\sum_{p} L_p/V_s$ of \eqref{eq:wl}, not a line count. The site tolerates up to 10\% above the complete legacy load a station carried, frozen and movable products together, and the busiest legacy station carries a load of 9,923, so its bound is 10,915. The flag marks a method exceeding its own bound at one or more stations; the check is per station, so a Max WL below 10,915 does not by itself certify feasibility. Time is the cap where a method exhausted its budget, otherwise the measured running time.}
+\tabnote{Reduction is against the original layout, Gap vs.\ ref against the set-variable formulation. Util.\ SD is the standard deviation of each station's realised load against its own legacy load (\%). Max WL is the realised busiest-station load $\sum_{p} L_p/V_s$ of \eqref{eq:wl}, not a line count. The site tolerates up to 10\% above the complete legacy load a station carried, frozen and movable products together, and the busiest legacy station carries a load of 9,923 (so its bound is $1.1\times 9,923 =10,915$). The flag marks a method exceeding its own bound at one or more stations; the check is per station, so a Max WL below 10,915 does not by itself certify feasibility. Time is the cap where a method exhausted its budget, otherwise the measured running time.}
 \label{tab:industrial}
 \end{table}
 
@@ -715,9 +720,9 @@ The results yield four implications for warehouse operations.
 % =====================================================================
 \section{Conclusions and research perspectives}\label{sec:conclusion}
 % =====================================================================
-We posed the correlated storage location assignment problem for automated pick-and-pass warehouses with station visits as the objective and hard capacity and workload limits, replacing the travel-distance objective that correlated storage models inherit from manual picking. On a real 21,874-product warehouse the model removes 13.7\% of station visits in sample and 6.6 to 7.4\% on weeks it was not fitted to, within every station limit, and a relocation cap lets a site take that gain in stages. The set-variable formulation gives the deepest reduction we obtain and is the form we would deploy; the binary encoding of the same model, run on the same engine, carries 7.8\% more visits at industrial scale while the two are indistinguishable on the synthetic benchmark. We attribute that divergence to the decision representation, though the mechanism is not instrumented, and on this evidence a benchmark of a few thousand products does not settle the choice of representation.
+We posed the correlated storage location assignment problem for automated pick-and-pass warehouses with station visits as the objective and hard capacity and workload limits, replacing the travel-distance objective that correlated storage models inherit from manual picking. On a real 21,874-product warehouse the model removes 13.7\% of station visits in sample and 6.6 to 7.4\% on weeks it was not fitted to, within every station limit, and a relocation cap lets a site take that gain in stages. The set-variable formulation gives the deepest reduction we obtain and is the form we would deploy; the binary encoding of the same model, run on the same engine, carries 7.8\% more visits at industrial scale while the two are indistinguishable on the synthetic benchmark. The benchmark is what makes that contrast readable: the representation has no measurable effect on a few thousand products and a large one on twenty thousand, so its choice cannot be settled at benchmark scale. We attribute the divergence to the representation itself, though the mechanism is not instrumented here.
 
-The two other strategies divide the remaining ground. The set-partitioning column generation, driven as a price-and-complete matheuristic, improves the live industrial layout by 5.8\% while disturbing the engineered balance least, and overtakes the reference between 1,000 and 2,000 products on this benchmark. The clustering heuristic is the fast fallback: it returns fewer visits than the reference at 2,000 products in a fraction of the time, and on the industrial site it removes 6.2\% but spends the whole workload tolerance, so it belongs where a layout is needed quickly and not where a ten-hour budget is available.
+The two other strategies divide the remaining ground. The set-partitioning column generation, driven as a price-and-complete matheuristic, improves the live industrial layout by 5.8\% while disturbing the engineered balance least, and on the benchmark it reaches the same quality region as the set-variable form at every size. The clustering heuristic is the fast fallback: it reaches that region too, at 2,000 products in a fraction of the budget, and on the industrial site it removes 6.2\% but spends the whole workload tolerance, so it belongs where a layout is needed quickly and not where a ten-hour budget is available. As the catalogue grows all three hold their ground against the two literature baselines, neither of which returns fewer visits than the reference on any benchmark instance, and both of which recover under a tenth of the available margin at 2,000 products.
 
 Four perspectives follow from the limits of this study.
 \begin{enumerate}

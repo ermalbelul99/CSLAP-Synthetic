@@ -502,7 +502,7 @@ Table~\ref{tab:reliability} reports mean visits, the spread across instances, th
 
 \begin{table}[H]
 \centering
-\tbl{Synthetic benchmark over 29 instances, with the set-variable formulation as the per-instance reference.}
+\tbl{Synthetic benchmark over 29 instances, with the set-variable formulation as the per-instance reference. The lowest mean visits in each block is shaded and set in bold.}
 {\small\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrcrr@{}}
 \toprule
 Method & Mean visits & Spread & Gap vs.\ ref (\%) & Time (s) \\
@@ -510,7 +510,8 @@ Method & Mean visits & Spread & Gap vs.\ ref (\%) & Time (s) \\
 \rowcolor{black}
 \multicolumn{5}{@{}l}{\color{white}\emph{50 SKUs, 5 stations, 2{,}036 mean orders, $n=12$}}\\
 Set-variable formulation & 7{,}555 & [6{,}825, 8{,}285] & (ref) & 120 \\
-Binary MILP & 7{,}554 & [6{,}823, 8{,}285] & $-0.0$\% & 120 \\
+\rowcolor{green!20}
+Binary MILP & \textbf{7{,}554} & [6{,}823, 8{,}285] & $-0.0$\% & 120 \\
 CG & 7{,}590 & [6{,}857, 8{,}322] & $+0.5$\% & 86 \\
 Heuristic & 8{,}084 & [7{,}268, 8{,}900] & $+6.9$\% & 1 \\
 GA & 7{,}767 & [7{,}022, 8{,}513] & $+2.8$\% & 48 \\
@@ -519,7 +520,8 @@ LPT start & 8{,}857 & [8{,}054, 9{,}661] & $+17.5$\% & $<0.1$ \\
 \rowcolor{black}
 \multicolumn{5}{@{}l}{\color{white}\emph{500 SKUs, 5 stations, 20{,}832 mean orders, $n=10$}}\\
 Set-variable formulation & 76{,}330 & [68{,}286, 84{,}373] & (ref) & 300 \\
-Binary MILP & 75{,}976 & [68{,}054, 83{,}897] & $-0.4$\% & 300 \\
+\rowcolor{green!20}
+Binary MILP & \textbf{75{,}976} & [68{,}054, 83{,}897] & $-0.4$\% & 300 \\
 CG & 76{,}681 & [68{,}658, 84{,}704] & $+0.5$\% & 256 \\
 Heuristic & 78{,}071 & [70{,}047, 86{,}095] & $+2.3$\% & 9 \\
 GA & 85{,}363 & [76{,}202, 94{,}523] & $+11.8$\% & 300 \\
@@ -527,7 +529,8 @@ SA-C & 88{,}689 & [79{,}245, 98{,}132] & $+16.2$\% & 300 \\
 LPT start & 90{,}177 & [80{,}419, 99{,}936] & $+18.1$\% & $<0.1$ \\
 \rowcolor{black}
 \multicolumn{5}{@{}l}{\color{white}\emph{1{,}000 SKUs, 10 stations, 38{,}743 mean orders, $n=4$}}\\
-Set-variable formulation & 192{,}276 & [150{,}483, 234{,}068] & (ref) & 600 \\
+\rowcolor{green!20}
+Set-variable formulation & \textbf{192{,}276} & [150{,}483, 234{,}068] & (ref) & 600 \\
 Binary MILP & 192{,}939 & [150{,}350, 235{,}528] & $+0.3$\% & 600 \\
 CG & 192{,}452 & [149{,}959, 234{,}945] & $+0.1$\% & 600 \\
 Heuristic & 194{,}955 & [153{,}736, 236{,}174] & $+1.4$\% & 24 \\
@@ -538,7 +541,8 @@ LPT start & 245{,}228 & [195{,}489, 294{,}967] & $+27.7$\% & $<0.1$ \\
 \multicolumn{5}{@{}l}{\color{white}\emph{2{,}000 SKUs, 20 stations, 78{,}698 mean orders, $n=3$\ \ [min, max]}}\\
 Set-variable formulation & 484{,}535 & [412{,}372, 571{,}164] & (ref) & 1{,}200 \\
 Binary MILP & 487{,}357 & [412{,}969, 576{,}006] & $+0.5$\% & 1{,}200 \\
-CG & 476{,}692 & [406{,}962, 560{,}599] & $-1.6$\% & 1{,}200 \\
+\rowcolor{green!20}
+CG & \textbf{476{,}692} & [406{,}962, 560{,}599] & $-1.6$\% & 1{,}200 \\
 Heuristic & 476{,}809 & [407{,}713, 555{,}412] & $-1.5$\% & 47 \\
 GA & 608{,}867 & [522{,}402, 732{,}053] & $+25.5$\% & 1{,}200 \\
 SA-C & 615{,}490 & [528{,}303, 741{,}011] & $+26.9$\% & 1{,}200 \\

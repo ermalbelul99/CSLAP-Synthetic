@@ -1,0 +1,1379 @@
+% =====================================================================
+%  A Full Post-Mortem of the Robust Slotting Study
+%
+%  Volume-normalised share-band contract + Bertsimas--Sim budgeted
+%  uncertainty for the Correlated Storage Location Assignment Problem.
+%
+%  Compile with pdfLaTeX (Overleaf default). No external assets needed.
+%  Run twice so the table of contents and cross-references resolve.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+
+% ---------------------------------------------------------------------
+% Light-weight callout environment (no extra packages, compiles anywhere)
+% ---------------------------------------------------------------------
+\newenvironment{keybox}
+  {\par\medskip\noindent\rule{\linewidth}{0.9pt}\par\nobreak\smallskip\ignorespaces}
+  {\par\smallskip\nobreak\noindent\rule{\linewidth}{0.9pt}\par\medskip}
+
+\newcommand{\vtr}{V_{\mathrm{tr}}}
+\newcommand{\vte}{V_{\mathrm{te}}}
+\newcommand{\gbind}{\gamma_{\mathrm{bind}}}
+\newcommand{\gcover}{\gamma_{\mathrm{cover}}}
+\newcommand{\PoR}{\mathrm{PoR}}
+\newcommand{\yes}{\ensuremath{\checkmark}}
+\newcommand{\no}{\ensuremath{\times}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize Robust Slotting Study --- Post-Mortem}
+\fancyhead[R]{\footnotesize\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlist[itemize]{topsep=3pt,itemsep=2pt,parsep=0pt}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt,parsep=0pt}
+
+\title{\textbf{A Full Post-Mortem of the Robust Slotting Study}\\[4pt]
+\large Volume-Normalised Share-Band Contracts and Bertsimas--\c{S}im
+Budgeted Uncertainty\\ for Correlated Storage Location Assignment}
+
+\author{Research session record --- methods, failures, audits, and defensible claims}
+\date{Compiled \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This document is a complete technical post-mortem of a computational
+experiment on robust storage location assignment in a pick-and-pass
+warehouse. It records what was modelled, what was measured, what failed,
+how each failure was diagnosed, and --- most importantly --- which claims
+survived adversarial code review, adversarial methodological review, and a
+dedicated seed-replication experiment, and which had to be retracted.
+
+The headline modelling result is that the legacy \emph{revealed-peak}
+workload contract was \emph{provably} unusable: at sub-maximum quantiles the
+station ceilings summed to less than the busiest training day, so two of
+three declared parameter settings described an empty feasible set. Replacing
+it with a \emph{volume-normalised share band} removes that pathology by
+construction and is what first made robust budgets $\Gamma\ge 2$ solvable at
+all. The headline empirical result is that budgets $\Gamma\in\{1,2\}$ reduce
+out-of-sample contract violations relative to the nominal layout by a margin
+exceeding the solver's own run-to-run spread. The headline \emph{negative}
+result is that the Bertsimas--\c{S}im coverage mechanism does not explain
+why: in the winning layouts the robust row is slack almost everywhere, and
+the realised overshoots would have required budgets far outside the declared
+range.
+
+Written for a reader who must be able to defend every number in it.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\section{The Physical System and What Is Actually Being Optimised}
+% =====================================================================
+
+\subsection{The warehouse}
+
+The system is a \textbf{pick-and-pass order-picking line}:
+
+\begin{itemize}
+  \item a catalogue of \textbf{2{,}000 SKUs} (stock-keeping units, i.e.\ distinct products);
+  \item \textbf{24 picking stations}, each a physical workstation along a conveyor;
+  \item customer \textbf{orders are multi-item}: one order requires several distinct products;
+  \item a tote representing an order travels along the conveyor and stops at
+        \emph{every station holding at least one product in that order}.
+\end{itemize}
+
+The decision is the \textbf{storage location assignment}: a binary mapping
+$x_{ps}\in\{0,1\}$, with $x_{ps}=1$ iff product $p$ is stored at station $s$,
+subject to
+\[
+  \sum_{s\in S} x_{ps} \;=\; 1 \qquad \forall p \in P,
+\]
+i.e.\ every product has exactly one home (assumption A5, Section~\ref{sec:assumptions}).
+
+This is the \textbf{Correlated Storage Location Assignment Problem (CSLAP)}.
+The word \emph{correlated} is load-bearing: the objective depends on which
+products \emph{co-occur} within orders, not on individual product popularity.
+Two slow-moving SKUs that always appear together should share a station; two
+fast movers that never co-occur should not.
+
+\subsection{The objective: station visits, not travel distance}
+
+\begin{equation}
+  V \;=\; \sum_{o\in O}\bigl|\{\, s\in S \;:\; \exists\, p\in o \text{ with } x_{ps}=1 \,\}\bigr|
+  \label{eq:objective}
+\end{equation}
+
+$V$ counts, summed over all orders $o$, the number of \emph{distinct} stations
+that order must visit.
+
+\paragraph{Why not picker travel distance?}
+In a classical picker-to-parts warehouse the cost driver is the walking
+distance of the picker, and the literature minimises tour length. In a
+pick-and-pass conveyor system the picker does not walk --- the tote comes to
+them. The cost driver is structurally different:
+
+\begin{itemize}
+  \item each station visit costs a \emph{stop}, a \emph{buffer slot}, and \emph{handling time};
+  \item buffers between stations are finite;
+  \item if a station's buffer fills, the tote cannot enter and waits \emph{on the main line};
+  \item a tote waiting on the main line \emph{blocks every tote behind it}, irrespective of destination.
+\end{itemize}
+
+A station visit is therefore not a local cost but a \emph{systemic congestion
+risk}. This is why $V$ is the correct objective, and why the workload
+constraint below is a hard operational matter rather than a soft preference.
+
+Two quantities are reported throughout:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\vtr$ & visits generated by a layout on the \textbf{training} order set (in-sample) \\
+$\vte$ & visits generated by the \emph{same} layout on the \textbf{future test} order set \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+$\vte$ is the scientifically meaningful quantity. $\vtr$ is what the optimiser
+sees; $\vte$ is what the warehouse would actually have paid. A layout that
+minimises $\vtr$ but degrades on $\vte$ has \textbf{overfitted to history} ---
+which is the entire reason this study exists.
+
+For reference, the site's own layout produced $\vte = 210{,}364$ visits pooled
+across the four test windows.
+
+\subsection{The operational constraint: daily pick-lines per station}
+
+A \textbf{pick line} is one (order, product) pick event. Let
+\[
+  W_s(d) \;=\; \text{number of pick-lines executed at station } s \text{ on day } d .
+\]
+
+Each station has bounded daily throughput. Exceeding it produces one of three
+real consequences:
+
+\begin{enumerate}
+  \item \textbf{overtime} --- the labour budget is breached (cost);
+  \item \textbf{spillover} --- work is pushed to the next day (service-level breach);
+  \item \textbf{blocking} --- the buffer saturates and the main line stalls
+        (throughput collapse for the \emph{entire} system).
+\end{enumerate}
+
+Critically, \textbf{the stations are physically heterogeneous}: static shelving,
+dynamic/flow racks, and pallet positions, spanning roughly a
+\textbf{1{,}700$\times$ range in speed}. This is the single most important
+physical fact in the study.
+
+\begin{keybox}
+\textbf{The structural tension.} A naive ``balance the load equally''
+constraint is \emph{wrong}, because a small station legitimately should carry
+less. Meanwhile an unconstrained visit-minimiser wants to pile the
+best-sellers onto the largest station, since that merges orders into fewer
+stations --- which is exactly what overloads it. \textbf{The objective pulls
+towards concentration; the constraint pushes towards dispersion.} Everything
+downstream is about specifying that constraint correctly.
+\end{keybox}
+
+\subsection{Assumptions fixed in advance}
+\label{sec:assumptions}
+
+These were declared before any solving and never silently changed:
+
+\begin{center}
+\begin{tabular}{cp{0.82\linewidth}}
+\toprule
+ID & Assumption \\
+\midrule
+A1 & The workload constraint binds \textbf{per DAY}, not per aggregated window. \\
+A2 & The station ceiling is \textbf{revealed from history}, not engineered from a spec sheet. \\
+A3 & Future demand lies inside the observed envelope; larger surges are out of scope. \\
+A4 & The robust budget $\Gamma$ insures the \textbf{idiosyncratic} component ($\approx$60\%); the \textbf{common} component ($\approx$40\%) is absorbed structurally or priced by $\beta$. \\
+A5 & Closed universe: fixed catalogue, every product has a home, no new SKUs. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A1 is not cosmetic. Aggregating over a week lets a Monday spike and a Friday
+trough cancel, rendering the constraint vacuous --- precisely the failure mode
+that makes a nominally ``feasible'' layout blow up in operation.
+
+% =====================================================================
+\section{Mathematical Formulations: From a Broken Contract to the Share Band}
+% =====================================================================
+
+\subsection{The legacy contract: revealed-peak fixed ceilings}
+
+The original formulation assigned each station an absolute ceiling $T_s$ in
+lines/day, derived as a $q$-quantile of that station's realised daily load
+\emph{under the currently operating layout}, with $q$ swept over
+$\{\max, p_{95}, p_{90}\}$:
+
+\begin{equation}
+  W_s(d) \;\le\; T_s,
+  \qquad
+  T_s \;=\; Q_q\bigl(\{W_s^{\mathrm{inc}}(d)\}_{d\in\mathrm{train}}\bigr).
+  \label{eq:legacy}
+\end{equation}
+
+This failed in three independent ways. Diagnosing them motivated everything else.
+
+\subsubsection*{Failure 1 --- circularity}
+
+$T_s$ is measured from the incumbent layout's own behaviour. A uniformity
+diagnostic was run across five candidate contract forms, measuring for each the
+\textbf{coefficient of variation} of the parameter each station requires:
+\[
+  \mathrm{cv} \;=\;
+  \frac{\text{sd across stations of the required parameter}}
+       {\text{mean across stations}} .
+\]
+A cv near $0$ means every station needs the \emph{same} parameter value. Here
+that is not a virtue but a symptom: the contract is a tautology.
+
+\begin{center}
+\begin{tabular}{lcl}
+\toprule
+Contract form & cv & Verdict \\
+\midrule
+own-max (revealed peak)                 & \textbf{0.00} & circular: fits itself by construction \\
+own-mean $+\,z\cdot$own-$\sigma$ (absolute) & 0.22 & A4 fails: absorbs no common drift \\
+\textbf{share-mean $+\,z\cdot$share-$\sigma$} & \textbf{0.30} & \textbf{chosen} \\
+share $\times$ slack                    & 0.70 & unstable \\
+share $+\,z\sqrt{\cdot}$                & 0.99 & unstable \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection*{Failure 2 --- provable counting infeasibility at $q<\max$}
+
+This is a \textbf{solver-free proof}, which is why it is more trustworthy than
+any solver output. Let $\mathcal{L}(d)=\sum_s W_s(d)$ be the warehouse-wide
+lines on day $d$. Every line must be executed somewhere, so a necessary
+condition for a feasible layout on day $d$ is
+\begin{equation}
+  \sum_{s\in S} T_s \;\ge\; \mathcal{L}(d) \qquad \forall d .
+  \label{eq:counting}
+\end{equation}
+
+Measured:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Fold & $\sum_s T_s$ at $q_{p95}$ / $q_{p90}$ & busiest day $\max_d \mathcal{L}(d)$ & Verdict \\
+\midrule
+0     & 18{,}841 / 17{,}890 & \textbf{19{,}692} & infeasible \\
+1--3  & $\approx$20{,}200 / $\approx$18{,}700 & \textbf{24{,}649} & infeasible \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{keybox}
+\textbf{A1 (per-day binding) and A2's sub-max quantile sweep are
+mathematically incompatible.} No solver was needed, and no solver could have
+rescued it: two of the three declared $q$ values described an empty feasible
+set.
+\end{keybox}
+
+\subsubsection*{Failure 3 --- zero slack for the robust budget}
+
+Define the \textbf{aggregate slack} available to protection and the
+\textbf{protection requirement} at budget $\Gamma$:
+\[
+  \text{slack} \;=\; \sum_s T_s - \max_d \mathcal{L}(d),
+  \qquad
+  \text{prot}(\Gamma) \;=\; \sum_s \ \sum_{i\le\Gamma} \hat L_{(i),s},
+\]
+where $\hat L_{(i),s}$ are the deviations of products assigned to $s$, sorted
+descending.
+
+\begin{center}
+\begin{tabular}{lcccl}
+\toprule
+Fold & slack & $\Gamma=1$ needs & $\Gamma=2$ needs & Outcome \\
+\midrule
+0    & 1{,}397 & 889 \yes & 1{,}486 \no & $\Gamma\le1$ only \\
+1--3 & 798     & $\approx$890 \no & --- & $\Gamma=0$ only \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This \emph{exactly} reproduced which cells solved and which did not, fold by
+fold.
+
+\begin{keybox}
+\textbf{A recorded negative result.} Both a reviewer and I believed the missing
+dual warm start caused the $\Gamma\ge2$ failures. The dual seeding fix was
+implemented --- and $\Gamma\ge2$ \emph{still} failed. The budget arithmetic was
+the cause, not the solver. The fix was correct and necessary; the hypothesis
+about what it would buy was wrong. A rejected hypothesis that cost real work is
+worth recording.
+\end{keybox}
+
+\subsection{The redesigned contract: the volume-normalised share band}
+
+\begin{equation}
+  \boxed{\;
+  W_s(d) \;\le\; \bigl(\mu_s + z\,\sigma_s\bigr)\cdot L(d)
+  \;}
+  \label{eq:shareband}
+\end{equation}
+
+\begin{center}
+\begin{tabular}{clc}
+\toprule
+Term & Definition & Units \\
+\midrule
+$W_s(d)$  & pick-lines executed at station $s$ on day $d$ & lines \\
+$L(d)$    & \textbf{total} warehouse-wide pick-lines on day $d$ & lines \\
+$\mu_s$   & mean over \textbf{training} days of station $s$'s \emph{share} of the day, under the incumbent & --- \\
+$\sigma_s$& sample sd (ddof$=1$) of that same share over training days & --- \\
+$z$       & tolerance multiplier, in units of the station's own share variability & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+with
+\[
+  \mathrm{share}_s(d) = \frac{W_s(d)}{L(d)},
+  \qquad
+  \mu_s = \frac{1}{|D|}\sum_{d\in D}\mathrm{share}_s(d),
+  \qquad
+  \sigma_s^2 = \frac{1}{|D|-1}\sum_{d\in D}\bigl(\mathrm{share}_s(d)-\mu_s\bigr)^2 .
+\]
+
+\subsubsection*{Why the normalisation is the entire point}
+
+Divide both sides of \eqref{eq:shareband} by $L(d)$:
+\begin{equation}
+  \mathrm{share}_s(d) \;\le\; \mu_s + z\,\sigma_s .
+  \label{eq:normalised}
+\end{equation}
+
+\textbf{The right-hand side no longer contains $L(d)$.} Decompose demand
+multiplicatively:
+\[
+  W_s(d) \;=\; \underbrace{L(d)}_{\text{common}} \;\cdot\;
+               \underbrace{\mathrm{share}_s(d)}_{\text{idiosyncratic}} .
+\]
+
+A \textbf{common shock} --- a 30\% busier week with every product up
+proportionally --- multiplies $L(d)$ and cancels identically on both sides. It
+cannot break this constraint. What \emph{can} break it is a change in
+\emph{composition}: one station's share of the day drifting upward.
+
+Contrast with the absolute ceiling $W_s(d)\le T_s$: there a 30\% volume surge
+consumes 30\% more of a fixed ceiling \emph{regardless of composition}, so
+$\Gamma$ would have to insure common risk as well.
+
+\begin{keybox}
+This is precisely why assumption A4 was unsatisfiable under the legacy contract
+and is satisfiable here. The normalisation is not a convenience --- it is what
+makes the budget's job well-posed.
+\end{keybox}
+
+\subsubsection*{Verified structural identities}
+
+Gated (Z2, Z3) and holding exactly:
+\begin{align}
+  \sum_s \mathrm{share}_s(d) &= 1 \quad \forall d
+  \qquad\Longrightarrow\qquad
+  \sum_s \mu_s = 1
+  \quad(\text{measured: } 1.000000000000), \label{eq:sumshare}\\[2pt]
+  \sum_s \bigl(\mu_s + z\sigma_s\bigr) &= 1 + z\sum_s \sigma_s \;>\; 1 .
+  \label{eq:permission}
+\end{align}
+
+Identity \eqref{eq:permission} is load-bearing: \textbf{total permission always
+strictly exceeds 100\% of the day}, so the aggregate counting infeasibility
+\eqref{eq:counting} that killed the legacy contract is impossible by
+construction. With $\sum_s\sigma_s \approx 0.1209$:
+
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+$z$ & total permission & aggregate slack \\
+\midrule
+3 & 1.363$\times$ & 36.3\% of the day \\
+4 & 1.483$\times$ & 48.3\% \\
+6 & 1.725$\times$ & 72.5\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+That surplus is the budget $\Gamma$ has to spend.
+
+\subsection{\texorpdfstring{The Bertsimas--\c{S}im robust model}{The Bertsimas-Sim robust model}}
+
+\subsubsection*{Philosophy}
+
+Classical \textbf{worst-case (box) robustness} assumes every uncertain
+parameter simultaneously attains its worst value. For 2{,}000 products this is
+absurdly conservative and yields an unusable solution.
+
+\textbf{Bertsimas--\c{S}im budgeted uncertainty} parameterises the
+conservatism. With each product's daily line count in
+$[\bar L_p - \hat L_p,\ \bar L_p + \hat L_p]$, the uncertainty set is
+\begin{equation}
+  \mathcal{U}_\Gamma \;=\;
+  \Bigl\{\, L \;:\; L_p = \bar L_p + \eta_p \hat L_p,\;\;
+  |\eta_p|\le 1,\;\; \sum_p |\eta_p| \le \Gamma \,\Bigr\}.
+  \label{eq:uset}
+\end{equation}
+
+$\Gamma$ is the \textbf{budget of uncertainty}: at most $\Gamma$ products may
+deviate adversely at once. $\Gamma=0$ recovers the nominal deterministic model;
+$\Gamma=|P|$ recovers full box robustness. In between lies a tunable dial with
+a probabilistic violation guarantee that degrades gracefully in $\Gamma$.
+
+The robust workload constraint at station $s$ on day $d$ becomes
+\begin{equation}
+  \sum_p \bar L_p x_{ps}
+  \;+\;
+  \underbrace{\max_{S\subseteq P,\ |S|\le\Gamma}\ \sum_{p\in S}\hat L_p x_{ps}}_{\text{protection term}}
+  \;\le\; \mathrm{RHS}_s(d).
+  \label{eq:robustraw}
+\end{equation}
+
+\subsubsection*{Dualisation}
+
+The protection term is a \emph{maximum inside a $\le$ constraint} ---
+non-linear as written. The standard resolution is LP duality. Relax the
+selection to continuous $u_p\in[0,1]$:
+\begin{equation}
+  \max_u \ \sum_p \hat L_p x_{ps} u_p
+  \quad\text{s.t.}\quad
+  \sum_p u_p \le \Gamma, \quad 0\le u_p \le 1 .
+  \label{eq:innerlp}
+\end{equation}
+
+This relaxation is \textbf{exact}: the constraint matrix is a unit-weight
+knapsack (an interval matrix, totally unimodular), so an integral optimum
+always exists. Its \textbf{LP dual}, with $\theta_s$ dual to the budget row and
+$\mu_{ps}$ dual to $u_p\le1$, is
+\begin{equation}
+  \min_{\theta,\mu} \ \Gamma\theta_s + \sum_p \mu_{ps}
+  \quad\text{s.t.}\quad
+  \theta_s + \mu_{ps} \ge \hat L_p x_{ps}, \quad \theta_s,\mu_{ps}\ge 0 .
+  \label{eq:dual}
+\end{equation}
+
+By \textbf{strong duality} the two optima coincide. Substituting the $\min$
+form into a $\le$ constraint permits dropping the minimisation (any
+dual-feasible point satisfying the constraint suffices, and the optimiser
+drives it down):
+
+\begin{equation}
+  \boxed{\;
+  \sum_p \bar L_p x_{ps} + \Gamma\theta_s + \sum_p \mu_{ps} \;\le\; \mathrm{RHS}_s(d),
+  \qquad
+  \theta_s + \mu_{ps} \;\ge\; a_{ps}\,x_{ps}
+  \;}
+  \label{eq:bsfinal}
+\end{equation}
+
+Everything is now linear. In the share-band implementation the per-unit
+deviation is $a_{ps}=\hat L_p$, identical across stations, because the band is
+expressed in \emph{lines} and the speed division required by the legacy
+time-based contract has vanished --- a unit-consistency property the code
+review verified independently.
+
+\subsubsection*{Why tight dual bounding boxes mattered}
+
+\begin{keybox}
+\textbf{Definition.} A \emph{bounding box} is the a-priori interval within
+which the solver is allowed to search for each variable.
+\end{keybox}
+
+The original implementation declared $\theta_s,\mu_{ps}\in[0,10^9]$. Two
+analytic facts shrink this enormously:
+
+\begin{itemize}
+  \item $\theta_s \le a_{\max}(s) := \max_p a_{ps}$. If $\theta_s$ exceeded the
+        largest coefficient, all $\mu_{ps}=0$ and the dual objective
+        $\Gamma\theta_s$ would strictly exceed the true maximum --- never optimal.
+  \item $\mu_{ps} \le a_{ps}$, since $\mu_{ps}\ge a_{ps}x_{ps}-\theta_s$ with
+        $x\le1$ and $\theta\ge0$.
+\end{itemize}
+
+There are $2000\times24 = 48{,}000$ such variables. Shrinking each from
+$[0,10^9]$ to its analytic range removes roughly \textbf{nine orders of
+magnitude of dead search space per variable}. For a local-search solver, which
+samples moves within the declared domain, this is the difference between a
+search that explores and one that flails.
+
+\subsubsection*{Dual seeding at the warm start}
+
+For a \emph{fixed} assignment the optimal duals have a closed form. Let
+$a_{(1)}\ge a_{(2)}\ge\cdots$ be the deviations of products assigned to $s$,
+sorted descending. Then
+\begin{equation}
+  \theta_s^\star = a_{(\Gamma)},
+  \qquad
+  \mu_{ps}^\star = \bigl(a_{ps}-\theta_s^\star\bigr)^{+} .
+  \label{eq:dualseed}
+\end{equation}
+
+Verification that this reproduces the true maximum:
+\[
+  \Gamma\theta^\star + \sum_p \mu^\star_{ps}
+  \;=\;
+  \Gamma a_{(\Gamma)} + \sum_{i=1}^{\Gamma}\bigl(a_{(i)}-a_{(\Gamma)}\bigr)
+  \;=\;
+  \sum_{i=1}^{\Gamma} a_{(i)} \qquad\checkmark
+\]
+
+Seeding $x$ \emph{without} the duals leaves the warm start dual-infeasible: the
+solver receives a point violating $\theta_s+\mu_{ps}\ge a_{ps}x_{ps}$ and must
+first repair it, destroying the value of the warm start.
+
+% =====================================================================
+\section{Complete Parameter Glossary}
+% =====================================================================
+
+\subsection{\texorpdfstring{$z\in\{3,4,6\}$}{z in {3,4,6}} --- tolerance / bandwidth multiplier}
+
+\textbf{Definition.} The number of station-share standard deviations of
+headroom granted above the station's mean share.
+
+\textbf{Role.} $z$ \emph{is the contract}. It defines what counts as an
+acceptable day. It is \emph{not} a treatment and never a tuning knob.
+
+\textbf{Bounded above and below.} As $z\to\infty$ the constraint becomes
+vacuous and the model reverts to the degenerate ``pile every best-seller onto
+the biggest station'' solution the constraint exists to prevent. As $z\to0$ it
+demands a balance the site has never achieved.
+
+\textbf{Empirical anchors (corrected; see Section~\ref{sec:folds}).}
+
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+$z$ & days fully clean (pre-registered, 179 nested slots) & days fully clean (\textbf{51 distinct days}) \\
+\midrule
+2.0 & 49.7\% & 51.0\% \\
+2.7 & 74.3\% & 70.6\% \\
+3.0 & 80.4\% & 80.4\% \\
+4.0 & 94.4\% & \textbf{94.1\%} \\
+6.0 & 99.4\% & \textbf{98.0\%} \\
+8.0 & 100.0\% & 100.0\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Bounds.} The incumbent needs $z=6.07$ to be clean on \emph{every}
+training day (upper bound: above it we would license a layout more imbalanced
+than the site has ever operated). The median station needs $z\approx2.86$
+(lower bound).
+
+\begin{keybox}
+\textbf{Reported as measured coverage, never as a sigma level.} The share
+distribution has \emph{fatter tails than Gaussian}: at $z=3$ a normal law
+predicts 99.865\% of station-days clean, but 99.07\% is observed. Calling
+$z=3$ ``three sigma'' would import a tail probability the data does not support.
+\end{keybox}
+
+\subsection{\texorpdfstring{$\Gamma\in\{0,1,2,4\}$}{Gamma} --- Bertsimas--Sim budget}
+
+\textbf{Definition.} The maximum number of products assumed to deviate
+adversely \emph{simultaneously} at a given station.
+
+\textbf{Role.} $\Gamma$ \emph{is the treatment}. Comparisons across $\Gamma$
+are valid \textbf{only within a fixed $z$} (gate Z13). Comparing $\Gamma=4$ at
+$z=6$ against $\Gamma=0$ at $z=3$ changes contract and treatment together, and
+would credit a loosened contract to the robust budget.
+
+\subsection{\texorpdfstring{$\beta\in\{1.02,1.05\}$}{beta} --- deterministic band tightening}
+
+\textbf{Definition.} A uniform contraction of the allowance:
+\begin{equation}
+  W_s(d) \;\le\; \frac{\mu_s + z\sigma_s}{\beta}\cdot L(d).
+  \label{eq:beta}
+\end{equation}
+
+\textbf{Role.} The \textbf{competitor arm}. $\beta$ buys safety by shrinking
+everyone's allowance uniformly and blindly; $\Gamma$ buys it by targeting the
+products whose volatility actually threatens each station. Comparing them asks:
+\emph{is the Bertsimas--\c{S}im machinery earning its complexity, or would a
+crude uniform haircut do as well?}
+
+\textbf{Historical note.} $\beta$ was a silent no-op for one development phase:
+the per-day right-hand side overrode the tightened capacity, so $\beta$
+duplicated $\Gamma=0$ (measured $-0.01\%$ and $-0.19\%$ --- noise). Caught,
+guarded, then fixed.
+
+\subsection{\texorpdfstring{$\hat L_p$}{lhat} --- per-product daily volatility}
+
+\textbf{Definition.}
+$\hat L_p = \min\bigl(\sigma_p^{\mathrm{daily}},\ \bar L_p\bigr)$,
+where $\sigma_p^{\mathrm{daily}}$ is the standard deviation of product $p$'s
+daily line count over training days and $\bar L_p$ its mean.
+
+\textbf{Why the cap.} Pick-line counts are non-negative. Without
+$\hat L_p\le\bar L_p$ the interval $[\bar L_p-\hat L_p,\ \bar L_p+\hat L_p]$
+would extend below zero --- physically meaningless, and it silently inflates
+the protection term.
+
+\textbf{Role.} $\hat L_p$ is the \emph{price} of protecting product $p$.
+High-volatility SKUs are expensive to insure; stable ones are cheap. This is
+what makes $\Gamma$ selective rather than uniform.
+
+\subsection{Price of Robustness and out-of-sample gain}
+
+\begin{align}
+  \PoR &= \frac{\vtr(\Gamma)-\vtr(0)}{\vtr(0)}
+  &&\text{in-sample visits given up to buy protection} \label{eq:por}\\[3pt]
+  G    &= \frac{\vte(0)-\vte(\Gamma)}{\vte(0)}
+  &&\text{visits recovered on future data} \label{eq:gain}
+\end{align}
+
+$\PoR \ge 0$ always holds for \emph{exact} optima, since a smaller feasible set
+cannot have a better optimum. $G>0$ would mean protection paid for itself.
+
+\textbf{What was measured:} $\PoR = +7\%$ to $+15\%$; $G$ \textbf{negative
+throughout}. Robustness costs visits and does not repay them \emph{in visits}.
+It repays in \emph{constraint reliability} --- a different currency, whose
+operational meaning Section~\ref{sec:mechanism} examines critically.
+
+\subsection{\texorpdfstring{$\gbind$}{gamma-bind} --- where protection starts to bite}
+
+\textbf{Definition.} For a given layout and station, the smallest budget at
+which the robust row would actually cut off that layout on training data.
+Operationally: sort the station's own $\hat L_p$ descending, accumulate, and
+find the first index at which the cumulative sum exceeds the station's
+worst-day headroom.
+
+\textbf{Interpretation.} Below $\gbind$, raising $\Gamma$ changes nothing at
+that station --- the constraint is slack. At or above it, the optimiser is
+forced to rebalance.
+
+\subsection{\texorpdfstring{$\gcover$}{gamma-cover} --- what the future asked for}
+
+\textbf{Definition.} The smallest budget whose protection would have absorbed
+the station's \emph{realised test-window overshoot}; zero when the station
+never overshot.
+
+\textbf{Interpretation.} $\gbind$ is about the model; $\gcover$ is about
+reality. Reporting both permits the statement \emph{``protection is useful at
+these stations, for this reason''} rather than the much weaker \emph{``arm A
+beat arm B''}.
+
+\subsection{Incumbent layout}
+
+\textbf{Definition.} The assignment the site actually operates. It plays three
+distinct roles, and conflating them is a trap:
+
+\begin{enumerate}
+  \item \textbf{statistical basis} --- $\mu_s,\sigma_s$ are fitted from \emph{its} behaviour;
+  \item \textbf{warm start} --- the solver's initial point;
+  \item \textbf{business baseline} --- what any proposed layout must beat.
+\end{enumerate}
+
+Role 1 raises a legitimate objection: does fitting the band to the incumbent
+rig the comparison in its favour?
+
+\begin{keybox}
+\textbf{Tested directly: no.} The incumbent violates its own fitted band on
+\textbf{35 / 10 / 1} of 179 training slots at $z=3/4/6$, with worst-day ratios
+up to \textbf{1.767}. The band is not a tautology for the layout it was fitted
+on, because the share distribution's tails exceed $\mu+z\sigma$.
+\end{keybox}
+
+% =====================================================================
+\section{Solvers, Architecture, and Experimental Design}
+% =====================================================================
+
+\subsection{Two solver paradigms}
+
+\begin{center}
+\begin{tabular}{p{0.24\linewidth}p{0.33\linewidth}p{0.33\linewidth}}
+\toprule
+ & \textbf{CPLEX / HiGHS (exact MIP)} & \textbf{Hexaly (local search)} \\
+\midrule
+method & branch-and-bound with cutting planes over an LP relaxation & metaheuristic neighbourhood search over feasible points \\
+returns & primal solution \emph{and} dual bound & primal solution only \\
+proves optimality & yes (gap $\to0$) & \textbf{no} \\
+proves infeasibility & yes (exhausted tree) & \textbf{no} \\
+scaling & degrades sharply with model size & handles $10^5$ variables routinely \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Hexaly was run at a \textbf{600\,s limit per arm}. Two consequences must be
+stated plainly:
+
+\begin{keybox}
+\textbf{Every arm hit its time limit.} Not one terminated on an optimality
+criterion. That is inherent to the method, not a failure --- but it means
+\emph{no arm in this study is claimed optimal}, and every reported $\PoR$ is a
+difference between two heuristic incumbents.
+
+\textbf{The dual bounds are effectively vacuous.} Across the 70 feasible rows,
+$\text{bound}/\text{obj}$ ranges $0.000$--$0.233$ (median $0.073$); one bound is
+literally zero. \textbf{No arm is certified within 77\% of optimal.}
+\end{keybox}
+
+\subsection{\texorpdfstring{\texttt{INFEASIBLE} vs \texttt{INCONSISTENT}}{INFEASIBLE vs INCONSISTENT}}
+
+Hexaly returns two different negative statuses, and collapsing them would be
+scientific misconduct:
+
+\begin{center}
+\begin{tabular}{lp{0.48\linewidth}l}
+\toprule
+Status & Meaning & Encoding \\
+\midrule
+\texttt{INCONSISTENT} & presolve derived a \textbf{contradiction} --- proven empty feasible set & bound $=+\infty$, proven \\
+\texttt{INFEASIBLE}   & search found nothing within the limit --- says \emph{nothing} about existence & bound $=$ NaN, undetermined \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Gate Z16 enforces that no row claims a proven infeasibility, because a
+local-search solver cannot produce one. The two arms that failed in the final
+grid ($z=3$, $\Gamma=4$, folds 2 and 3) are recorded as \textbf{undetermined},
+never as infeasible.
+
+\begin{keybox}
+A ``MODEL INFEASIBLE (proven)'' verdict is a legitimate scientific result. A
+\emph{claimed} one that the method cannot support is a fabrication.
+\end{keybox}
+
+\subsection{Temporal validation and the nested-fold correction}
+\label{sec:folds}
+
+\textbf{Rolling-origin expanding-window cross-validation.} Unlike $k$-fold CV,
+which shuffles and would leak future into past, temporal validation always
+trains on a prefix and tests on the immediately following block. Each fold's
+training window \emph{expands} to include everything before its test window.
+
+\begin{center}
+\begin{tabular}{ccccc}
+\toprule
+Fold & train days & training window & test days & test window \\
+\midrule
+0 & 38 & 2021-09-01 $\to$ 10-22 & 5 & 10-25 $\to$ 10-29 \\
+1 & 43 & 2021-09-01 $\to$ 10-29 & 4 & 11-02 $\to$ 11-05 \\
+2 & 47 & 2021-09-01 $\to$ 11-05 & 4 & 11-08 $\to$ 11-12 \\
+3 & 51 & 2021-09-01 $\to$ 11-12 & 5 & 11-15 $\to$ 11-19 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection*{The correction that matters}
+
+The pre-registration stated ``179 training days''. That is $38+43+47+51$ --- a
+\textbf{sum over nested sets}. It was verified that fold $f$'s training set is a
+strict superset of fold $f-1$'s, all beginning 2021-09-01. Therefore
+\begin{equation}
+  \text{distinct training days}
+  \;=\; \Bigl|\textstyle\bigcup_f D_f^{\mathrm{train}}\Bigr|
+  \;=\; \mathbf{51}, \qquad\text{not } 179 .
+  \label{eq:distinct}
+\end{equation}
+
+\textbf{The earliest 38 days are counted four times.} The whole record is
+\textbf{56 days} ($\approx$11 weeks, one site).
+
+This inflated the pre-registered coverage anchors, and worst exactly where it
+mattered: $z=6$ was justified as ``matches demonstrated status quo, 99.4\%''. On
+distinct days it is \textbf{98.0\%} --- the incumbent leaves one of 51 days
+unclean.
+
+\begin{keybox}
+\textbf{Clopper--Pearson interval.} The \emph{exact} binomial confidence
+interval, obtained by inverting the binomial test rather than relying on a
+normal approximation --- essential at these tiny counts. On $1/51$ it admits a
+true unclean rate up to roughly 10\%. The $z$-window is a point estimate from
+51 days with no interval, and its upper bound $z\le6.07$ is a \emph{maximum set
+by a single day}.
+\end{keybox}
+
+This is now corrected in the pre-registration, with the original kept verbatim,
+and pinned by gate Z19 so it cannot drift back.
+
+% =====================================================================
+\section{The Gate Ledger and Every Engineering Failure}
+% =====================================================================
+
+\subsection{What a gate ledger is}
+
+Each gate is a claim paired with an \textbf{executable oracle}, written
+\emph{before} the data exists. A gate is \emph{met} only if its process exits 0
+\textbf{and} its declared \texttt{EXPECT:} token appears in the output. The
+runner writes evidence back into the ledger with a hash and a timing.
+
+Crucially, every gate is \textbf{mutation-tested}: fed a fixture it should
+accept, then the same fixture carrying exactly the defect it exists to catch,
+which it must reject.
+
+\begin{keybox}
+\textbf{A gate that has only ever passed is not evidence} --- you have not shown
+that it \emph{can} fail.
+\end{keybox}
+
+\subsection{The 120\,s pilot failure --- a pilot doing its job}
+
+At a reduced 120\,s limit (a cost-saving deviation, \emph{not} the
+pre-registered 600\,s), $\Gamma=4$ returned no feasible layout and gate Z10
+rejected the cell at 5 of 6 arms. \textbf{The assertion was not weakened.}
+Three independent diagnostics followed:
+
+\begin{enumerate}
+  \item \textbf{Aggregate budget.} $\Gamma=4$ needs \textbf{2{,}315 lines};
+        the quietest fold-0 day supplies \textbf{2{,}762}. It fits.
+  \item \textbf{Proximity.} The nearest solved layout ($\Gamma=2$) missed
+        $\Gamma=4$ feasibility by \textbf{2 station-days / 60 lines} out of
+        550{,}777 training lines.
+  \item \textbf{Direct test.} Re-solved at the pre-registered 600\,s: feasible,
+        objective $29{,}704$, $0/38$ days breached.
+\end{enumerate}
+
+\textbf{Verdict: time-limit artefact, not infeasibility.} Returning to 600\,s
+was not tuning --- 600\,s was pre-registered; 120\,s was the deviation.
+
+\subsubsection*{An unexpected bonus: the monotone feasibility ladder}
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Layout & $\Gamma=0$ & $\Gamma=1$ & $\Gamma=2$ & $\Gamma=4$ \\
+\midrule
+incumbent & \no\ (8/38) & \no & \no & \no \\
+$g0$      & \yes & \no & \no & \no \\
+$g1$      & \yes & \yes & \no & \no \\
+$g2$      & \yes & \yes & \yes & \no \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Each layout $g_\Gamma$ is feasible at exactly its own budget and breaks at the
+next --- strong evidence that the robust row is enforced as specified.
+
+\subsection{The Z7 defect --- the busiest day is the wrong day}
+
+Gate Z7 asserted that $\Gamma=4$'s protection fits inside available slack, and
+measured slack on the \textbf{busiest} training day. That is wrong:
+
+\begin{itemize}
+  \item protection $\sum_s\sum_{i\le\Gamma}a_{(i)}$ depends on $\hat L_p$ --- a
+        \textbf{constant number of lines}, independent of the day;
+  \item slack $z\bigl(\sum_s\sigma_s\bigr)L(d)$ \textbf{scales with the day's volume}.
+\end{itemize}
+
+Therefore slack is \textbf{smallest on the quietest day}. Checking the busiest
+day overstates affordability by the max/min volume ratio, which is
+\textbf{2.58$\times$} on these folds.
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+ & old (busiest day) & corrected (quietest day) \\
+\midrule
+tightest cell margin & $\approx3\times$ & \textbf{1.08$\times$} (fold 3, $z=3$) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{keybox}
+That 1.08$\times$ margin \textbf{predicted exactly where the final grid would
+fail}: the two arms that did not solve were $z=3$, $\Gamma=4$, folds 2 and 3. A
+corrected gate earned its keep by forecasting the failure.
+\end{keybox}
+
+\subsection{Mutation testing and the sandboxing bug --- twice}
+
+\textbf{Mutation testing} deliberately injects a defect into a fixture and
+requires the test to fail. It answers \emph{``does this check discriminate?''}
+rather than \emph{``did this check pass?''}
+
+\paragraph{Incident 1.} The gate-mutation script built its fixture at the real
+results directory and deleted the tree on cleanup. That path was empty when the
+script was written; by the time of the grid it held the committed pilot.
+Running the suite \textbf{destroyed committed evidence}. Recovered from git.
+
+\paragraph{Incident 2 --- worse.} After gate Z10 was retargeted from the 120\,s
+pilot to the 600\,s one, the Z10 mutation script kept building at the \emph{old}
+path. It therefore mutated one directory while the gate read another ---
+\textbf{every mutation ``passed'' while proving nothing} --- and cleanup again
+deleted real results. Recovered from git.
+
+\begin{keybox}
+\textbf{The second incident is the more instructive.} Z10 read green for a full
+cycle while its validation was vacuous. \emph{A gate is only as good as the
+mutation test that validates it, and a mutation test pointed at the wrong
+directory is worse than none --- it manufactures false confidence.}
+\end{keybox}
+
+\paragraph{Structural fix.} An environment hook
+(\texttt{CSLAP\_ZDIR\_SANDBOX}) redirects the gate module's root;
+\texttt{checks\_z} prints a loud \texttt{*** SANDBOX ***} banner whenever it is
+set, so sandboxed output cannot be mistaken for evidence. The Z10 mutation
+script now \emph{imports the gate module and reads the fixture path from it},
+then asserts that path lies inside the sandbox before deleting anything. The
+fixture cannot drift from the gate, and cannot touch real results.
+
+This belongs to the same failure family as an earlier incident in which a
+\LaTeX\ \texttt{*.log} ignore rule silently swallowed 17 solver console logs,
+which \texttt{git stash --include-untracked} then skipped, and a worktree
+deletion destroyed.
+
+\begin{keybox}
+\textbf{Uncommitted evidence is not evidence.} In both mutation incidents, the
+only reason nothing was lost permanently is that each phase had been committed
+first.
+\end{keybox}
+
+\subsection{Gate Z9 and the \texorpdfstring{$\beta$}{beta}-inversion}
+
+On the final grid, \textbf{6 of 24} $\beta$ arms returned objectives
+\emph{below} their $\Gamma=0$ baseline (worst $-1.79\%$). For exact optima this
+is impossible: $\beta$'s feasible set is a strict subset of $\Gamma=0$'s, so
+$\mathrm{opt}_\beta \ge \mathrm{opt}_{\Gamma=0}$.
+
+\textbf{Both explanations were tested rather than assumed.} All 24 $\beta$
+layouts satisfy the \emph{tightened} band on every training day and differ from
+$\Gamma=0$ by $\approx$1{,}700 of 2{,}000 products. \textbf{$\beta$ is enforced
+everywhere.}
+
+The inversion is therefore a \textbf{suboptimality certificate}: a $\beta$
+layout is feasible for the tighter band, hence also feasible for $\Gamma=0$'s
+looser band. A lower objective at a feasible point of $\Gamma=0$'s problem
+\emph{proves} that $\Gamma=0$'s returned incumbent was suboptimal by at least
+that margin.
+
+\subsubsection*{Two corrections to my own language}
+
+\begin{enumerate}
+  \item I wrote ``suboptimality \emph{bounded at} 1.79\%''. That inverts the
+        inequality. An inversion is a \textbf{lower} bound on solver error:
+        error $\ge 1.79\%$. The only \emph{upper} bound available is the dual,
+        and it is vacuous.
+  \item I applied the resulting noise floor \textbf{asymmetrically} --- ruling
+        $\beta$'s $+0.4$--$1.2\%$ indistinguishable while reporting
+        $\Gamma=2$'s $-1.34\%$ saving at $z=3$ as a win. Both sit under the
+        same floor. Now stated symmetrically, and the $z=3$ visit claim is
+        retracted.
+\end{enumerate}
+
+\textbf{Z9 was restructured, not loosened.} The original assertion tested a
+property of \emph{exact optima} against a \emph{local-search} solver --- invalid
+by construction. The replacement checks what ``$\beta$ is binding'' actually
+means and holds regardless of solver quality: the returned layout must satisfy
+the tightened band on every training day, and must differ from $\Gamma=0$. Both
+mutation-tested. This is the one assertion changed after seeing data, and it is
+flagged as such in the ledger.
+
+\subsection{Tooling, snapshots, and metadata defects}
+
+\begin{center}
+\small
+\begin{tabular}{lp{0.55\linewidth}p{0.24\linewidth}}
+\toprule
+ID & What went wrong & Fix \\
+\midrule
+D1 & \texttt{calibration.csv} / \texttt{per\_station.csv} held \textbf{fold 3 only} --- the runner snapshotted all three files per fold but merged only \texttt{results.csv}. \emph{Committed evidence was wrong.} & re-merged from snapshots; runner merges all three \\
+D3 & All 16 gate \texttt{CHECK}s and the grid runner lived in a \textbf{session temp directory}. & moved to \texttt{tools/}, paths derived from \texttt{\_\_file\_\_} \\
+D2 & \texttt{--share-z} on a non-Hexaly backend silently solved the \textbf{legacy contract}, persisted indistinguishable rows, \emph{then} crashed. & refused up front; verified firing \\
+D5 & A fold dying before its first \texttt{persist()} would be snapshotted as a \textbf{duplicate of the previous fold} and merge to a complete-looking 24 rows. & clear first, fail loudly \\
+D6 & An unmatched arm name \textbf{dropped an arm silently}. & now raises \\
+D11 & \texttt{results.csv} recorded neither contract nor $z$ --- scoring at the wrong $z$ was undetectable. & stamps contract, $z$, seed, backend \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{keybox}
+\textbf{The overwrite-mode persistence trap.} The driver writes
+\texttt{results.csv} from a \emph{process-local} row list in overwrite mode.
+Sending four folds to one output directory silently keeps only the last. The
+mitigation is to snapshot each fold \emph{the moment its process exits} --- not
+by polling, which is what cost a complete arm to a race condition in an earlier
+run.
+\end{keybox}
+
+% =====================================================================
+\section{The Adversarial Review and Statistical Audit}
+% =====================================================================
+
+Two hostile reviews were commissioned: one on code, one on method. The code
+review \emph{recomputed} rather than read, and independently confirmed the core
+is sound --- no leakage ($\mu,\sigma$ match a train-only fit to $10^{-12}$ and
+differ from a train+test fit on every fold), all arms scored against the same
+$\beta=1$ band, units consistent, $\gbind/\gcover$ correct with zero
+mismatches, every committed metric reproducible. The methodological review was
+far more damaging.
+
+\subsection{Statistical power is capped by design}
+
+\textbf{The unit-of-analysis problem.} There are 18 test days, but they form
+\textbf{4 consecutive weeks}, one per fold. Weekday demand is strongly
+autocorrelated; 18 days are not 18 independent observations. The honest unit is
+the \textbf{week}: $n=4$.
+
+\begin{keybox}
+\textbf{Sign test.} The non-parametric test for paired data using only the
+\emph{direction} of each difference. Under $H_0$ each pair is equally likely to
+go either way, so the count of positive differences is
+$\mathrm{Binomial}(n,\tfrac12)$. With $n=4$ all in one direction,
+\[
+  p \;=\; 2\times\left(\tfrac12\right)^{4} \;=\; 0.125 .
+\]
+\textbf{No comparison in this study can reach $p<0.05$ on weekly units. It is
+arithmetically impossible.}
+\end{keybox}
+
+This should have appeared in the pre-registration; it now does.
+
+\subsection{Finer-grained paired tests}
+
+\textbf{McNemar's test.} The paired test for binary outcomes. Given $n_{01}$
+cases where A fails and B does not, and $n_{10}$ the reverse, concordant pairs
+carry no information; inference rests on the \textbf{discordant} pairs, testing
+whether they split evenly. The exact binomial form was used (appropriate at
+these counts, unlike the $\chi^2$ approximation).
+
+On 432 station-days ($18\times24$):
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Comparison & $z=3$ & $z=4$ & $z=6$ \\
+\midrule
+$\Gamma=0$ vs $\Gamma=1$        & $p=0.019$  & $0.035$  & $0.022$ \\
+$\Gamma=0$ vs $\Gamma=2$        & $0.0042$   & $0.0034$ & $0.012$ \\
+$\Gamma=0$ vs $\beta{=}1.05$    & $0.52$     & $0.12$   & $0.15$  \\
+\textbf{incumbent vs $\Gamma=2$}& \textbf{0.51} & \textbf{0.63} & \textbf{1.00} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Three readings:
+
+\begin{enumerate}
+  \item $\Gamma$ versus nominal is nominally significant everywhere;
+  \item $\beta$ versus nominal is \textbf{not} significant anywhere --- its
+        apparent improvement is not distinguishable from noise;
+  \item \textbf{incumbent versus $\Gamma=2$ is a statistical tie at every $z$},
+        which directly refutes the earlier ``dominates the incumbent'' claim.
+\end{enumerate}
+
+\paragraph{Multiplicity.} With 14 comparisons, \textbf{Bonferroni}
+($\alpha/m = 0.0036$) or the uniformly more powerful \textbf{Holm step-down}
+procedure (sort $p$ ascending, compare $p_{(i)}$ against $\alpha/(m-i+1)$, stop
+at the first failure) leave \textbf{only 1 of 14 surviving}. Both control the
+family-wise error rate --- the probability of \emph{any} false rejection.
+
+\paragraph{Why the $\Gamma$ effect is still credible.} Not from $p$-values, but
+from \textbf{direction consistency}: across 34 fold-level
+$\Gamma$-versus-nominal comparisons, \textbf{31 better, 3 tied, 0 worse}. The
+effect never reverses. Note that the three $z$ values are \emph{not} independent
+replications --- same data, nested contracts.
+
+\subsection{The mechanism does not survive scrutiny}
+\label{sec:mechanism}
+
+This is the most serious finding, and it argues \emph{against} the tidy story.
+
+\paragraph{$\Gamma$ is slack where the winning layouts sit.}
+Fraction of station-folds with $\gbind\le4$:
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Arm & $z=3$ & $z=4$ & $z=6$ & median $\gbind$ \\
+\midrule
+$g0$ & 75.0\% & 61.5\% & 46.9\% & 1 / 2 / 8 \\
+$g1$ & \textbf{5.2\%} & \textbf{5.2\%} & \textbf{0\%} & 13 / 18 / 49 \\
+$g2$ & \textbf{4.2\%} & \textbf{4.2\%} & \textbf{0\%} & 12 / 21 / 49 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The $\Gamma=1$ arm did not land on a layout that $\Gamma=1$ constrains --- it
+landed on one protected to $\gbind\approx13$--$49$ at the median station.
+
+\paragraph{$\Gamma\le4$ could not have covered the realised overshoots.}
+For $g2$ at $z=3$, residual overshoots require $\gcover\in[5,52]$:
+\textbf{0\% coverable at $\Gamma\le4$}.
+
+\begin{keybox}
+\textbf{Both ends fail.} The constraint is slack where the layout sits, and the
+failures that remain are ones the budget could never have absorbed. Whatever
+produced fewer violated days, \emph{it was not Bertsimas--\c{S}im scenario
+coverage.} The defensible statement is that $\Gamma$ acts as a
+\textbf{conservatism dial that forces rebalancing} --- displacing the search
+away from the concentrated nominal optimum --- not that it insures the
+scenarios it nominally insures.
+\end{keybox}
+
+\subsection{The binary metric reverses when read continuously}
+
+The headline uses a $0/1$ threshold: did \emph{any} station exceed its band on
+day $d$? The \textbf{continuous} version of the identical quantity ---
+\texttt{mean\_daily\_ratio}, the mean over days of the worst station's
+load/allowance ratio --- tells the opposite story:
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+$z=6$, by fold & f0 & f1 & f2 & f3 \\
+\midrule
+incumbent & 0.783 & 0.817 & 0.811 & 0.774 \\
+$g2$      & 0.837 & 0.883 & 0.860 & 0.808 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Every optimised arm runs closer to the band than the incumbent in 3--4
+of 4 folds, at every $z$.} Worst-day ratios can also be worse: at $z=3$, $g1$
+peaks at \textbf{1.469} versus the incumbent's 1.249 while ``winning'' 3/18 to
+6/18.
+
+\textbf{Interpretation.} Optimised layouts \emph{consume the headroom the
+contract grants them}, which is what an optimiser is supposed to do. But it
+means ``fewer violated days'' and ``more operating margin'' are different
+claims, and only the first is true.
+
+\subsection{The seed replication (Gate Z20)}
+
+\paragraph{The objection.} One local-search run per cell. A metaheuristic's
+output is stochastic, so a 4-versus-8-day difference could reflect
+\emph{where the search stopped} rather than the model. Supporting evidence:
+$\beta{=}1.02$ differs from $\Gamma=0$ by 0.215 percentage points of visits at
+$z=4$ yet halves violations.
+
+\paragraph{The experiment.} Hexaly exposes a search seed. It was plumbed
+through the backend and driver, and $z=4$ was re-run for $\Gamma\in\{0,2\}$ on
+all four folds at seeds 11 and 22. With the original grid run this gives
+\textbf{three independent samples per cell} --- 8 solves, 2\,h\,50\,m.
+
+\paragraph{Result --- test days violated of 18, pooled over folds:}
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Arm & run 1 & run 2 & run 3 & range \\
+\midrule
+$\Gamma=0$ & 8 & 10 & 7 & \textbf{3} \\
+$\Gamma=2$ & 1 & 1  & 2 & \textbf{1} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{keybox}
+\textbf{The distributions are disjoint.} The worst $\Gamma=2$ run still beats
+the best $\Gamma=0$ run. Between-arm gap \textbf{7.0 days} against a largest
+within-arm range of \textbf{3}. Per (fold, seed) pair, $\Gamma=2$ is better in
+\textbf{11 of 12}, tied in the twelfth, and \textbf{never worse}. The $\Gamma$
+effect survives the objection.
+\end{keybox}
+
+The replication also produced a \emph{measured} noise floor for visits, rather
+than one inferred from $\beta$-inversions:
+\[
+  \text{seed-only visit spread} \;=\; 0.87\%\ (\Gamma{=}0),
+  \qquad 0.32\%\ (\Gamma{=}2).
+\]
+
+Applied symmetrically:
+
+\begin{center}
+\begin{tabular}{lcl}
+\toprule
+Claim & Magnitude & vs 0.87\% floor \\
+\midrule
+$z=4$, $\Gamma{=}2$ saves vs incumbent & 3.25\% & clears \\
+$z=6$, $\Gamma{=}2$ saves vs incumbent & 5.81\% & clears \\
+$z=3$, $\Gamma{=}2$ saves vs incumbent & 1.34\% & \textbf{1.5$\times$ the spread --- retracted} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Gate Z20 fails if the arms ever overlap across seeds, if $\Gamma=2$ is worse in
+any fold-seed pair, or if the seed spread exceeds 5\%.
+
+% =====================================================================
+\section{Defensible Claims, Retractions, and Open Problems}
+% =====================================================================
+
+\subsection{What can be claimed rigorously}
+
+\paragraph{On the contract redesign --- the strongest result, and a modelling
+one rather than a statistical one.}
+
+\begin{keybox}
+The revealed-peak ceiling was \emph{provably} unusable: at $q<\max$ the station
+ceilings summed to less than the busiest training day, so two of three declared
+quantiles described an empty feasible set, and the remaining slack could not
+fund $\Gamma\ge1$ on three of four folds. The volume-normalised share band
+removes this by construction --- $\sum_s(\mu_s+z\sigma_s)=1+z\sum_s\sigma_s>1$
+guarantees aggregate feasibility --- and it is what first made $\Gamma\ge2$
+solvable at all. \textbf{This needs no statistics; it is arithmetic,
+independently verified.}
+\end{keybox}
+
+\paragraph{On the effect of $\Gamma$.}
+Layouts solved at $\Gamma\in\{1,2\}$ violate the share band on fewer test days
+than the nominal $\Gamma=0$ layout, at every declared $z$, in 31 of 34
+fold-level comparisons with zero reversals, and by a margin exceeding the
+solver's own run-to-run spread (disjoint distributions over three seeds).
+Nearly all the benefit arrives by $\Gamma=1$--$2$; $\Gamma=4$ adds nothing while
+costing 3--4 further points of $\PoR$.
+
+\paragraph{On the comparison with the incumbent.}
+At $z=4$ and $z=6$, $\Gamma=2$ \textbf{matches} the incumbent's reliability
+(1/18 vs 2/18; 1/18 vs 1/18 --- statistical ties, $p\ge0.51$) while using
+\textbf{3.3\%--5.8\% fewer station visits}, a margin clearing the measured
+0.87\% seed-noise floor.
+
+Note the shape of the claim: \emph{equal reliability at lower cost}, not
+superiority on both axes.
+
+\subsection{What was retracted, and why}
+
+\begin{center}
+\small
+\begin{tabular}{p{0.34\linewidth}p{0.16\linewidth}p{0.42\linewidth}}
+\toprule
+Claim & Status & Reason \\
+\midrule
+``The incumbent beats every optimised arm \emph{at zero visit cost}'' &
+\textbf{retracted} &
+The grid never computed incumbent visits. Once computed: optimised arms use
+\textbf{11--13\% fewer}. A cost comparison was asserted with no measurement
+behind it. \\
+\addlinespace
+``A $\Gamma$ arm \emph{dominates} the incumbent on both dimensions'' &
+\textbf{softened} &
+Violations differ by 0--1 days of 18; McNemar $p=0.51/0.63/1.00$. A tie, not a win. \\
+\addlinespace
+``\emph{Every} optimised arm is below it'' &
+\textbf{false} &
+$z=3$, $\Gamma=4$ is \textbf{+1.739\%} above. One counterexample, and $g4$ had
+been omitted from that table. \\
+\addlinespace
+``$z=6$ matches the status quo at 99.4\%'' &
+\textbf{corrected to 98.0\%} &
+The anchor was computed over 179 \emph{nested} day-slots spanning only 51
+distinct days. \\
+\addlinespace
+``Hexaly suboptimality \emph{bounded at} 1.79\%'' &
+\textbf{corrected} &
+An inversion is a \emph{lower} bound on error. The upper bound is the dual, and
+it is vacuous. \\
+\addlinespace
+``$\Gamma=2$ saves 1.34\% of visits at $z=3$'' &
+\textbf{retracted} &
+Below the measured noise floor --- the same rule already applied to $\beta$. \\
+\addlinespace
+``The robust budget \emph{repairs} reliability'' &
+\textbf{weakened} &
+$\gbind$ shows the row is slack in the winning layouts; $\gcover$ shows
+$\Gamma\le4$ could not cover the realised overshoots. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Remaining limitations}
+
+\begin{enumerate}
+  \item \textbf{The mechanism is unexplained.} $\Gamma$ works, but not through
+        the channel the theory describes. The honest framing is an indirect
+        rebalancing dial.
+  \item \textbf{No cost-matched control.} $\beta$ costs 0.4--1.2\%; $\Gamma$
+        costs 7--15\%. They are an order of magnitude apart, so ``does $\Gamma$
+        beat $\beta$?'' is confounded with ``does spending more help?''
+  \item \textbf{Power is capped at $p=0.125$} on weekly units. This cannot be
+        fixed by analysis, only by more data.
+  \item \textbf{The contract partly encodes the incumbent's policy.} $\mu_s$
+        legitimately captures station heterogeneity (a 1{,}700$\times$ speed
+        range means equal shares would be \emph{wrong}), but $\sigma_s$ is the
+        incumbent's own erraticness --- a policy artefact. At $z=3$,
+        \textbf{6 of 24} stations have their entire allowance below an equal
+        $1/24$ share, so ``violated days'' measures departure from historical
+        practice, not certified physical failure.
+  \item \textbf{Generalisation is narrow.} One site, 2{,}000 SKUs, 24 stations,
+        11 consecutive weeks, one solver, one incumbent policy, no seasonal
+        coverage.
+  \item \textbf{No arm is certified within 77\% of optimal.} Every $\PoR$ figure
+        is a difference between heuristic incumbents.
+\end{enumerate}
+
+\subsection{Future research avenues}
+
+\begin{enumerate}
+  \item \textbf{The cost-matched $\beta$ arm} ($\beta\approx1.15$--$1.20$,
+        calibrated to cost $\approx$6\%). Settles whether Bertsimas--\c{S}im
+        earns its complexity. Cheapest and most decisive experiment available.
+  \item \textbf{Extend the horizon.} 51 distinct training days and 4 test weeks
+        are the binding constraint on every statistical claim. More weeks buy
+        more than any modelling refinement.
+  \item \textbf{Chase the mechanism.} If $\Gamma$ works by displacing the search
+        rather than by coverage, test that directly: compare against a
+        random-restart or diversity-penalised $\Gamma=0$ arm at matched cost. If
+        those reproduce the effect, the Bertsimas--\c{S}im interpretation
+        collapses and something more interesting is happening.
+  \item \textbf{Replace $\sigma_s$ with an engineered capability estimate}, so
+        the band measures physical capacity rather than historical behaviour.
+  \item \textbf{Seed replication across the whole grid}, not only $z=4$.
+\end{enumerate}
+
+% =====================================================================
+\section*{Methodological Lessons Worth Carrying Forward}
+\addcontentsline{toc}{section}{Methodological Lessons Worth Carrying Forward}
+% =====================================================================
+
+\begin{description}[style=unboxed,leftmargin=0pt]
+
+\item[Write the acceptance test before the run, and prove it can fail.]
+Gates Z11, Z12, Z15, Z16 and Z17 were authored before any grid data existed.
+Z12 in particular caught nothing --- but it was the only reason a layout
+breaching its own training contract could not ship silently, which is exactly
+what made an earlier exact-solver run meaningless (53--92\% of training days
+broken while reported feasible).
+
+\item[A green gate is not evidence until its mutation test is verified.]
+Z10 passed for a full cycle while its fixture pointed at the wrong directory.
+
+\item[Commit every phase.]
+Twice, tooling written for this study destroyed committed evidence. Both times
+it was recoverable \emph{only} because the phase had been committed first.
+
+\item[When a check fails, diagnose before touching it.]
+Z9's failure was real, and following it produced a genuine finding --- a
+measured suboptimality floor --- rather than a suppressed inconvenience.
+Conversely, Z7's \emph{passing} concealed a defect: it measured the wrong day,
+and correcting it forecast exactly which grid cells would fail.
+
+\item[Report the counterweight with equal weight.]
+The incumbent's continuous-margin advantage, the broken mechanism story, and the
+two unsolved arms belong in the abstract, not a footnote. The finding that
+survives adversarial review is worth more than the one that merely sounds
+better.
+
+\end{description}
+
+\end{document}

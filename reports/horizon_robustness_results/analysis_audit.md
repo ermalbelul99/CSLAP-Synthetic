@@ -1,6 +1,6 @@
 # Analysis audit
 
-Regenerated 2026-09-13T17:55:44Z from immutable campaign artifacts, in 41.96 s, by analysis version `2026-09-13-r3`. No optimizer is imported by this path.
+Regenerated 2026-09-13T22:57:41Z from immutable campaign artifacts, in 41.79 s, by analysis version `2026-09-13-r3`. No optimizer is imported by this path.
 
 Reproduce with:
 
@@ -65,7 +65,7 @@ Primary summaries read `cases/<case_id>.json` only. Deliberate retries are inven
 | `tables/case_frame.csv` | 464 | 86 | `c479cacc595eb9d0…` |
 | `tables/cross_horizon.csv` | 800 | 27 | `70fd6934113fd3ba…` |
 | `tables/dispersion_survey.csv` | 90 | None | `74d52002a50ff8bf…` |
-| `tables/drift_survey.csv` | 15 | None | `a2b5814516fe8953…` |
+| `tables/drift_survey.csv` | 16 | None | `60e729006f50f274…` |
 | `tables/frontier_delta.csv` | 456 | 24 | `462099829ea54d50…` |
 | `tables/frontier_delta_pooled_by_rule.csv` | 456 | 26 | `9220c353de2a2c99…` |
 | `frontier_nu` | — | — | not produced: only one nu value (['0.01']) is present; no frontier is defined |

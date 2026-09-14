@@ -214,18 +214,28 @@ def frontier(rows, path, *, axis, title=None):
         positions[value] = index
         labels.append(value)
     for arm in series:
-        entries = sorted(grouped[arm], key=lambda r: float(r["value"]))
+        # One point per axis value: cells at the same value (several datasets or
+        # horizons) are AGGREGATED with an explicit denominator, never threaded
+        # through as separate points of one line (13 Sep 2026 review).
+        merged = {}
+        for e in grouped[arm]:
+            m = merged.setdefault(e["value"], dict(passes=0, scored=0, cells=0))
+            m["passes"] += e["joint_pass"]; m["scored"] += e["scored_cells"]; m["cells"] += e["cells"]
+        entries = [dict(value=v, **merged[v]) for v in sorted(merged, key=float)]
         xs = [positions[e["value"]] for e in entries]
-        rates = [(100.0 * e["joint_pass"] / e["scored_cells"]) if e["scored_cells"] else None
-                 for e in entries]
+        rates = [(100.0 * e["passes"] / e["scored"]) if e["scored"] else None for e in entries]
         drawn_x = [x for x, y in zip(xs, rates) if y is not None]
         drawn_y = [y for y in rates if y is not None]
         top.plot(drawn_x, drawn_y, marker=MARKERS[arm], color=SERIES[arm], linewidth=2,
                  markersize=6, label=arm, zorder=3)
+        for x, y, e in zip(xs, rates, entries):
+            if y is not None:
+                top.annotate(f"{e['passes']}/{e['scored']}", (x, y), textcoords="offset points",
+                             xytext=(0, 6), fontsize=6.5, color=INK_SECONDARY, ha="center")
         if drawn_x:
             top.annotate(arm, (drawn_x[-1], drawn_y[-1]), textcoords="offset points",
                          xytext=(6, 0), fontsize=7.5, color=INK_SECONDARY, va="center")
-        unresolved = [e["cells"] - e["scored_cells"] for e in entries]
+        unresolved = [e["cells"] - e["scored"] for e in entries]
         bottom.plot(xs, unresolved, marker=MARKERS[arm], color=SERIES[arm], linewidth=1.6,
                     markersize=5, zorder=3)
     top.set_xticks(range(len(labels)))
@@ -241,7 +251,8 @@ def frontier(rows, path, *, axis, title=None):
     bottom.set_xticklabels(labels)
     top.legend(frameon=False, fontsize=8, ncols=len(series), loc="lower center",
                bbox_to_anchor=(0.5, -0.18), labelcolor=INK_SECONDARY)
-    fig.text(0.02, -0.02, "The lower panel is the denominator audit: cells that produced no scored "
+    fig.text(0.02, -0.02, "One point per value per arm: passes/scored cells over every matched cell at that "
+                          "value. The lower panel is the denominator audit: cells that produced no scored "
                           "result are never dropped from the frontier.", fontsize=6.5, color=MUTED)
     return _save(fig, path)
 

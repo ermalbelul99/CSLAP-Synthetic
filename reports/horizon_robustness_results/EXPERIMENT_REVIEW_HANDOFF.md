@@ -1193,14 +1193,16 @@ Each cell: pass/miss · cap breaches/floor breaches · worst breach (pp) · mean
 * **Replication endpoint (primary):** TIGHT passes ±2 at n = P on the held-out future for 3 of 3 seeds. Predeclared threshold: at least two of three. **REPLICATED.**
 * **Factorial reading (secondary, descriptive), seed-wise:**
 
-| Arm | scenarios | margin | passes | worst breach (pp), max over seeds | mean visits/order | vs incumbent | stations below modelled minimum, mean |
-|---|---|---|---:|---:|---:|---:|---:|
-| NOM | 0 | 0 | 0/3 | 1.144 | 3.232 | −16.0% | 13.0 |
-| TIGHT | 0 | 1 | 3/3 | 0.000 | 3.270 | −15.0% | 12.7 |
-| HIST+ACT | 1 | 0 | 0/3 | 0.179 | 3.264 | −15.2% | 3.7 |
-| HIST+ACT-T | 1 | 1 | 3/3 | 0.000 | 3.347 | −13.0% | 3.3 |
+| Arm | scenarios | margin | passes | worst breach (pp), max over seeds | largest station deviation from target (pp), max over seeds | mean visits/order | vs incumbent | stations below modelled minimum, mean |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| NOM | 0 | 0 | 0/3 | 1.144 | 3.144 | 3.232 | −16.0% | 13.0 |
+| TIGHT | 0 | 1 | 3/3 | 0.000 | 1.756 | 3.270 | −15.0% | 12.7 |
+| HIST+ACT | 1 | 0 | 0/3 | 0.179 | 2.179 | 3.264 | −15.2% | 3.7 |
+| HIST+ACT-T | 1 | 1 | 3/3 | 0.000 | 1.160 | 3.347 | −13.0% | 3.3 |
 
-  Margin main effect (passes with the margin on against off): 6 against 0 of 6 each. Scenario main effect (scenarios on against off): 3 against 3. These are counts over three optimiser seeds at one origin; they describe this deployment and generalise to nothing.
+  Margin main effect (passes with the margin on against off): 6 against 0 of 6 each. Scenario main effect (scenarios on against off): 3 against 3. These are counts over three optimiser seeds at one origin; they describe this deployment and generalise to nothing. Pass counts are not the whole reading: the scenarios and activation, bundled in this factorial, shrink the largest station deviation from 3.14 to 2.18 pp without the margin and from 1.76 to 1.16 pp with it (the incumbent's own largest deviation on this future is 1.16 pp), while HIST+ACT-T costs 2.4% more visits than TIGHT. So the margin decides the pass; the scenarios buy fidelity to the historical shares at a visit cost: a cost-protection trade-off, not evidence that scenario protection is useless. Their separate contributions (scenarios against activation) are not isolated here.
+
+* **The held-out window was not an easy one.** Measured only after the campaign had scored it, its product mix sits 0.195 from the pooled history it was scored against in total variation, against a historical block maximum of 0.194 and mean 0.171 over 11 blocks (`tables/drift_survey.csv`, row `BERNER@holdout`): drift at the top of the historical range, not below it.
 
 ### 13.4 What this section does not claim
 

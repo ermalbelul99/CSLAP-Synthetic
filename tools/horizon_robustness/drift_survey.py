@@ -67,6 +67,9 @@ def window_counts(orders):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--datasets", nargs="+", default=list(DEFAULT))
+    parser.add_argument("--holdout", action="store_true",
+                        help="also measure the revision-3 deployment window [first+2P, first+3P); allowed only "
+                             "because that future has already been scored by campaign ho3_20260913")
     args = parser.parse_args(argv)
     started = time.time()
     policy = Protocol()
@@ -100,6 +103,31 @@ def main(argv=None):
             print(json.dumps({k: row[k] for k in ("dataset_id", "n", "historical_blocks", "historical_tv_max",
                                                     "historical_tv_mean", "future_tv_ex_post",
                                                     "reserved_margin_rho", "future_tv_within_rho")}))
+    if args.holdout:
+        from Baselines.horizon_robustness.protocol import holdout_origin
+        for dataset in args.datasets:
+            if dataset != "BERNER":
+                continue
+            demand = _load_dataset(dataset, ROOT)
+            product_count = demand.catalogue.p
+            origin = holdout_origin(len(demand.orders), product_count)
+            n = product_count
+            history = complete_window(demand.orders, 0, origin)
+            pooled = mix(window_counts(history), product_count)
+            blocks = [s for s in make_scenarios(history, product_count, n) if s.label == "block"]
+            historical = [tv(mix(s.counts, product_count), pooled) for s in blocks]
+            future = complete_window(demand.orders, origin, origin + n)
+            future_tv = tv(mix(window_counts(future), product_count), pooled)
+            row = dict(dataset_id=dataset + "@holdout", origin=origin, n=n, historical_blocks=len(blocks),
+                       historical_tv_max=float(max(historical)), historical_tv_mean=float(statistics.fmean(historical)),
+                       historical_tv_p90=float(sorted(historical)[max(0, int(0.9 * len(historical)) - 1)]),
+                       historical_tv_last=float(historical[-1]), future_tv_ex_post=float(future_tv),
+                       reserved_margin_rho=float(rho), future_tv_within_rho=future_tv <= rho,
+                       historical_max_within_rho=max(historical) <= rho,
+                       note="revision-3 deployment window, measured only after campaign ho3_20260913 scored it")
+            rows.append(row)
+            print(json.dumps({k: row[k] for k in ("dataset_id", "n", "historical_blocks", "historical_tv_max",
+                                                    "historical_tv_mean", "future_tv_ex_post")}))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))

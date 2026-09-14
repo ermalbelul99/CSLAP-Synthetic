@@ -1,0 +1,25 @@
+{
+  "gate": "P0:G4",
+  "check": "PY reports/horizon_robustness_results/writing/tools/check_governance.py --phase P0",
+  "expect": "GOVERNANCE CONSISTENT",
+  "exit_code": 0,
+  "token_found": true,
+  "output_sha256": "376ba22338076cf29ffc2badc74b50e32ffad3c413becef0644d7b4b61d9e012",
+  "output_file": ".unlazy/horizon-writing/gate_outputs/P0-G4.txt",
+  "ts": "2026-09-14T10:34:29Z",
+  "negative_control": {
+    "fixture": ".unlazy/horizon-writing/fixtures/check_governance/missing_phase_gate/",
+    "exit_code": 1,
+    "token_found": false,
+    "output_file": ".unlazy/horizon-writing/gate_outputs/nc_missing_phase_gate.txt",
+    "output_sha256": "6e8986a6c6b3f1dd1f6df4ccab79673b2e13ffbb249dc40d1548db06126665e6",
+    "matches_expected": true
+  },
+  "evidence_refs": [
+    "DR-001",
+    "V-003",
+    "V-001",
+    "V-002"
+  ],
+  "status": "MET"
+}

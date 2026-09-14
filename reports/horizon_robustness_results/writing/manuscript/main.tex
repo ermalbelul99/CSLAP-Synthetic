@@ -1,0 +1,79 @@
+%% =====================================================================
+%%  Extension of the submitted companion on correlated storage assignment
+%%  in automated pick-and-pass warehouses. Venue-neutral working draft.
+%%  Compiled by the authors on Overleaf; no journal class is used.
+%%  The supplement (supplement.tex) is a separate document; the main text
+%%  refers to its sections by name, so no cross-document package is needed.
+%% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+% APA references via BibTeX, as in the companion (without its journal class).
+\usepackage[natbibapa]{apacite}
+
+% Visible marker for every item that needs author confirmation or a verified source.
+\newcommand{\authorreview}[1]{\textcolor{red}{[AUTHOR REVIEW: #1]}}
+
+% Numbered propositions (kernel \newtheorem, no extra package).
+\newtheorem{proposition}{Proposition}
+
+% Working title (review round 1).
+\title{Station workload shares after re-slotting a pick-and-pass warehouse: a held-out comparison of reserved margins and historical scenarios}
+\author{\authorreview{author list and affiliations}}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% ---------------------------------------------------------------------
+% Abstract, revised in review rounds 1 and 2 (at most 250 words).
+% ---------------------------------------------------------------------
+\begin{abstract}
+In automated pick-and-pass warehouses, a layout that minimises station visits must also keep station workloads balanced on later orders. Where a companion study used per-station workload budgets, we state the limit as a two-sided rule on shares: each station's share of future workload must stay within a fixed absolute band around its historical share. Share-policy rows replace those budgets in the visit-minimisation model, under an information contract in which targets and scenarios come only from orders before a deployment origin. Two protections are compared: a margin reserved inside the band during optimisation, and robust rows over the product mixes of historical order blocks, extended to historically inactive products. After exploratory campaigns at an earlier origin of an industrial warehouse's order stream fixed the policy, a predeclared two-by-two comparison was deployed at a later origin and scored on orders not used by any earlier solve, score, or drift or dispersion analysis. Both configurations that reserved a margin satisfied the band on all three optimiser seeds, and neither configuration without one did on any seed; the configurations with historical scenarios kept the largest station deviation lower at higher mean visits per order. For every layout the later product mix lay outside the set of mixes it was protected against, and a sufficient condition on the distance between later and historical mixes did not hold. Reserving part of the band is thus a policy tested at one origin of one warehouse, not a calibrated rule.
+\end{abstract}
+
+\noindent\textit{Keywords:} storage location assignment; pick-and-pass warehouse; workload balancing; robust optimisation; constraint tightening; out-of-sample evaluation
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_model}
+\input{sections/04_protocol}
+\input{sections/05_results}
+\input{sections/06_discussion}
+\input{sections/07_conclusion}
+
+% ---------------------------------------------------------------------
+% Declarations. Placeholders only; the authors complete them once a venue
+% is chosen and its requirements are known.
+% ---------------------------------------------------------------------
+\section*{Data availability statement}
+% AUTHOR-CONFIRM: what can be shared about the Company A data and the synthetic instances, and under which conditions.
+\authorreview{data availability: state what can be shared about the Company~A data, the synthetic instances and the analysis code, and under which conditions}
+
+\section*{Funding}
+% AUTHOR-CONFIRM: funding details.
+\authorreview{funding details}
+
+\section*{Competing interests}
+% AUTHOR-CONFIRM: competing interests.
+\authorreview{competing interests}
+
+\section*{Author contributions}
+% AUTHOR-CONFIRM: author contributions.
+\authorreview{author contributions}
+
+\section*{Use of generative AI}
+% AUTHOR-CONFIRM: wording of this statement, the tools named, and the authors' review, as required by the chosen venue.
+The text of this manuscript was drafted with generative AI assistance under the authors' direction. \authorreview{AI-use statement: confirm the wording, name the tools, and state the authors' review of the text and their responsibility for it as the chosen venue requires}
+
+\bibliographystyle{apacite}
+\bibliography{references}
+
+\end{document}

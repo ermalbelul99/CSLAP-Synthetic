@@ -1,0 +1,19 @@
+E MATCH ho.pass.NOM.count computed=0 displayed=0
+E MATCH ho.pass.TIGHT.count computed=3 displayed=3
+E MATCH ho.pass.HIST_ACT.count computed=0 displayed=0
+E MATCH ho.pass.HIST_ACT_T.count computed=3 displayed=3
+E MATCH ho.visits.NOM.mean computed=3.231630 displayed=3.231630
+E MATCH ho.visits.TIGHT.mean computed=3.269742 displayed=3.269742
+E MATCH ho.visits.HIST_ACT.mean computed=3.263692 displayed=3.263692
+E MATCH ho.visits.HIST_ACT_T.mean computed=3.346774 displayed=3.346774
+E MATCH ho.visits.incumbent computed=3.847124 displayed=3.847124
+E MATCH ho.maxdev.NOM.max computed=3.143883 displayed=3.143883
+E MATCH ho.maxdev.TIGHT.max computed=1.756255 displayed=1.756255
+E MATCH ho.maxdev.HIST_ACT.max computed=2.178584 displayed=2.178584
+E MATCH ho.maxdev.HIST_ACT_T.max computed=1.159749 displayed=1.159749
+E MATCH ho.maxdev.incumbent computed=1.156787 displayed=1.156787
+E MATCH ho.visits.HIST_ACT_T_over_TIGHT.pct computed=2.355907 displayed=2.355907
+E MATCH drift.holdout.future_tv computed=0.194956 displayed=0.194956
+E MATCH drift.holdout.hist_tv_max computed=0.194411 displayed=0.194411
+E MATCH drift.holdout.hist_tv_mean computed=0.171100 displayed=0.171100
+E mismatches: 0; verification warnings: 0

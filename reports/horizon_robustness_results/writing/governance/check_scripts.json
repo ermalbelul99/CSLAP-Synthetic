@@ -1,0 +1,103 @@
+[
+  {
+    "script": "reports/horizon_robustness_results/writing/tools/check_inputs.py",
+    "kind": "check",
+    "author": {
+      "agent_type": "general-purpose",
+      "family": "sonnet",
+      "seq": 23
+    },
+    "reviewer": {
+      "agent_type": "code-reviewer",
+      "family": "opus",
+      "seq": 24
+    },
+    "review_status": "PASS (narrow re-review 3, seq 24); history: REVISE seq 6, 17, 20; author rounds seq 5, 16, 19, 23",
+    "checks_artifacts": [
+      "reports/horizon_robustness_results/writing/governance/source_manifest.json"
+    ]
+  },
+  {
+    "script": "reports/horizon_robustness_results/writing/tools/check_governance.py",
+    "kind": "check",
+    "author": {
+      "agent_type": "general-purpose",
+      "family": "sonnet",
+      "seq": 23
+    },
+    "reviewer": {
+      "agent_type": "code-reviewer",
+      "family": "opus",
+      "seq": 24
+    },
+    "review_status": "PASS (narrow re-review 3, seq 24); history: REVISE seq 6, 17, 20; author rounds seq 5, 16, 19, 23",
+    "checks_artifacts": [
+      "reports/horizon_robustness_results/writing/governance/dispatch_log.jsonl",
+      "reports/horizon_robustness_results/writing/governance/findings.jsonl",
+      "reports/horizon_robustness_results/writing/governance/state.json",
+      "reports/horizon_robustness_results/writing/governance/PLAN_ADDENDA.md",
+      "reports/horizon_robustness_results/writing/governance/required_gates.json",
+      "reports/horizon_robustness_results/writing/governance/check_scripts.json"
+    ]
+  },
+  {
+    "script": "reports/horizon_robustness_results/writing/tools/compare_anchors.py",
+    "kind": "check",
+    "author": {
+      "agent_type": "general-purpose",
+      "family": "sonnet",
+      "seq": 39
+    },
+    "reviewer": {
+      "agent_type": "code-reviewer",
+      "family": "opus",
+      "seq": 42
+    },
+    "review_status": "PASS (narrow re-review 2, seq 42); history: REVISE seq 26, 32; author rounds seq 25, 31, 39",
+    "checks_artifacts": [
+      "reports/horizon_robustness_results/writing/evidence/anchors.json",
+      "reports/horizon_robustness_results/writing/evidence/independent/anchors_B.json",
+      "reports/horizon_robustness_results/writing/evidence/ANCHOR_SPEC.md",
+      "reports/horizon_robustness_results/writing/evidence/document_values.json",
+      "reports/horizon_robustness_results/writing/evidence/independent/document_values_A.json",
+      "reports/horizon_robustness_results/writing/evidence/independent/document_values_B.json",
+      "reports/horizon_robustness_results/writing/evidence/DOCUMENT_VALUES_SPEC.md"
+    ]
+  },
+  {
+    "script": "reports/horizon_robustness_results/writing/tools/check_claims.py",
+    "kind": "check",
+    "author": {
+      "agent_type": "general-purpose",
+      "family": "sonnet",
+      "seq": 39
+    },
+    "reviewer": {
+      "agent_type": "code-reviewer",
+      "family": "opus",
+      "seq": 42
+    },
+    "review_status": "PASS (narrow re-review 2, seq 42); history: REVISE seq 26, 32; author rounds seq 25, 31, 39",
+    "checks_artifacts": [
+      "reports/horizon_robustness_results/writing/evidence/claims.json",
+      "reports/horizon_robustness_results/writing/evidence/requirements_map.json",
+      "reports/horizon_robustness_results/writing/evidence/anchors.json",
+      "reports/horizon_robustness_results/writing/evidence/independent/anchors_B.json",
+      "reports/horizon_robustness_results/writing/evidence/document_values.json",
+      "reports/horizon_robustness_results/writing/evidence/independent/document_values_A.json",
+      "reports/horizon_robustness_results/writing/evidence/independent/document_values_B.json"
+    ]
+  },
+  {
+    "script": "reports/horizon_robustness_results/writing/tools/recompute_anchors.py",
+    "kind": "generator",
+    "author": {
+      "agent_type": "general-purpose",
+      "family": "opus",
+      "seq": 56
+    },
+    "reviewer": null,
+    "review_status": "generator saved by ORCH from DBR builder A targeted revision 2 (seq 56, F-078/F-079/F-080; earlier versions seq 27 and seq 37 preserved as results/P1-027-anchors-A.script.py and P1-037-anchors-rev-A.script.py); A and B revision 2 agree on all 248 required keys with ORCH consistency checks clean (L/gate_outputs/p1_anchors_rev2_summary.json); cross-checked against builder B by compare_anchors.py (P1:G1)",
+    "checks_artifacts": []
+  }
+]

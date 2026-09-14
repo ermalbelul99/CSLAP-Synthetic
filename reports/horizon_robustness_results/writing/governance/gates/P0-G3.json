@@ -1,0 +1,13 @@
+{
+  "gate": "P0:G3",
+  "check": "PY tools/horizon_robustness/verify_campaign.py --all --authorization",
+  "expect": "AUTHORIZATION VERIFIED",
+  "exit_code": 0,
+  "token_found": true,
+  "output_sha256": "bf038e2ebe01398a24e041feb82bdef4d1f7748fbd7dc19c1811b2617c1c8c9c",
+  "ts": "2026-09-14T07:29:26Z",
+  "output_file": ".unlazy/horizon-writing/gate_outputs/P0-G3.txt",
+  "negative_control": "EXEMPT: fault injection would modify campaign artifacts, which are protected (H2)",
+  "evidence_refs": [],
+  "status": "MET"
+}

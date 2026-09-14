@@ -1,0 +1,114 @@
+{
+  "phase": "WRITING",
+  "wave": "P1-W9",
+  "go": {
+    "ts": "2026-09-14",
+    "decisions": {
+      "D1": "default",
+      "D2": "default",
+      "D3": "default",
+      "D4": "default",
+      "D5": "default"
+    }
+  },
+  "families": {
+    "opus": {
+      "status": "available",
+      "ts": "2026-09-14T07:29:26Z",
+      "self_reported_model": "Opus 5 (claude-opus-5)"
+    },
+    "fable": {
+      "status": "unavailable",
+      "ts": "2026-09-14T07:29:26Z",
+      "self_reported_model": null,
+      "reason": "HTTP 429 out of usage credits",
+      "last_failure": "2026-09-14T07:27:48Z",
+      "retry_after": "2026-09-14T19:27:48Z",
+      "retry_policy": "U7: 12 h after each usage-limit failure"
+    },
+    "sonnet": {
+      "status": "available",
+      "ts": "2026-09-14T07:29:26Z",
+      "self_reported_model": "Claude Sonnet 5 (claude-sonnet-5)"
+    },
+    "haiku": {
+      "status": "excluded",
+      "by": "USER",
+      "decision": "U7",
+      "ts": "2026-09-14T08:27:00Z",
+      "self_reported_model": "claude-haiku-4-5-20251001"
+    }
+  },
+  "in_flight": [],
+  "next_seq": 71,
+  "sections": {},
+  "ownership": {},
+  "p8_status": null,
+  "open_items": [
+    {
+      "id": "F-040",
+      "severity": "MINOR",
+      "what": "N7: waiver_valid reads output_file without the gate_outputs location check (check_governance.py:1025)",
+      "route": "next tooling round (A-005)"
+    },
+    {
+      "id": "F-042",
+      "severity": "MINOR",
+      "what": "N8: fixture runner writes W/tools/__pycache__ via exec_module",
+      "route": "next tooling round (A-005)",
+      "operating_rule": "ORCH never runs the fixture suite between a --snapshot and its --compare"
+    },
+    {
+      "id": "F-043",
+      "severity": "MINOR",
+      "what": "N9: no-git scan exempts itself and misses command-string git calls",
+      "route": "next tooling round (A-005)"
+    },
+    {
+      "id": "F-044",
+      "severity": "MINOR",
+      "what": "N10: null ballot round mixed with integer rounds raises TypeError (check_governance.py:685)",
+      "route": "next tooling round (A-005)"
+    }
+  ],
+  "export_hash": null,
+  "vote_weights": {
+    "opus": 2,
+    "fable": 2,
+    "sonnet": 1,
+    "haiku": 0,
+    "decision": "U7"
+  },
+  "required_families": [
+    "opus",
+    "sonnet"
+  ],
+  "u7_from_seq": 17,
+  "hard_stop": {
+    "id": "H8",
+    "phase": "P0",
+    "package": "reports/horizon_robustness_results/writing/governance/hard_stops/H8-P0-001.md",
+    "ts": "2026-09-14T09:57:00Z",
+    "affected": "P0 close (P0:G4) and all later phases",
+    "status": "resolved by user decision U8",
+    "resolved_ts": "2026-09-14T10:01:56Z",
+    "user_answer": "Option 2 (fix round 3 plus tooling fix-round budget), with no git writes of any kind for now"
+  },
+  "git_writes": "forbidden by U8 (no commits, push, init or config changes; read-only status/log/diff only); D1 commits suspended",
+  "closed_phases": [
+    "P0"
+  ],
+  "scope_change": {
+    "ts": "2026-09-14",
+    "by": "USER",
+    "directive": "reports/horizon_robustness_results/writing/WRITE_NOW_DIRECTIVE.md",
+    "note": "reports/horizon_robustness_results/writing/governance/SCOPE_CHANGE_WRITE_NOW.md",
+    "preparation_tasks": "superseded by user instruction (not passed, not completed, not invalid)",
+    "recorded_state": {
+      "phase": "P1",
+      "wave": "P1-W9",
+      "in_flight": [],
+      "next_seq": 71
+    }
+  }
+}

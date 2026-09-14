@@ -1,0 +1,1120 @@
+[
+{
+ "id": "C-01",
+ "type": "observation",
+ "endpoint_status": "additional_descriptive",
+ "p1_row": "Scenario trade-off",
+ "statement": "On the held-out window, the arms with historical scenarios and activation had smaller largest absolute station deviations from target and higher mean visits than the matching arms without them, both without and with the reserved margin. Over the three optimizer seeds the largest deviation ranged from 2.939 to 3.144 percentage points for NOM against 2.069 to 2.179 for HIST+ACT, and from 1.209 to 1.756 for TIGHT against 1.026 to 1.160 for HIST+ACT-T, so the two margin arms' seed ranges do not overlap. Mean future visits per order were 3.232 for NOM against 3.264 for HIST+ACT, and 3.270 for TIGHT against 3.347 for HIST+ACT-T, which is 2.4% more visits than TIGHT; per seed, TIGHT made 3.266 to 3.276 visits per order and HIST+ACT-T 3.304 to 3.386.",
+ "allowed_wording": [
+  "With the margin reserved, HIST+ACT-T kept its largest station deviation between 1.026 and 1.160 percentage points over the seeds, against 1.209 to 1.756 for TIGHT, and made 2.4% more mean future visits per order than TIGHT.",
+  "Without the margin, the largest station deviation of HIST+ACT ranged from 2.069 to 2.179 percentage points over the seeds, against 2.939 to 3.144 for NOM, at 3.264 against 3.232 mean visits per order.",
+  "On this maximum-deviation statistic HIST+ACT-T, at most 1.160 percentage points over the seeds, is close to the incumbent's 1.157 on the same window; the statistic does not show that their station profiles are the same.",
+  "The scenario-and-activation arms stayed closer to the historical shares at a higher visit count; they did not change which arms satisfied the band."
+ ],
+ "required_qualifiers": [
+  {"text": "Visit counts compare time-capped returned layouts, not optima.", "discharge": "sentence"},
+  {"text": "Historical scenarios and activation are bundled in this factorial, so their separate contributions are not identified.", "discharge": "sentence"},
+  {"text": "The maximum-deviation comparison and the visit ratio are additional descriptive analyses, not predeclared endpoints.", "discharge": "sentence"},
+  {"text": "One held-out origin and three optimizer seeds, as stated in the scope paragraph (C-24).", "discharge": "scope_paragraph"}
+ ],
+ "forbidden_wording": [
+  "identical profile to the incumbent",
+  "matches the incumbent's fidelity",
+  "same station profile as the incumbent",
+  "equivalent tail risk",
+  "protection against other futures",
+  "protects against future demand",
+  "a separate activation effect",
+  "the effect of activation",
+  "scenarios add nothing",
+  "scenario protection is useless",
+  "2.35%",
+  "cost of protection"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.2 lines 1184-1189 (every cell); §13.3 lines 1196-1203 (factorial reading, bundled scenarios and activation)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "lines 80-86 (held-out anchor table); §2 lines 96-98 (scenarios buy fidelity; 2.355907%; close on the maximum-deviation statistic only)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F11 line 74 (seed ranges); P1 step 5 table, row Scenario trade-off, line 546"},
+  {"path": "reports/horizon_robustness_results/tables/station_profile_industrial.csv", "sha256": "fabfca653d3a1d48eb9992608f12188256993b671bb27d1c1bc13d628326d1b6", "locator": "rows with campaign ho3_20260913 (station deviations per arm and seed)"},
+  {"path": "reports/horizon_robustness_results/tables/case_frame.csv", "sha256": "0e9dc1f5f4c8dc5578e18cd1785a9426ba32900b68d646a0cd7fce6eda918ce0", "locator": "12 rows with campaign ho3_20260913 (mean visits per order)"}
+ ],
+ "anchor_keys": ["ho.maxdev.NOM.min", "ho.maxdev.NOM.max", "ho.maxdev.TIGHT.min", "ho.maxdev.TIGHT.max", "ho.maxdev.HIST_ACT.min", "ho.maxdev.HIST_ACT.max", "ho.maxdev.HIST_ACT_T.min", "ho.maxdev.HIST_ACT_T.max", "ho.maxdev.incumbent", "ho.visits.NOM.mean", "ho.visits.TIGHT.mean", "ho.visits.HIST_ACT.mean", "ho.visits.HIST_ACT_T.mean", "ho.visits.TIGHT.s11", "ho.visits.TIGHT.s22", "ho.visits.TIGHT.s33", "ho.visits.HIST_ACT_T.s11", "ho.visits.HIST_ACT_T.s22", "ho.visits.HIST_ACT_T.s33", "ho.visits.HIST_ACT_T_over_TIGHT.pct"],
+ "document_value_keys": [],
+ "unit": "pp (largest absolute station deviation); visits_per_order; pct (visit ratio)",
+ "denominator": "three optimizer seeds per arm at one held-out origin; the deviation is the maximum over the 24 evaluated stations; means are over the three seeds",
+ "display_rounding": {"pp": 3, "visits_per_order": 3, "pct": 1},
+ "scope_boundary": "Held-out campaign ho3_20260913 only. The percentage uses the companion's one-decimal convention (plan F13); if STYLE_CANON.md fixes another rounding, only the displayed digits change (2.355907 exact). Never computed from three-decimal display values.",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C5 (line 61), scenario part", "WRITING_EXECUTION_PLAN_REVIEWED_20260914.md §2 rows 'Scenarios add nothing' and 'Matches incumbent fidelity' (lines 96-97)"]
+},
+{
+ "id": "C-02",
+ "type": "observation",
+ "endpoint_status": "predeclared_primary",
+ "p1_row": "Margin reading (primary endpoint)",
+ "statement": "The predeclared primary endpoint required TIGHT to satisfy the two-sided band with δ = 0.02 at n = P = 21,874 on the held-out window starting at order index 243,151 for at least two of the three optimizer seeds. TIGHT satisfied the band for all three seeds, so the endpoint was met.",
+ "allowed_wording": [
+  "TIGHT satisfied the two-sided band on all three optimizer seeds at the held-out origin, which meets the predeclared primary endpoint of at least two seeds.",
+  "The predeclared \"Replication endpoint\" tests the same policy at a later origin of the same order stream, whose history contains the exploratory origin's data; TIGHT met it on all three optimizer seeds.",
+  "TIGHT passed 3/3 seeds against a predeclared threshold of two."
+ ],
+ "required_qualifiers": [
+  {"text": "The endpoint tests the same fixed policy at a later origin of the same order stream, and that origin's training history contains the exploratory origin's data and scored futures.", "discharge": "sentence"},
+  {"text": "Meeting the endpoint supports a bounded case-study claim only.", "discharge": "sentence"},
+  {"text": "Three optimizer seeds at one origin describe optimizer variability, not future demand (C-24).", "discharge": "scope_paragraph"}
+ ],
+ "forbidden_wording": [
+  "replicated",
+  "REPLICATED",
+  "independent replication",
+  "replication of the exploratory result",
+  "confirms the exploratory finding",
+  "validated policy",
+  "certified band",
+  "guarantees compliance"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.3 lines 456-458: \"Replication endpoint (primary): TIGHT passes the two-sided ±2 band at n = P on the held-out future for at least two of the three seeds. Failure closes the fixed-policy claim; passing supports a bounded case-study claim only.\"; §9.2 lines 429-443 (origin, horizon, frozen policy)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.2 line 1187 (TIGHT row, three passes); §13.3 line 1193 (endpoint read; its word REPLICATED is rejected, see interpretation_errata.md)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§5 INV-5 label rule lines 374-376; F19 line 82"},
+  {"path": "reports/horizon_robustness_results/tables/case_frame.csv", "sha256": "0e9dc1f5f4c8dc5578e18cd1785a9426ba32900b68d646a0cd7fce6eda918ce0", "locator": "rows campaign ho3_20260913, arm TIGHT (joint two-sided pass per seed)"}
+ ],
+ "anchor_keys": ["ho.pass.TIGHT.count"],
+ "document_value_keys": ["pred.holdout.delta", "pred.holdout.n", "pred.holdout.origin"],
+ "unit": "count (seeds passing)",
+ "denominator": "three optimizer seeds at one held-out origin",
+ "display_rounding": {"count": 0, "share": 2},
+ "scope_boundary": "Held-out campaign ho3_20260913 only. The predeclared label may be quoted once, immediately followed by the qualifier (INV-5).",
+ "supersedes": ["EXPERIMENT_REVIEW_HANDOFF.md §13.3 line 1193 'REPLICATED.'", "WRITING_PLAN_20260914.md §1 C5 (line 61), compliance part"]
+},
+{
+ "id": "C-03",
+ "type": "observation",
+ "endpoint_status": "predeclared_secondary",
+ "p1_row": "Margin reading (secondary factorial reading)",
+ "statement": "In the held-out factorial, both arms with the reserved margin, TIGHT and HIST+ACT-T, satisfied the two-sided band on all three optimizer seeds, and neither arm without it, NOM or HIST+ACT, satisfied it on any seed. The misses differed in size: the worst breach beyond the band ranged over the seeds from 0.939 to 1.144 percentage points for NOM and from 0.069 to 0.179 for HIST+ACT. Both no-margin arms breached in both directions: NOM above the cap and below the floor on every seed, HIST+ACT above the cap on two seeds and below the floor on all three.",
+ "allowed_wording": [
+  "The margin arms passed 3/3 seeds and the no-margin arms 0/3.",
+  "Table note: worst breach over the seeds, HIST+ACT 0.069–0.179 pp, NOM 0.939–1.144 pp.",
+  "Every arm with the reserved margin satisfied the band on every seed, and every arm without it missed on every seed; the worst breach of HIST+ACT was at most 0.179 percentage points, and that of NOM at least 0.939."
+ ],
+ "required_qualifiers": [
+  {"text": "This two-factor comparison under equal configured solve budgets at one origin is not a causal law, and it does not isolate the margin from solver and layout effects.", "discharge": "sentence"},
+  {"text": "Breach magnitudes are the worst excess per seed; a small breach is still a miss of the declared policy.", "discharge": "sentence"},
+  {"text": "Pass counts are counts over three optimizer seeds at one origin (C-24).", "discharge": "scope_paragraph"}
+ ],
+ "forbidden_wording": [
+  "isolated mechanism",
+  "the mechanism is isolated",
+  "margin decides the pass",
+  "the margin causes compliance",
+  "attributes compliance to the reserved margin",
+  "scenarios add nothing",
+  "scenario protection is useless",
+  "negligible breach",
+  "the whole factorial interpretation was predeclared"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.3 lines 459-465 (factorial reading, secondary, descriptive: pass count and breach magnitudes in both directions)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.2 lines 1186-1189 (cap/floor breaches and worst breach per seed); §13.3 lines 1196-1203"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 line 98 ('The mechanism is isolated' corrected); line 99 (predeclared versus additional)"},
+  {"path": "reports/horizon_robustness_results/tables/case_frame.csv", "sha256": "0e9dc1f5f4c8dc5578e18cd1785a9426ba32900b68d646a0cd7fce6eda918ce0", "locator": "12 rows campaign ho3_20260913 (joint pass, worst excess, cap and floor violation counts)"}
+ ],
+ "anchor_keys": ["ho.pass.NOM.count", "ho.pass.TIGHT.count", "ho.pass.HIST_ACT.count", "ho.pass.HIST_ACT_T.count", "ho.breach.NOM.s11.worst", "ho.breach.NOM.s22.worst", "ho.breach.NOM.s33.worst", "ho.breach.HIST_ACT.s11.worst", "ho.breach.HIST_ACT.s22.worst", "ho.breach.HIST_ACT.s33.worst", "ho.breach.NOM.s11.cap_count", "ho.breach.NOM.s22.cap_count", "ho.breach.NOM.s33.cap_count", "ho.breach.NOM.s11.floor_count", "ho.breach.NOM.s22.floor_count", "ho.breach.NOM.s33.floor_count", "ho.breach.HIST_ACT.s11.cap_count", "ho.breach.HIST_ACT.s22.cap_count", "ho.breach.HIST_ACT.s33.cap_count", "ho.breach.HIST_ACT.s11.floor_count", "ho.breach.HIST_ACT.s22.floor_count", "ho.breach.HIST_ACT.s33.floor_count"],
+ "document_value_keys": [],
+ "unit": "count (seeds passing; stations breaching); pp (worst breach)",
+ "denominator": "three optimizer seeds per arm at one held-out origin; breach counts over the 24 evaluated stations",
+ "display_rounding": {"count": 0, "pp": 3},
+ "scope_boundary": "Held-out campaign ho3_20260913 only. The anchors give the worst breach per seed without its direction and the breach counts by direction; a magnitude per direction is not anchored and is not stated.",
+ "supersedes": ["WRITING_PLAN_20260914.md §3 line 115 'isolated mechanism'", "EXPERIMENT_REVIEW_HANDOFF.md §13.3 line 1203 'the margin decides the pass'", "WRITING_EXECUTION_PLAN_REVIEWED_20260914.md §2 row 'The mechanism is isolated' (line 98)"]
+},
+{
+ "id": "C-04",
+ "type": "observation",
+ "endpoint_status": "additional_descriptive",
+ "p1_row": "Mechanism",
+ "statement": "Every returned held-out layout used essentially its whole training allowance. The minimum training slack each layout required lay between 0.019997 and 0.019999 for NOM and HIST+ACT, which optimised against the band with δ = 0.02, and between 0.009992 and 0.009999 for TIGHT and HIST+ACT-T, whose band was tightened with λ = 0.5.",
+ "allowed_wording": [
+  "No returned layout kept spare slack on its training scenarios: each required almost exactly the allowance its arm was given.",
+  "The layouts without a margin required between 0.019997 and 0.019999 of the allowed 0.02, and the layouts with the margin between 0.009992 and 0.009999."
+ ],
+ "required_qualifiers": [
+  {"text": "The minimum required slack is measured on each arm's own training scenario set, not on the future window.", "discharge": "sentence"},
+  {"text": "It describes the time-capped layouts the optimizer returned, not a property of an optimum.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "optimal layouts use the whole allowance",
+  "the optimizer always exhausts the band",
+  "the band binds at the optimum"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/tables/case_frame.csv", "sha256": "0e9dc1f5f4c8dc5578e18cd1785a9426ba32900b68d646a0cd7fce6eda918ce0", "locator": "12 rows campaign ho3_20260913, column minimum_required_slack (exact field validation.minimum_required_slack_exact in the case records)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F10 line 73; P1 step 5 table, row Mechanism, line 548"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.2 lines 418-420 (margin level: optimise inside the band tightened by λ)"}
+ ],
+ "anchor_keys": ["ho.min_slack.NOM.s11", "ho.min_slack.NOM.s22", "ho.min_slack.NOM.s33", "ho.min_slack.HIST_ACT.s11", "ho.min_slack.HIST_ACT.s22", "ho.min_slack.HIST_ACT.s33", "ho.min_slack.TIGHT.s11", "ho.min_slack.TIGHT.s22", "ho.min_slack.TIGHT.s33", "ho.min_slack.HIST_ACT_T.s11", "ho.min_slack.HIST_ACT_T.s22", "ho.min_slack.HIST_ACT_T.s33"],
+ "document_value_keys": ["pred.holdout.delta", "pred.holdout.lambda"],
+ "unit": "share",
+ "denominator": "12 held-out layouts (four arms, three seeds each)",
+ "display_rounding": {"share": 6},
+ "scope_boundary": "Held-out campaign ho3_20260913 only. Display: the per-station overlay of target, training envelope, realised share and band (plan P5b) carries this observation.",
+ "supersedes": []
+},
+{
+ "id": "C-05",
+ "type": "scope",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Solver returns",
+ "statement": "All 12 held-out solves returned time-capped layouts with no proof of optimality: each reports a gap of about 0.985 against a bound of 11,517, and the 12 solves were configured for 21,600 seconds in total. Visit costs therefore compare returned layouts, and no difference between arms is a difference between optimal objectives. The gap and bound belong in the supplement, with one sentence in the main text.",
+ "allowed_wording": [
+  "Every held-out layout is the best solution the solver returned within its time limit; none is shown to be optimal.",
+  "Each held-out solve ended with a gap of about 0.985 against a bound of 11,517 (supplement)."
+ ],
+ "required_qualifiers": [
+  {"text": "Differences in visits between arms compare returned layouts under equal configured budgets.", "discharge": "sentence"},
+  {"text": "No visit figure is an optimal value, so the visit cost of the margin is not identified exactly.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "the optimal layout",
+  "optimal layouts",
+  "optimal visit cost",
+  "proven optimal protection cost",
+  "cost of protection",
+  "price of robustness",
+  "a new exact optimizer"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/tables/case_frame.csv", "sha256": "0e9dc1f5f4c8dc5578e18cd1785a9426ba32900b68d646a0cd7fce6eda918ce0", "locator": "12 rows campaign ho3_20260913, columns gap and bound"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.2 lines 440-443 (time cap per solve; 12 unique solves, 21,600 s configured)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§9.2 items 4 and 4b lines 871-879 (returned incumbents, not optima); §13.1 line 1178"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F10 line 73 (gap ≈ 0.985, bound 11,517); P1 step 5 table, row Solver returns, line 549"}
+ ],
+ "anchor_keys": ["ho.gap.NOM.s11", "ho.gap.NOM.s22", "ho.gap.NOM.s33", "ho.gap.TIGHT.s11", "ho.gap.TIGHT.s22", "ho.gap.TIGHT.s33", "ho.gap.HIST_ACT.s11", "ho.gap.HIST_ACT.s22", "ho.gap.HIST_ACT.s33", "ho.gap.HIST_ACT_T.s11", "ho.gap.HIST_ACT_T.s22", "ho.gap.HIST_ACT_T.s33", "ho.bound.NOM.s11", "ho.bound.NOM.s22", "ho.bound.NOM.s33", "ho.bound.TIGHT.s11", "ho.bound.TIGHT.s22", "ho.bound.TIGHT.s33", "ho.bound.HIST_ACT.s11", "ho.bound.HIST_ACT.s22", "ho.bound.HIST_ACT.s33", "ho.bound.HIST_ACT_T.s11", "ho.bound.HIST_ACT_T.s22", "ho.bound.HIST_ACT_T.s33"],
+ "document_value_keys": ["pred.holdout.solves", "pred.holdout.configured_seconds"],
+ "unit": "fraction (gap); visits (bound); count (solves); seconds",
+ "denominator": "12 held-out solves",
+ "display_rounding": {"fraction": 3, "visits": 0, "count": 0, "seconds": 0},
+ "scope_boundary": "Held-out campaign ho3_20260913. The same limit applies to every returned layout of every campaign (handoff §9.2 items 4 and 4b), but only the held-out gap and bound are anchored.",
+ "supersedes": ["WRITING_PLAN_20260914.md §3 lines 122-124 'what the band costs'"]
+},
+{
+ "id": "C-06",
+ "type": "context",
+ "endpoint_status": "additional_descriptive",
+ "p1_row": "Drift",
+ "statement": "Measured only after the held-out window had been scored, its product mix lay at a total-variation distance of 0.195 from the pooled history it was scored against. The stored historical values over 11 blocks, a maximum of 0.194 and a mean of 0.171, measure each block against a pooled history that contains that block, which shrinks each value by the factor one minus the block's mass fraction. With that fraction taken by order count, about 0.09, the like-for-like historical maximum, each block measured against the rest of the history, is about 0.214, above the held-out value; the stored ordering reverses for any mass fraction above about 0.0028. The incumbent layout satisfied the two-sided band on the held-out window.",
+ "allowed_wording": [
+  "Measured against the rest of the history, the largest historical block distance is about 0.214, and the held-out product mix, at 0.195 from the pooled history, lies below it.",
+  "The stored comparison, 0.195 against a historical maximum of 0.194, places each historical block inside its own reference; corrected for that, the historical maximum is about 0.214.",
+  "The incumbent layout satisfied the two-sided band on the held-out window."
+ ],
+ "required_qualifiers": [
+  {"text": "Block line mass is not stored, so the block mass fraction is taken by order count, and this is disclosed.", "discharge": "sentence"},
+  {"text": "Total-variation distance measures product-mix change, not the difficulty of holding station shares, because aggregation within a station can cancel product-level change.", "discharge": "sentence"},
+  {"text": "The future distance is ex post; the reserved margin was not chosen from this survey and is not re-chosen after the result.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  {"text": "substantial", "conditional_on": {"q_card": "Q-008", "outcome": "w_greater_than_w_star"}},
+  {"text": "despite", "conditional_on": {"q_card": "Q-008", "outcome": "w_greater_than_w_star"}},
+  {"text": "beyond the historical maximum", "conditional_on": {"q_card": "Q-008", "outcome": "w_greater_than_w_star"}},
+  "difficult",
+  "demanding",
+  "stress test",
+  "not an easy case",
+  "not an easy one",
+  "at the top of the historical range",
+  "extreme drift",
+  "calibrated extremeness",
+  "unprecedented"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/tables/drift_survey.csv", "sha256": "60e729006f50f274d58dced4267a457e26002de256176b30fbd812ff21f502bb", "locator": "row dataset_id = BERNER@holdout (file line 17): historical_blocks 11, historical_tv_max, historical_tv_mean, future_tv_ex_post"},
+  {"path": "tools/horizon_robustness/drift_survey.py", "sha256": "fcf8168967ed04bf471177fe1f4e8b7bcb4ff46ef5a81f206dacb704ce74e85a", "locator": "lines 13-15 (\"TV between each right-aligned n-block of the history prefix and the pooled history of the SAME prefix\"); lines 83-87"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F16 line 79 (TV(block, pooled) = (1 − w)·TV(block, rest); w*); P1 step 5 table, row Drift, line 550"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 row 'The held-out window was not easy', line 101"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.4 lines 476-478 (drift survey reported as explanatory context only; margin not chosen from it)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.2 line 1186 (incumbent pass on the same future); §13.3 line 1205 (rejected reading, see interpretation_errata.md)"}
+ ],
+ "anchor_keys": ["drift.holdout.future_tv", "drift.holdout.hist_tv_max", "drift.holdout.hist_tv_mean", "drift.holdout.blocks", "drift.holdout.w_order_count", "drift.holdout.w_star", "drift.holdout.hist_tv_max.like_for_like", "ho.incumbent.joint_pass"],
+ "document_value_keys": [],
+ "unit": "tv; fraction (w, w*); count (blocks); bool (incumbent pass)",
+ "denominator": "11 matched historical blocks of n = 21,874 orders in the prefix before order index 243,151; one scored future window",
+ "display_rounding": {"tv": 3, "fraction_w_order_count": 2, "fraction_w_star": 4, "count": 0},
+ "scope_boundary": "Q-008 decisive test resolved w_greater_than_w_star (Resolution line of Q-008), so the three conditional wordings stay forbidden. The replacement wording is Class J and is decided by SCI-5 with a blue-team seat; allowed_wording here is the conservative default and may be amended by that DR. Q-003 governs the like-for-like correction.",
+ "supersedes": ["EXPERIMENT_REVIEW_HANDOFF.md §13.3 line 1205", "WRITING_EXECUTION_PLAN_REVIEWED_20260914.md line 101 'high product-mix drift' as a comparison with history"]
+},
+{
+ "id": "C-07",
+ "type": "definition",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Protocol",
+ "statement": "The study evaluates layouts with an order-indexed, horizon-conditioned protocol. At a deployment origin in the stream of complete orders, ordered by order identifier, the targets and training scenarios are computed from the prefix before the origin, the layout is frozen, and it is scored on the next n complete orders. The evidence comes from an exploratory origin and one later held-out deployment at order index 243,151 with n = 21,874, whose training prefix contains the exploratory origin's history and every future scored there.",
+ "allowed_wording": [
+  "We use an order-indexed, horizon-conditioned protocol with a later held-out deployment.",
+  "The held-out deployment starts at order index 243,151 and scores the next 21,874 complete orders; its training prefix contains the exploratory origin's data and scored futures."
+ ],
+ "required_qualifiers": [
+  {"text": "The predeclared label \"Replication endpoint\" may be quoted once, immediately followed by the statement that it tests the same policy at a later origin of the same stream, whose history contains the exploratory origin's data.", "discharge": "sentence"},
+  {"text": "This is a contribution relative to the companion; out-of-sample and rolling-origin evaluation are established techniques, and the companion already evaluates layouts on unseen dated weeks.", "discharge": "sentence"},
+  {"text": "The held-out window was unexamined in this study, not unexamined by anyone: the companion's temporal hold-out used a different dated extract.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "novel methodology",
+  "novel undated information contract",
+  "rolling-origin experiment",
+  "rolling-origin protocol",
+  "replicated",
+  "independent replication",
+  "first out-of-sample evaluation",
+  "unexamined by anyone",
+  "nobody else has measured this"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 row 1, line 95 (\"Prefer order-indexed, horizon-conditioned protocol with a later held-out deployment\"); line 74 (companion already contains dated unseen-week evaluation)"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.2 lines 429-435 (origin at the end of the furthest scored future; target from the full prefix, frozen; 'unexamined in this study', not 'unexamined by anyone')"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "INV-5 label rule lines 374-376; P1 step 5 table, row Protocol, line 551; P4 step 4 line 717 (\"Nobody else has measured this\" is inadmissible)"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§2 line 27 (next n complete orders); §8 line 85 (prefix-only training, layout fixed before scoring)"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": ["pred.holdout.origin", "pred.holdout.n"],
+ "unit": "count (order index; orders)",
+ "denominator": "one exploratory origin and one held-out origin",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "Type 'definition' because the row states what the protocol is; its contribution status relative to the companion is carried by the second qualifier. 'novel methodology' stays forbidden unless a P4 NOV-5 DR establishes it and supersedes this entry. The exploratory origin's index has no anchor or document value and is therefore not written as a number.",
+ "supersedes": ["WRITING_PLAN_20260914.md §0 lines 37-38 'undated information contract and predeclared rolling-origin protocol'", "WRITING_PLAN_20260914.md §1 C1 (line 57)"]
+},
+{
+ "id": "C-08",
+ "type": "limitation",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Margin rule",
+ "statement": "The study obtained no validated rule for choosing the reserved margin. On the exploratory prefix, the incumbent layout's largest station-share deviation in a single historical block was 1.70 percentage points at n = P/2, 1.63 at n = P and 1.47 at n = 2P, each block measured against a pooled history that contains it; against the rest of the history the values are about 1.80, 1.83 and 1.89. Either way they exceed the reserved margin of one percentage point, and the margin arms nevertheless satisfied the band on the held-out window, so the margin was neither set from this statistic nor validated by it.",
+ "allowed_wording": [
+  "No validated rule for choosing the margin was obtained.",
+  "The incumbent's largest historical block deviation on the exploratory prefix, 1.63 percentage points at n = P against a reference that contains the block and about 1.83 against the rest of the history, was larger than the reserved margin of one percentage point."
+ ],
+ "required_qualifiers": [
+  {"text": "These dispersion values come from the prefix before the exploratory origin; no value exists for the held-out prefix, and none is stated about it.", "discharge": "sentence"},
+  {"text": "The like-for-like values take the block mass fraction by order count.", "discharge": "sentence"},
+  {"text": "The incumbent's dispersion belongs to its own layout and does not calibrate the margin of an optimised layout, and the failure of the total-variation certificate does not imply any particular alternative rule.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "margins must come from station-level dispersion",
+  "margin has to be set from station-level dispersion",
+  "any date-free margin rule has to be predeclared from station-level dispersion",
+  "empirically calibrated margin rule",
+  "automatic margin calibration",
+  "the reserved margin is validated",
+  "dispersion of the held-out prefix",
+  "about 1.7 points at most"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/tables/dispersion_survey.csv", "sha256": "74d52002a50ff8bf45e9b8de57f2dd05cc770336c9c806c05e29daacafa9ff72", "locator": "rows dataset_id = BERNER, origin 199403, n = 10937 / 21874 / 43748 (file lines 89-91), column max_abs_pp"},
+  {"path": "tools/horizon_robustness/dispersion_survey.py", "sha256": "d3f4c75e6f128f904f901e7b0cc1fc858c212a497d85c2d442c920a983a9b5a9", "locator": "lines 10-13 (blocks plus pooled history; b_s pooled share; d_ks = block share minus b_s)"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§8.2 lines 354-356 (\"1.70 pp in a single historical block relative to its pooled share\")"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F17 line 80; P1 step 5 table, row Margin rule, line 552"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 row 'TV is too loose, so margins have to come from station dispersion', line 100"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§12.6 line 1162 (rejected reading, see interpretation_errata.md); §12.6 line 1158 (λ frontier not run)"}
+ ],
+ "anchor_keys": ["disp.explor.n_half.max_abs", "disp.explor.n_P.max_abs", "disp.explor.n_2P.max_abs", "disp.explor.n_half.max_abs.like_for_like", "disp.explor.n_P.max_abs.like_for_like", "disp.explor.n_2P.max_abs.like_for_like"],
+ "document_value_keys": ["pred.twosided.block_deviation_quoted"],
+ "unit": "pp",
+ "denominator": "historical blocks by 24 evaluated stations under the incumbent, exploratory prefix, three horizons",
+ "display_rounding": {"pp": 2},
+ "scope_boundary": "Exploratory prefix (origin of the first scored futures) only. The reserved margin of one percentage point is λδ at the held-out policy (δ = 0.02 share, λ = 0.5); it is written in words because no anchor holds that product.",
+ "supersedes": ["WRITING_PLAN_20260914.md §0 lines 43-45 'margin has to be set from station-level dispersion'", "EXPERIMENT_REVIEW_HANDOFF.md §12.6 line 1162, last two sentences"]
+},
+{
+ "id": "C-09",
+ "type": "assumption",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Target definition and incumbent headroom",
+ "statement": "The targets b_s are the incumbent layout's own historical station shares over the training prefix, frozen at the origin, so the incumbent starts with the whole allowance as headroom while an optimised layout spends it. On the single history scenario on which NOM and TIGHT train, the incumbent's minimum required slack is 0, against about 0.020 for the NOM layouts and about 0.010 for the TIGHT layouts. On the scenario set of HIST+ACT and HIST+ACT-T, 11 historical blocks plus the history scenario, the incumbent requires about 0.0157, inside δ = 0.02 and above the tightened allowance, against about 0.020 for the HIST+ACT layouts and about 0.010 for the HIST+ACT-T layouts.",
+ "allowed_wording": [
+  "The targets are the incumbent's own historical shares, so on the history scenario the incumbent needs no slack, whereas every optimised layout uses its whole allowance.",
+  "On the block scenario set of the scenario arms the incumbent needs about 0.0157 of share, which fits within δ = 0.02 but not within the tightened allowance."
+ ],
+ "required_qualifiers": [
+  {"text": "State the target definition and this asymmetry before any result that compares arms with the incumbent (handoff §11, second question).", "discharge": "sentence"},
+  {"text": "The incumbent is scored on the same future as context, not as a feasibility standard for the optimised arms.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "optimisation harms compliance",
+  "the incumbent is more robust",
+  "the incumbent passes because it is robust",
+  "a neutral target"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§11 question 2, lines 1028-1032: \"Because b is the incumbent's own historical share, the incumbent starts with the full δ of headroom while any optimizer spends it.\""},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.2 lines 432-433 (target b_s computed from the full prefix and then frozen)"},
+  {"path": "reports/horizon_robustness_results/tables/case_frame.csv", "sha256": "0e9dc1f5f4c8dc5578e18cd1785a9426ba32900b68d646a0cd7fce6eda918ce0", "locator": "rows campaign ho3_20260913, column minimum_required_slack (arms); incumbent value from reference_evaluation.validation in the case records"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 5 table, row Target definition and incumbent headroom, line 553; P1 step 7 Q-005, lines 575-576"}
+ ],
+ "anchor_keys": ["ho.incumbent.training_slack.history", "ho.incumbent.training_slack.hist_act", "ho.min_slack.NOM.s11", "ho.min_slack.NOM.s22", "ho.min_slack.NOM.s33", "ho.min_slack.TIGHT.s11", "ho.min_slack.TIGHT.s22", "ho.min_slack.TIGHT.s33", "ho.min_slack.HIST_ACT.s11", "ho.min_slack.HIST_ACT.s22", "ho.min_slack.HIST_ACT.s33", "ho.min_slack.HIST_ACT_T.s11", "ho.min_slack.HIST_ACT_T.s22", "ho.min_slack.HIST_ACT_T.s33", "drift.holdout.blocks"],
+ "document_value_keys": ["pred.holdout.delta", "handoff.q2.incumbent_headroom"],
+ "unit": "share (minimum required slack); count (blocks)",
+ "denominator": "incumbent on each training scenario set; 12 held-out layouts",
+ "display_rounding": {"share_arms": 3, "share_incumbent_hist_act": 4, "count": 0},
+ "scope_boundary": "Q-005 key rule: ho.incumbent.training_slack.history is compared only with NOM and TIGHT, and ho.incumbent.training_slack.hist_act only with HIST+ACT and HIST+ACT-T; the retired key ho.incumbent.training_slack is never cited. The motivation for share targets (Q-004) is open until P2; this claim states the definition and the asymmetry only.",
+ "supersedes": []
+},
+{
+ "id": "C-10",
+ "type": "interpretation",
+ "endpoint_status": "exploratory",
+ "p1_row": "Upper-only versus two-sided",
+ "statement": "The upper-only screen and the two-sided campaigns order TIGHT and HIST+ACT differently on BERNER, and the difference is consistent with the size and side of the margin each rule reserved. Under the upper-only rule, with a tolerance of one percentage point, HIST+ACT satisfied the caps at two of three horizons and TIGHT at none; the TIGHT layouts required a training allowance of about 0.005, so half a percentage point was reserved, on the cap side only. Under the two-sided rule with δ = 0.02, the TIGHT layouts required about 0.010, so one percentage point was reserved on each side; TIGHT satisfied the band at all three horizons and HIST+ACT at one, and the misses of the scenario arms were mostly below the floor, with 0 cap and 3 floor breaches for HIST+ACT and 1 cap and 8 floor breaches for HIST, summed over the three horizons.",
+ "allowed_wording": [
+  "The upper-only screen reserved half a percentage point on the cap side, and the two-sided rule one percentage point on each side; TIGHT satisfied none of the three BERNER horizons under the first and all three under the second.",
+  "Under the two-sided rule the scenario arms missed mostly below the floor: 0 cap and 3 floor breaches for HIST+ACT, and 1 cap and 8 floor breaches for HIST."
+ ],
+ "required_qualifiers": [
+  {"text": "Both campaigns are exploratory, with one seed at one origin, and the two-sided policy was fixed after the same futures had been examined under the upper-only rule.", "discharge": "sentence"},
+  {"text": "Upper-only and two-sided results are reported side by side and never pooled, and consistency with the margin size is not a causal isolation.", "discharge": "sentence"},
+  {"text": "Upper-only caps limit increases only, so an upper-only pass does not show that station profiles were preserved.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "the two-sided result contradicts the upper-only screen",
+  "HIST+ACT is better than TIGHT",
+  "TIGHT is better than HIST+ACT",
+  "robust-arm misses are downward",
+  "two-sided balance preservation",
+  "the held-out result reverses the screen"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§10.4 lines 973-979 (upper-only BERNER violations; HIST+ACT passes two of three); §12.2 lines 1084-1108 (two-sided BERNER cells and pass table); §12.5 item 5 line 1149 (11 floor against 1 cap breaches); §12.6 line 1160 (exploratory)"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§2 lines 59-62 (TIGHT λ = 0.5; upper-only primary δ = 0.01); §8.3 lines 382-384 (TIGHT at λ = 0.5 under δ = 0.02 optimises inside the ±1 band)"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§3 lines 31-37 (upper-only protection is not two-sided balance preservation)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F12 line 75; P1 step 2 lines 516-517 (margin size under each rule; breach directions); P1 step 5 table, row Upper-only versus two-sided, line 554"},
+  {"path": "reports/horizon_robustness_plan/PLAN.md", "sha256": "69ce4d643497878b21e3f9d598a7ac5397f470e416b0d5d4a5ddd0751f75b835", "locator": "line 169 (\"label the resulting study retrospective/exploratory, not a newly untouched confirmatory holdout\")"}
+ ],
+ "anchor_keys": ["uo.berner.pass.NOM.count", "uo.berner.pass.TIGHT.count", "uo.berner.pass.HIST.count", "uo.berner.pass.HIST_ACT.count", "uo.berner.min_slack.TIGHT.10937", "uo.berner.min_slack.TIGHT.21874", "uo.berner.min_slack.TIGHT.43748", "ts.berner.d02.pass.NOM.count", "ts.berner.d02.pass.TIGHT.count", "ts.berner.d02.pass.HIST.count", "ts.berner.d02.pass.HIST_ACT.count", "ts.berner.d02.min_slack.TIGHT.10937", "ts.berner.d02.min_slack.TIGHT.21874", "ts.berner.d02.min_slack.TIGHT.43748", "ts.berner.d02.HIST_ACT.cap_breaches_total", "ts.berner.d02.HIST_ACT.floor_breaches_total", "ts.berner.d02.HIST.cap_breaches_total", "ts.berner.d02.HIST.floor_breaches_total"],
+ "document_value_keys": ["pred.twosided.delta_primary"],
+ "unit": "count (horizons passing; breaches); share (training allowance)",
+ "denominator": "three BERNER horizons at the exploratory origin, one seed, per rule",
+ "display_rounding": {"count": 0, "share": 3},
+ "scope_boundary": "BERNER at the exploratory origin: campaign screen_20260910 (upper-only) and ts_d02_20260912 (two-sided). The upper-only tolerance has no anchor or document value and is written in words (CAMPAIGN_PREDECLARATION.md:62). The reserved margin is the tolerance minus the TIGHT training allowance; it equals that allowance because λ = 0.5.",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C2 (line 58), BERNER part", "earlier plan wording 'floor-breach counts' (orchestration plan P1 step 2, lines 516-517)"]
+},
+{
+ "id": "C-11",
+ "type": "definition",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Model relation",
+ "statement": "The extension keeps the companion's assignment variables x_ps and visit variables z_os, its single-station assignment and slot-capacity rows with slot counts ζ_s, and its objective of minimising total order-station visits. It replaces the companion's station workload-budget rows, which bound each station's load by its budget T_s, with share-policy rows that keep each station's share of total workload inside a band around its target b_s; share preservation is therefore a feasibility policy, not an objective. For a given total workload, an upper share row is a budget row whose budget is proportional to that total, and multiplying every product's workload by a common positive factor leaves every share, and so share feasibility, unchanged; this is the only sense in which the share rows stand in for budgets.",
+ "allowed_wording": [
+  "Station budgets are replaced, not supplemented, by share-policy rows; the visit objective and the assignment rows are unchanged.",
+  "A share row equals a budget row scaled with total workload, so the policy needs no absolute workload level."
+ ],
+ "required_qualifiers": [
+  {"text": "Uniform scaling leaves shares unchanged, but it does not make the learned layout or its future compliance independent of the horizon.", "discharge": "sentence"},
+  {"text": "Notation follows the companion: ζ_s counts slots and C_s is the companion's line capacity, so C_s is not used for slots, and V_s and T_s are inherited context only.", "discharge": "sentence"},
+  {"text": "The band half-width δ is an absolute share allowance and is not the companion's relative workload tolerance.", "discharge": "sentence"},
+  {"text": "Industrial workload here counts distinct retained product-order pairs, not the companion's load normalised by processing rate.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "new objective",
+  "share-preservation objective",
+  "workload-share preservation objective",
+  "rows added to the companion's feasible set",
+  "supplements the budget constraints",
+  "scale invariance makes the layout independent of the horizon"
+ ],
+ "sources": [
+  {"path": "IJSSOL_CSLAP_v1.tex", "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8", "locator": "lines 186-193 (notation table tab:data: line 192 \"$T_s$ & Workload budget of station $s$\", line 193 \"$C_s$ & Line capacity $T_s V_s$ of station $s$ over the horizon\"); lines 228-237 (eq:obj, eq:assign, eq:cap, eq:link, eq:wl); lines 249-252 (eq:setobj to eq:setwl); line 212 (\"Workload balance therefore enters as a constraint and not as a term of the objective.\"); line 584 (budget $T_s$ is $110\\%$ of legacy load)"},
+  {"path": "IJSSOL_CSLAP_v1_supplementary.tex", "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8", "locator": "lines 532-533 (\"the workload budget $T_s$ is $110\\%$ of a station's complete legacy load, the $10\\%$ being the tolerance the site operates to.\")"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§1 lines 9-13 (workload counts; complete station share); §2 lines 21-25 (scale invariance; delta an absolute share allowance)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§3 table lines 141-147 (workload restriction replaced, not supplemented); lines 152-154 (not a new objective); lines 201-203 (scale invariance is not invariance of the learned layout); §5 override 1 lines 275-281 (notation)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 5 table, row Model relation, line 555"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": ["comp.budget.definition", "comp.supp.workload.definition"],
+ "unit": "none",
+ "denominator": "not applicable",
+ "display_rounding": {"none": null},
+ "scope_boundary": "Definition of the model relation only; the formal delta is written in P3 (W/math/model_delta.md). MATHEMATICAL_SCOPE.md §1 line 15 uses C_s for slots; that internal usage is not carried into the paper.",
+ "supersedes": ["WRITING_PLAN_20260914.md §2 lines 85-86 'the extension's rows are added to that feasible set'", "WRITING_PLAN_20260914.md §2 line 95 'the workload-share preservation objective'"]
+},
+{
+ "id": "C-12",
+ "type": "premise",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Band shape",
+ "statement": "The policy band is absolute: station s must keep its future share within [max(0, b_s − δ), min(1, b_s + δ)], so every station receives the same allowance in share units whatever its target, and at the primary setting δ = 0.02 that allowance is two percentage points on each side. A band proportional to b_s was not studied.",
+ "allowed_wording": [
+  "The band is absolute, the same number of percentage points at every station; a relative band was not run."
+ ],
+ "required_qualifiers": [
+  {"text": "Findings about the absolute band do not transfer to a relative band.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "holds for relative bands",
+  "proportional band",
+  "does not depend on the band shape"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§8.1 lines 342-344 (\"Every station must stay within ±δ of its historical share\"; floors clipped at zero, caps at one)"},
+  {"path": "reports/horizon_robustness_plan/PLAN.md", "sha256": "69ce4d643497878b21e3f9d598a7ac5397f470e416b0d5d4a5ddd0751f75b835", "locator": "line 90 (\"a transparent, identical absolute-share departure limit\"; not the article's relative allowance)"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§2 line 21 (delta measured as an absolute share allowance)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 5 table, row Band shape, line 556"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": ["pred.holdout.delta", "pred.twosided.delta_primary"],
+ "unit": "share",
+ "denominator": "not applicable",
+ "display_rounding": {"share": 2},
+ "scope_boundary": "All two-sided campaigns use this band; the upper-only screen uses the cap side only.",
+ "supersedes": []
+},
+{
+ "id": "C-13",
+ "type": "context",
+ "endpoint_status": "predeclared_secondary",
+ "p1_row": "Savings in context",
+ "statement": "On the held-out window every optimised arm made fewer future station visits per order than the incumbent layout, which made 3.847: the arm-level mean over three optimizer seeds was 16.0% fewer for NOM, 15.0% for TIGHT, 15.2% for HIST+ACT and 13.0% for HIST+ACT-T, and single runs ranged from 12.0% to 17.5% fewer. These savings are not comparable with the companion's 6.6% and 7.4% on unseen weeks, or with its 13.7% in sample, because the extract, the order stream, the reference layout and the workload restriction all differ.",
+ "allowed_wording": [
+  "Against the incumbent on the same held-out window, the arms made 13.0–16.0% fewer future visits per order (arm-level means over three optimizer seeds; single runs 12.0–17.5%).",
+  "These savings are not comparable with the companion's 6.6% and 7.4% on unseen weeks, which come from a different extract, stream, reference layout and workload restriction."
+ ],
+ "required_qualifiers": [
+  {"text": "The savings compare time-capped returned layouts with the incumbent on the same future window.", "discharge": "sentence"},
+  {"text": "The companion already evaluates layouts out of sample on dated weeks, so out-of-sample testing is not presented as new.", "discharge": "sentence"},
+  {"text": "The savings are arm-level means over three optimizer seeds at one origin, not an expected saving at other deployments (C-24).", "discharge": "scope_paragraph"}
+ ],
+ "forbidden_wording": [
+  "improves on the companion's out-of-sample saving",
+  "better than the companion",
+  "twice the companion's saving",
+  "about 15% fewer visits",
+  "13–15%",
+  "what the band costs"
+ ],
+ "sources": [
+  {"path": "IJSSOL_CSLAP_v1.tex", "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8", "locator": "line 633 (\\subsection{Robustness on unseen weeks}\\label{sec:temporal}); line 640 (\"The 13.7\\% of Table~\\ref{tab:industrial} is in sample; on unseen weeks the same method removes 6.6\\% and 7.4\\%\"); line 611 (13.7\\% in text); line 595 (13.65 in table tab:industrial); line 634 (split on the recorded delivery date); line 754 (the dated extract behind Table tab:temporal)"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.3 lines 460-461 (mean visits per order relative to the incumbent scored on the same future, secondary); §9.2 lines 433-435 (different dated extract)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.3 lines 1196-1201 (column 'vs incumbent')"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "lines 153-154 (\"Percentage visit savings from different extracts, horizons and baselines are not directly comparable across papers.\"); line 74"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 2 lines 504-505 (arm-level means and single-run range); P1 step 5 table, row Savings in context, line 557"}
+ ],
+ "anchor_keys": ["ho.visits.incumbent", "ho.saving.NOM.pct", "ho.saving.TIGHT.pct", "ho.saving.HIST_ACT.pct", "ho.saving.HIST_ACT_T.pct", "ho.saving.single_run.min.pct", "ho.saving.single_run.max.pct"],
+ "document_value_keys": ["comp.saving.heldout.low", "comp.saving.heldout.high", "comp.saving.in_sample", "comp.temporal.section", "comp.temporal.label"],
+ "unit": "pct; visits_per_order",
+ "denominator": "arm-level means over three optimizer seeds; single-run range over the 12 held-out layouts",
+ "display_rounding": {"pct": 1, "visits_per_order": 3},
+ "scope_boundary": "Held-out campaign ho3_20260913. The companion's in-sample value is its text value 13.7 (IJSSOL_CSLAP_v1.tex:611, :640); its table gives 13.65 (line 595), so any use of the table value needs its own document value (Q-002, Q-015).",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C5 (line 61) '≈15 % fewer visits'", "WRITING_PLAN_20260914.md §3 lines 122-124 'the 13–15 % visit saving'"]
+},
+{
+ "id": "C-14",
+ "type": "scope",
+ "endpoint_status": "exploratory",
+ "p1_row": "Synthetic evidence role",
+ "statement": "The two-sided synthetic evidence covers 4 synthetic warehouses, run at the exploratory origin with one seed; the larger upper-only synthetic benchmark is a different campaign under a different rule, and its instance count is never attached to a two-sided statement. The synthetic generator is stationary, so these instances are a control on finite-sample and solver effects, not evidence about robustness to real demand drift, and their historically inactive product sets are empty, so HIST+ACT is the same model as HIST on them.",
+ "allowed_wording": [
+  "Under the two-sided rule the synthetic evidence consists of 4 warehouses at one origin with one seed.",
+  "On the synthetic instances HIST+ACT reduces to HIST, which is reported as an identity."
+ ],
+ "required_qualifiers": [
+  {"text": "Synthetic results are exploratory context and are never pooled with the industrial held-out evidence.", "discharge": "sentence"},
+  {"text": "Where the inactive set is empty, the equality of HIST+ACT and HIST is an identity, not evidence that activation protection is costless or beneficial.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "29 instances",
+  "a 29-instance two-sided benchmark",
+  "synthetic evidence of robustness to drift",
+  "activation helps on synthetic data"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§12.3 lines 1110-1127 (four synthetic warehouses at δ = 0.02); §9.2 items 5-6 lines 880-885 (empty inactive sets; stationary generator)"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§8.3 line 374 (screen subset); §5 lines 114-116 (HIST+ACT reduces to HIST, reported as an identity)"},
+  {"path": "reports/horizon_robustness_results/WRITING_PLAN_20260914.md", "sha256": "ffd8157b6b5c0c2eadbb71be15b38288afc1cb42abbc99f978656a05bde813c9", "locator": "line 68 (must not make: 'a 29-instance two-sided benchmark (only 4 ran two-sided)')"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 5 table, row Synthetic evidence role, line 558"}
+ ],
+ "anchor_keys": ["ts.synthetic_instances.count"],
+ "document_value_keys": [],
+ "unit": "count (synthetic warehouses)",
+ "denominator": "distinct synthetic datasets run two-sided (campaign ts_d02_20260912)",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "The forbidden '29 instances' applies to two-sided statements; the upper-only benchmark count has no anchor or document value, so the register states no number for it. extra.ts.synthetic_instances.instances is not cited.",
+ "supersedes": []
+},
+{
+ "id": "C-15",
+ "type": "disclosure",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Unused tail",
+ "statement": "The retained industrial stream holds 284,862 complete orders and the held-out window ends at order index 265,025, so 19,837 retained orders after it were used by no solve, score or survey of this study. That tail is shorter than P = 21,874 orders but long enough for a smaller horizon; it is not an approved further test and not an independent warehouse, and the writing process does not read it.",
+ "allowed_wording": [
+  "The last 19,837 retained orders, after the held-out window, were not used."
+ ],
+ "required_qualifiers": [
+  {"text": "The count treats 284,862 as the number of retained orders, as its source states (Q-013).", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "there is no other deployment segment",
+  "no retained orders remain",
+  "a second held-out test",
+  "independent deployment segment"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/DATA_PROVENANCE.md", "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c", "locator": "line 14 (\"| Complete retained orders | 284,862 |\")"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13 line 1172 (\"future [243,151, 265,025)\")"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.2 lines 430-432 (orders from the held-out origin onward read by no earlier solve, survey, re-scoring or diagnostic)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 last row, line 105 (\"19,837 retained orders remain after index 265,025, fewer than P but enough for a smaller horizon\")"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 3 line 531; P1 step 5 table, row Unused tail, line 559; §3 H1 line 130"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": ["prov.stream_end", "prov.tail_start", "prov.tail_unused", "prov.products"],
+ "unit": "count (orders)",
+ "denominator": "retained complete orders of the approved export",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "prov.stream_end semantics is 'length' (Q-013), so the computation 284,862 − 265,025 applies without an off-by-one correction.",
+ "supersedes": ["WRITING_EXECUTION_PLAN_REVIEWED_20260914.md §2 row 'There is no other deployment segment' (line 105)"]
+},
+{
+ "id": "C-16",
+ "type": "derivation",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Trapped-activation correction",
+ "statement": "After the second independent review, the two-sided model's lower activation endpoint was corrected: when every historically inactive product sits at one station, the activation mass cannot be placed elsewhere, so that station's lowest share over the uncertainty set is A_sk rather than (1 − ν)·A_sk. The correction changes no recorded result, because no executed model has a station holding every inactive product: the synthetic inactive sets are empty, and on the industrial case the inactive products span several stations in every layout. The correction is documented in the supplement.",
+ "allowed_wording": [
+  "The corrected lower activation endpoint changes no recorded result and is documented in the supplement."
+ ],
+ "required_qualifiers": [
+  {"text": "Zero impact rests on the executed models' inactive-product placement and on the revalidation of every stored certificate under the corrected code recorded in handoff §6.8; neither was re-run during writing.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "the original two-sided model was exact",
+  "no correction was needed",
+  "the correction improved the results"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§6.8 lines 506-521 (\"Lower activation endpoint ... When every inactive product sits at station s the mass is trapped there and the lowest share is A_sk ... Zero impact on recorded results\")"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§6 Step 2 preflight item 4, lines 380-384"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§8.1 lines 345-348 (original lower rows using (1−ν)·A_sk)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 5 table, row Trapped-activation correction, line 560"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": [],
+ "unit": "none",
+ "denominator": "every executed two-sided model",
+ "display_rounding": {"none": null},
+ "scope_boundary": "Supplement. The derivation of both endpoints is checked in P3 (derivations A and B); this claim records the correction and its recorded impact only.",
+ "supersedes": []
+},
+{
+ "id": "C-17",
+ "type": "limitation",
+ "endpoint_status": "not_applicable",
+ "p1_row": "Negative results",
+ "statement": "The negative results are classified by the reviewer-first categories. Demonstrated boundary condition: the conditional robust guarantee assumes that the future lies in the uncertainty set, and on the held-out window every returned layout had a station below its lowest modelled share, which shows that the assumption failed there; the sufficient total-variation certificate assumes a product-mix distance within the reserved margin, and every surveyed future window exceeded that margin. Empirical limitation: neither arm without a margin satisfied the band on any held-out seed, and at the exploratory origin a wider band did not bring the scenario arms into compliance, while the mechanism is not isolated. Experimental limitation: scenarios and activation are bundled, there is one held-out origin and one horizon, no λ, δ or ν frontier was run at that origin, and no validated margin rule was obtained. Implementation limitation: every held-out layout is time-capped without proof of optimality, cells with no returned layout within the time limit are not infeasibility, and the earlier minimum-slack diagnostics are logged but not replayable.",
+ "allowed_wording": [
+  "The departure of the realised future from every arm's modelled set is a demonstrated boundary condition of the conditional guarantee: the assumption is named and the evidence shows where it fails.",
+  "The misses of the arms without a margin are an empirical limitation whose mechanism is not isolated.",
+  "The bundled scenarios and activation, the single held-out origin and the absence of frontiers are experimental limitations.",
+  "Time-capped layouts and non-replayable diagnostics are implementation limitations."
+ ],
+ "required_qualifiers": [
+  {"text": "Each limitation states what failed, under which conditions, whether its explanation is demonstrated or hypothetical, and which experiment would resolve it; no experiment is run for this paper.", "discharge": "sentence"},
+  {"text": "Negative and mixed results are reported as found; no band, activation budget, arm, instance or horizon was changed or removed to improve a table.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "the method fails",
+  "robust optimisation fails",
+  "proves that historical scenarios cannot protect",
+  "a boundary condition of robust optimisation in general"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.2 lines 1184-1189 (stations outside the modelled set, above/below); §12.2 lines 1102-1107 (δ = 0.03 passes); §9.2 lines 862-897 (known limitations); §1.1 lines 38-42 (six diagnostics not replayable); §13.4 line 1209"},
+  {"path": "reports/horizon_robustness_results/tables/drift_survey.csv", "sha256": "60e729006f50f274d58dced4267a457e26002de256176b30fbd812ff21f502bb", "locator": "every row, column future_tv_within_rho = False"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§5 lines 107-116 (reporting commitments); §7.3 lines 308-311 (six runs not replayable); §9.3 lines 466-468 (what is not tested)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P1 step 5 table, row Negative results, line 561"}
+ ],
+ "anchor_keys": ["ho.pass.NOM.count", "ho.pass.HIST_ACT.count", "ho.departures.HIST_ACT.s11.below", "ho.departures.HIST_ACT.s22.below", "ho.departures.HIST_ACT.s33.below", "ho.departures.HIST_ACT_T.s11.below", "ho.departures.HIST_ACT_T.s22.below", "ho.departures.HIST_ACT_T.s33.below", "ts.berner.d03.pass.HIST.count", "ts.berner.d03.pass.HIST_ACT.count", "drift.holdout.future_tv"],
+ "document_value_keys": [],
+ "unit": "none (classification)",
+ "denominator": "not applicable",
+ "display_rounding": {"none": null},
+ "scope_boundary": "Categories from .claude/skills/reviewer_first_skill/SKILL_Academic_Manuscript_Architect_and_Critical_Reviewer.md §XII (lines 566-598). No item is classified as a genuine failure; the classification is a judgement open to BCL and SCI-5 review. Details of each item are carried by C-03, C-05, C-08, C-20, C-21, C-24, C-29 and C-31.",
+ "supersedes": []
+},
+{
+ "id": "C-18",
+ "type": "observation",
+ "endpoint_status": "exploratory",
+ "p1_row": "none (first plan C2, corrected by reviewed plan §2)",
+ "statement": "Under the upper-only rule the screening campaign compared the four arms on the synthetic benchmark and on BERNER at one origin with one seed. On the synthetic benchmark the comparison between historical scenarios and tightening is mixed across catalogue-size strata and rests on unequal scored denominators, because the robust arms returned no layout within the time limit in part of the smallest family, so it supports no single ranking of the arms. On BERNER, HIST+ACT satisfied the caps at two of three horizons, and NOM, TIGHT and HIST at none.",
+ "allowed_wording": [
+  "Under the upper-only rule no single ranking of historical scenarios against tightening holds across the synthetic strata; paired outcomes within matched cells and the non-returned cells are reported together.",
+  "On BERNER under the upper-only rule, HIST+ACT met the caps at two of three horizons and every other arm at none."
+ ],
+ "required_qualifiers": [
+  {"text": "A cell with no returned layout within the time limit is not infeasibility.", "discharge": "sentence"},
+  {"text": "The upper-only study is exploratory and is reported separately from the two-sided campaigns, never pooled with them.", "discharge": "sentence"},
+  {"text": "On stationary synthetic data, differences between scenarios and tightening reflect finite-sample and solver behaviour, not robustness to drift.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "historical scenarios do not beat tightening on the benchmark",
+  "tightening explains the robustness gain",
+  "universal superiority",
+  "superior",
+  "the smallest instances are infeasible"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§10.1 lines 909-920 (returned layouts and passes per arm); §10.3 lines 935-966 (H2 mixed by stratum); §10.4 lines 973-979 (BERNER); §10.6 lines 1005-1008 (non-returns are not infeasibility)"},
+  {"path": "reports/horizon_robustness_results/tables/paired_stratum_summary.csv", "sha256": "7772ec24689f7e45ea40a9b8028f1cde3a791d158cfb6da9a2c8316a87643817", "locator": "upper-only rows, baseline TIGHT, by catalogue-size stratum and horizon"},
+  {"path": "reports/horizon_robustness_results/tables/stratum_summary.csv", "sha256": "5162f2c98182e2ab5a0ac5111f8f6f63701957dae6b73961812756b0730017cf", "locator": "upper-only rows by stratum, arm and horizon (scored denominators)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 row 'Historical scenarios do not beat tightening on the benchmark', line 103"},
+  {"path": "reports/horizon_robustness_plan/PLAN.md", "sha256": "69ce4d643497878b21e3f9d598a7ac5397f470e416b0d5d4a5ddd0751f75b835", "locator": "line 169 (retrospective/exploratory label); lines 277-280 (hypotheses H1-H4)"}
+ ],
+ "anchor_keys": ["uo.berner.pass.NOM.count", "uo.berner.pass.TIGHT.count", "uo.berner.pass.HIST.count", "uo.berner.pass.HIST_ACT.count"],
+ "document_value_keys": [],
+ "unit": "count (horizons passing)",
+ "denominator": "three BERNER horizons, one seed, one origin; synthetic strata use the instance as unit with scored and non-returned cells stated",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "Campaign screen_20260910. Synthetic stratum values and the synthetic instance count have no anchors and are not stated as numbers here; a display of them needs numbers.json keys first.",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C2 (line 58)", "EXPERIMENT_REVIEW_HANDOFF.md §10.3 lines 951-953 'is explained by ordinary tightening'"]
+},
+{
+ "id": "C-19",
+ "type": "observation",
+ "endpoint_status": "exploratory",
+ "p1_row": "none (first plan C3, corrected by reviewed plan §2)",
+ "statement": "Under the two-sided rule with δ = 0.02, at the exploratory origin with one seed, TIGHT satisfied the band at all three BERNER horizons, HIST+ACT at one, and HIST and NOM at none. Summed over the three horizons the misses comprised 0 cap and 3 floor breaches for HIST+ACT and 1 cap and 8 floor breaches for HIST, so the scenario arms missed mostly, but not only, below the floor. In every two-sided BERNER cell the realised future also fell below the lowest modelled share at some station; leaving the modelled set and breaching the band are different metrics.",
+ "allowed_wording": [
+  "At the exploratory origin TIGHT satisfied the two-sided band at all three BERNER horizons, HIST+ACT at one, and HIST and NOM at none.",
+  "The misses of the scenario arms included cap breaches as well as floor breaches."
+ ],
+ "required_qualifiers": [
+  {"text": "Exploratory: the two-sided policy was fixed before its solves but after the same futures had been examined under the upper-only rule.", "discharge": "sentence"},
+  {"text": "The three horizons share one origin and are not replicates.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "misses are downward",
+  "robust-arm misses are small and downward",
+  "three replicates",
+  "independent confirmation",
+  "TIGHT is the method"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§12.2 lines 1084-1108; §12.5 items 1 and 5, lines 1145 and 1149; §12.6 lines 1155, 1160 and 1161 (downward departures in every two-sided BERNER cell)"},
+  {"path": "reports/horizon_robustness_results/tables/two_sided_novelty_survey.csv", "sha256": "9ee2156215fad231daf680d654b551d0b8963e1834e12b9f52a97b215ce5b3e0", "locator": "BERNER two-sided rows (departures below the lowest modelled share)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 row 'Robust arms' misses are downward', line 102"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F12 line 75"}
+ ],
+ "anchor_keys": ["ts.berner.d02.pass.NOM.count", "ts.berner.d02.pass.TIGHT.count", "ts.berner.d02.pass.HIST.count", "ts.berner.d02.pass.HIST_ACT.count", "ts.berner.d02.HIST_ACT.cap_breaches_total", "ts.berner.d02.HIST_ACT.floor_breaches_total", "ts.berner.d02.HIST.cap_breaches_total", "ts.berner.d02.HIST.floor_breaches_total"],
+ "document_value_keys": ["pred.twosided.delta_primary"],
+ "unit": "count (horizons passing; breaches)",
+ "denominator": "three BERNER horizons at the exploratory origin, one seed",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "Campaign ts_d02_20260912, BERNER only. The incumbent's two-sided pass count at the exploratory origin is not anchored and is not stated; add an anchor before any use.",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C3 (line 59) 'robust-arm misses are small (≤ 0.41 pp) and downward'"]
+},
+{
+ "id": "C-20",
+ "type": "observation",
+ "endpoint_status": "exploratory",
+ "p1_row": "none (first plan C4)",
+ "statement": "At the exploratory origin on BERNER, with each δ a separately optimised model and one seed: with δ of three percentage points TIGHT satisfied the band at all three horizons and NOM, HIST and HIST+ACT at none; with δ of one percentage point TIGHT satisfied it at one horizon and the other arms at none. Widening the band did not bring the scenario arms into compliance, and the narrower band was met once.",
+ "allowed_wording": [
+  "A wider band did not make the scenario arms comply at the exploratory origin; only TIGHT satisfied the band at every horizon with δ of three percentage points."
+ ],
+ "required_qualifiers": [
+  {"text": "Each δ is a different model and a different solve, so a wider band does not imply better future compliance, and the δ values form a sampled response, not a frontier.", "discharge": "sentence"},
+  {"text": "No lower bound was certified, so no band is shown unattainable, and no λ frontier was run.", "discharge": "sentence"},
+  {"text": "Exploratory, one seed at one origin, and never pooled with the held-out evidence.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "Pareto frontier",
+  "optimal frontier",
+  "wider bands improve compliance",
+  "the band is unattainable",
+  "infeasible band"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§12.2 lines 1102-1108 (passes by δ); §12.5 items 2-3, lines 1146-1147; §12.6 lines 1158-1159 and 1164"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§8.2 lines 363-368 (δ = 0.02 primary; 0.01 aspiration; 0.03 fallback; no headline moves)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "lines 107-111 (not an optimal Pareto frontier); lines 451-453 (separately optimized models; no monotone compliance)"}
+ ],
+ "anchor_keys": ["ts.berner.d01.pass.NOM.count", "ts.berner.d01.pass.TIGHT.count", "ts.berner.d01.pass.HIST.count", "ts.berner.d01.pass.HIST_ACT.count", "ts.berner.d03.pass.NOM.count", "ts.berner.d03.pass.TIGHT.count", "ts.berner.d03.pass.HIST.count", "ts.berner.d03.pass.HIST_ACT.count"],
+ "document_value_keys": [],
+ "unit": "count (horizons passing)",
+ "denominator": "three BERNER horizons per δ at the exploratory origin, one seed",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "Campaigns ts_b01_20260912 and ts_b03_20260912. The δ values of one and three percentage points have no anchor or document value and are written in words (CAMPAIGN_PREDECLARATION.md:363-366).",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C4 (line 60)"]
+},
+{
+ "id": "C-21",
+ "type": "observation",
+ "endpoint_status": "predeclared_secondary",
+ "p1_row": "none (first plan C6, set-coverage part)",
+ "statement": "On the held-out window every returned layout had stations whose realised share fell below the lowest share its modelled scenario set allowed: two to four stations for HIST+ACT-T, three or four for HIST+ACT, and 12 or 13 for NOM and TIGHT, whose modelled set is the single pooled-history point. Above the highest modelled share there were at most three such stations for the scenario arms and 11 or 12 for NOM and TIGHT. A realised share outside a station's modelled range shows that the future lay outside that arm's uncertainty set.",
+ "allowed_wording": [
+  "The realised future lay outside the uncertainty set of every returned held-out layout, mostly in the downward direction for the scenario arms."
+ ],
+ "required_qualifiers": [
+  {"text": "Staying inside every station's modelled range does not prove that the future lay inside the uncertainty set; only a departure proves non-membership.", "discharge": "sentence"},
+  {"text": "Leaving the modelled set is not a band violation: the margin arms left their sets and still satisfied the band.", "discharge": "sentence"},
+  {"text": "Counts over three optimizer seeds at one origin (C-24).", "discharge": "scope_paragraph"}
+ ],
+ "forbidden_wording": [
+  "the future stayed inside the uncertainty set",
+  "compliance comes from the reserved margin, not from set membership",
+  "compliance rests on within-station cancellation",
+  "proves that historical scenarios cannot protect"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.2 lines 1182-1189 (stations outside the modelled set above/below per seed); §13.3 lines 1196-1201"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.3 lines 461-462 (departures from the modelled set in both directions, secondary)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§6 Step 3 lines 454-456 (outside an envelope proves non-membership; inside every envelope does not prove membership)"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§5 line 65 (station-direction envelopes expose departures but do not certify membership)"}
+ ],
+ "anchor_keys": ["ho.departures.NOM.s11.below", "ho.departures.NOM.s22.below", "ho.departures.NOM.s33.below", "ho.departures.TIGHT.s11.below", "ho.departures.TIGHT.s22.below", "ho.departures.TIGHT.s33.below", "ho.departures.HIST_ACT.s11.below", "ho.departures.HIST_ACT.s22.below", "ho.departures.HIST_ACT.s33.below", "ho.departures.HIST_ACT_T.s11.below", "ho.departures.HIST_ACT_T.s22.below", "ho.departures.HIST_ACT_T.s33.below", "ho.departures.NOM.s11.above", "ho.departures.NOM.s22.above", "ho.departures.NOM.s33.above", "ho.departures.TIGHT.s11.above", "ho.departures.TIGHT.s22.above", "ho.departures.TIGHT.s33.above", "ho.departures.HIST_ACT.s11.above", "ho.departures.HIST_ACT.s22.above", "ho.departures.HIST_ACT.s33.above", "ho.departures.HIST_ACT_T.s11.above", "ho.departures.HIST_ACT_T.s22.above", "ho.departures.HIST_ACT_T.s33.above"],
+ "document_value_keys": [],
+ "unit": "count (stations)",
+ "denominator": "24 evaluated stations per layout; 12 held-out layouts",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "Held-out campaign ho3_20260913. Exploratory-origin departures are in C-19.",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C6 (line 62) 'so compliance rests on within-station cancellation, not on set membership'", "EXPERIMENT_REVIEW_HANDOFF.md §12.6 line 1161 'its compliance comes from the reserved margin, not from set membership'"]
+},
+{
+ "id": "C-22",
+ "type": "derivation",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (first plan C7, corrected by reviewed plan §2)",
+ "statement": "For a fixed layout, the largest and the smallest share of a station over the declared historical-hull-and-activation uncertainty set are attained at finitely many scenario vertices and activation endpoints, including the trapped-activation case for the smallest share, so the robust rows are finitely many linear rows. Multiplying each row by its integer scenario total, and the activation endpoint also by the denominator of ν, gives integer-count rows with floor and ceiling thresholds that define the same set of layouts. Exactness rests on this derivation; agreement between the solvers, the independent exact validator and the vertex oracle supports the implementation, not the mathematics.",
+ "allowed_wording": [
+  "The robust counterpart is an exact finite restatement over the uncertainty set, and its integer-count form defines the same feasible layouts."
+ ],
+ "required_qualifiers": [
+  {"text": "A finite-precision solver return is not an exact certificate; the stored layouts were revalidated in exact rational arithmetic by code that shares nothing with the solvers.", "discharge": "sentence"},
+  {"text": "Finite rows, integer rescaling, safety margins, scenario hulls and chronological splits are established techniques and are not presented as new.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "validated by the validator, therefore exact",
+  "a new exact optimizer",
+  "novel robust counterpart",
+  "newly invented",
+  "integer rescaling is new"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§4 lines 41-53 (exact finite robust counterpart, upper side); §10 lines 103-142 (integer-count restatement defines the same set)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§6.6 lines 413-465; §6.8 lines 506-521 (lower endpoint, vertex oracle); §9.1 lines 839-846 (exact revalidation and scoring)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§2 row 'Exact counterpart is validated by a validator', line 104; §3 lines 132-135 (not newly invented techniques)"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": [],
+ "unit": "none",
+ "denominator": "not applicable",
+ "display_rounding": {"none": null},
+ "scope_boundary": "The two-sided lower endpoint and edge cases are derived in P3 (preflight items 4-5); MATHEMATICAL_SCOPE.md §4 states the upper side only. If P3 derivations disagree, this claim is routed back.",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C7 (line 63) 'is validated by an independent exact validator'"]
+},
+{
+ "id": "C-23",
+ "type": "interpretation",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (first plan C8)",
+ "statement": "Conditional robust feasibility and observed future compliance are different quantities. If a layout satisfies every finite robust row and the realised future product mix lies in the declared uncertainty set, every station respects its band; nothing in the study establishes that a future lies in that set or gives a probability of future compliance, and observed compliance on the held-out window is one realisation scored for three optimizer seeds.",
+ "allowed_wording": [
+  "The model provides conditional robust feasibility for its uncertainty set under the stated assumptions; it does not guarantee compliance on future orders."
+ ],
+ "required_qualifiers": [
+  {"text": "Robust feasibility is stated only as conditional on the declared uncertainty set and its assumptions.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "guarantees future compliance",
+  "future-feasibility guarantee",
+  "universal future reliability",
+  "reliability probability",
+  "95% coverage",
+  "robust to any future demand",
+  "operationally certified",
+  "λ = 0.5 is certified"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§4 line 53 (the guarantee and what it is not); §6 lines 69-71 (no universal guarantee)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.4 line 1209; §9.2 item 10 lines 895-897"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§6 Step 4 lines 489-492 (allowed: conditional robust feasibility for U; forbidden: universal future reliability, calibrated automatic margin rule, new exact optimizer, proven optimal protection cost, independent-demand replication from three seeds)"},
+  {"path": "reports/horizon_robustness_results/WRITING_PLAN_20260914.md", "sha256": "ffd8157b6b5c0c2eadbb71be15b38288afc1cb42abbc99f978656a05bde813c9", "locator": "§1 C8 line 64; 'must not make' lines 66-67"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": [],
+ "unit": "none",
+ "denominator": "not applicable",
+ "display_rounding": {"none": null},
+ "scope_boundary": "Applies to every arm and campaign.",
+ "supersedes": []
+},
+{
+ "id": "C-24",
+ "type": "scope",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (INV-5 scope-once paragraph)",
+ "statement": "The held-out evidence is one industrial warehouse, one deployment origin at order index 243,151, one horizon of n = 21,874 complete orders and three optimizer seeds under one frozen policy with δ = 0.02, ν = 0.01 and λ = 0.5. The seeds describe optimizer variability at that origin, not variation in future demand, so no significance test or interval is computed and nothing is claimed about other origins, horizons or warehouses. The study cannot separate historical scenarios from activation, cannot isolate the margin from solver and layout effects, and ran no λ, δ or ν frontier at the held-out origin.",
+ "allowed_wording": [
+  "One held-out origin and three optimizer seeds.",
+  "Seeds are averaged within the origin and never counted as independent futures."
+ ],
+ "required_qualifiers": [
+  {"text": "Stated once at the head of Results and once in Limitations; the abstract and the conclusion each carry one qualifier clause.", "discharge": "scope_paragraph"},
+  {"text": "The held-out results are reported in their own section, with the incumbent as same-future context, and are never pooled with the exploratory campaigns.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "replicates",
+  "independent futures",
+  "statistically significant",
+  "confidence interval",
+  "p-value",
+  "Wilcoxon",
+  "generalises to other warehouses",
+  "independent-demand replication"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§9.2 lines 427-443; §9.3 lines 464-468 (\"Three seeds measure optimiser variability, not demand variability\"; what is not tested); §9.4 lines 472-475"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.4 line 1209; §13.3 line 1203 (separate contributions not isolated)"},
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "INV-5 scope-once lines 369-373; INV-4 lines 365-366 (no significance tests or intervals over three seeds)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§5 override 4 lines 289-292"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": ["pred.holdout.origin", "pred.holdout.n", "pred.holdout.delta", "pred.holdout.nu", "pred.holdout.lambda"],
+ "unit": "count; share; fraction",
+ "denominator": "one origin, one horizon, three optimizer seeds, four arms",
+ "display_rounding": {"count": 0, "share": 2, "fraction_nu": 2, "fraction_lambda": 1},
+ "scope_boundary": "The reviewed plan's allowed phrase 'optimizer seed replication' (line 490) is not used: INV-5, which has precedence, keeps replication vocabulary out of the paper's own voice.",
+ "supersedes": []
+},
+{
+ "id": "C-25",
+ "type": "premise",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (first plan C1 boundary; Q-006)",
+ "statement": "The approved industrial export has the header PRODUCT;ORDER;QTY;STATION;BOX_ID and no date column, so the protocol orders complete orders by their numeric order identifiers. That this order matches the creation, release, picking and delivery sequence on site is an assumption, and whether dates exist operationally at the site is left for author confirmation.",
+ "allowed_wording": [
+  "The export carries no dates, so horizons are counted in complete orders taken in order-identifier sequence."
+ ],
+ "required_qualifiers": [
+  {"text": "Chronology is assumed from order identifiers; sorting does not establish it.", "discharge": "sentence"},
+  {"text": "The dated alternative is deferred, not disproved, and the study does not show that dates are unnecessary for operational decisions in general.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "dates are unnecessary for every operational decision",
+  "the stream is chronological",
+  "the dated approach is inferior",
+  "the dated alternative is disproved"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "§1 F9 line 72 (\"The export header is PRODUCT;ORDER;QTY;STATION;BOX_ID, with no date column\")"},
+  {"path": "reports/horizon_robustness_results/DATA_PROVENANCE.md", "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c", "locator": "line 27 (\"This checks the implementation's sequence, not the operational truth of order-ID chronology.\")"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§9.2 item 8 lines 891-892 (\"Order-ID chronology is an assumption.\")"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§2 line 27 (dates unnecessary to define the next n complete orders; necessary for calendar horizons, arrival rates or date-specific behaviour)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "lines 16-19 (not evidence that dates are unnecessary for every operational decision; dated alternative deferred, not disproved); line 196 (chronology assumed)"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": [],
+ "unit": "none",
+ "denominator": "not applicable",
+ "display_rounding": {"none": null},
+ "scope_boundary": "Q-006 resolution (plan F9). On-site dates are % AUTHOR-CONFIRM.",
+ "supersedes": []
+},
+{
+ "id": "C-26",
+ "type": "premise",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (reviewed plan §3 data contract; Q-001)",
+ "statement": "The industrial instance keeps the shared loader's retained catalogue of 21,874 products in 21,874 slots and 24 evaluated stations, with 5,899 frozen and 15,975 movable products. The companion reports 26 stations and evaluates the same 24, so the two excluded stations are not a new exclusion; they and their products enter neither workloads, visits nor denominators. Every included product occupies a slot even with zero historical workload, no new product arrives in a future window, and frozen products keep their stations while their changing demand still counts in workloads and visits.",
+ "allowed_wording": [
+  "We use the 24 evaluated stations and the 21,874 products of the companion's industrial case, 5,899 of them frozen."
+ ],
+ "required_qualifiers": [
+  {"text": "Industrial workload counts distinct retained product-order pairs, not units ordered or processing hours.", "discharge": "sentence"},
+  {"text": "The catalogue is a closed snapshot: unknown new products are outside scope, and an export cannot prove that never-ordered physical inventory is complete.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "we exclude two stations",
+  "26 evaluated stations",
+  "the catalogue is the complete physical inventory"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/DATA_PROVENANCE.md", "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c", "locator": "lines 11-13 (21,874 / 21,874; 24 stations; 5,899 / 15,975); line 21 (excluded stations enter neither catalogue, workloads, visits nor denominators); line 27 (one-product freeze edge case)"},
+  {"path": "IJSSOL_CSLAP_v1.tex", "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8", "locator": "line 569 (\"21{,}874 products and 26 picking stations. We evaluate 24 stations;\"); lines 577-579 (15,975 reassignable, 5,899 fixed; all products remain in evaluation and workloads)"},
+  {"path": "IJSSOL_CSLAP_v1_supplementary.tex", "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8", "locator": "lines 516-519 (products, free to relocate, frozen, stations of which evaluated)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§3 data contract lines 178-191"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§1 lines 7-9 (closed catalogue; workload counts distinct product-order pairs)"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": ["prov.products", "prov.stations_evaluated", "prov.fixed", "prov.movable", "comp.products", "comp.stations.reported", "comp.stations.evaluated"],
+ "unit": "count",
+ "denominator": "retained industrial system",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "Q-001 resolution: the paper says 'the 24 evaluated stations'. Synthetic workload keeps line multiplicity (MATHEMATICAL_SCOPE.md:9).",
+ "supersedes": ["WRITING_PLAN_20260914.md §2 lines 100-101 'the extension's retained system has 24 after two exclusions'"]
+},
+{
+ "id": "C-27",
+ "type": "assumption",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (first plan C1 boundary; reviewed plan §3)",
+ "statement": "The industrial catalogue, incumbent layout, slot capacities, freeze mask and order-retention rule are reconstructed by the shared loader from the whole export and assumed known before deployment; that reconstruction depends on future orders, so the experiment is snapshot-conditioned and retrospective. Conditional on the snapshot, targets, training counts and scenarios use only the prefix before the origin, the targets are frozen at the origin and never recomputed from the scored future or from the incumbent's future profile, and each layout is written before its future segment is scored.",
+ "allowed_wording": [
+  "Conditional on an assumed pre-known snapshot of the catalogue, incumbent and freeze mask, all estimation uses only the orders before the origin."
+ ],
+ "required_qualifiers": [
+  {"text": "Prefix-only estimation conditional on the snapshot is not evidence that the metadata were available at each historical origin.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "prospectively verified metadata",
+  "prospective reconstruction",
+  "no future information entered the pipeline",
+  "fully prospective"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/DATA_PROVENANCE.md", "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c", "locator": "line 5 (assumed pre-known, not prospectively verified; future-dependent retention acknowledged)"},
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§8 line 85 (retrospective snapshot-conditioned experiment)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§9.1 lines 854-856 (layout written before scoring); §9.2 item 7 lines 886-890"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§3 lines 192-200 (assumed pre-known metadata; freeze targets, never retarget)"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": [],
+ "unit": "none",
+ "denominator": "not applicable",
+ "display_rounding": {"none": null},
+ "scope_boundary": "Industrial case. Synthetic instances have no snapshot reconstruction.",
+ "supersedes": []
+},
+{
+ "id": "C-28",
+ "type": "definition",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (reviewed plan §3 horizon bullets)",
+ "statement": "Horizons are counted in complete orders. The exploratory grid n ∈ {⌈P/2⌉, P, 2P}, with P the catalogue size, is a declared sensitivity design, not an operationally optimal horizon, and historical scenario blocks use the same n as the scored future. At one origin, where the larger horizon is an integer multiple of the smaller, the larger horizon's uncertainty set is contained in the smaller one's; this constrains the model but implies nothing monotone about realised future compliance or about time-capped returned costs. The held-out deployment used n = P only.",
+ "allowed_wording": [
+  "The horizon grid is a declared sensitivity design, not a recommended planning interval."
+ ],
+ "required_qualifiers": [
+  {"text": "Nesting holds only for matched horizons that are integer multiples at a common origin; it does not transfer to other horizons or origins.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "optimal horizon",
+  "universal planning interval",
+  "compliance improves with n",
+  "monotone future feasibility"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/MATHEMATICAL_SCOPE.md", "sha256": "b8ffb5df2bf0eda5a287e30568a4c9a80aac943766e2a22c3e592f453a5c45b2", "locator": "§2 line 27 (declared sensitivity design; matched n); §9 lines 91-99 (U_large subset of U_small; no monotone future feasibility)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§3 lines 204-206"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§2 lines 55-57 (three declared horizons); §9.2 lines 436-439 (held-out horizon n = P only)"}
+ ],
+ "anchor_keys": [],
+ "document_value_keys": [],
+ "unit": "none",
+ "denominator": "not applicable",
+ "display_rounding": {"none": null},
+ "scope_boundary": "The numeric value of P is carried by C-26 and C-07.",
+ "supersedes": []
+},
+{
+ "id": "C-29",
+ "type": "disclosure",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (study-design accounting; Q-009; first plan 'must not make' list)",
+ "statement": "The analysis uses six non-superseded campaigns and excludes four superseded directories, which were never analysed. Across the analysed campaigns 464 rows were authorized: 412 returned a layout that was scored on its future horizon and 52 returned no allocation, and the scored rows hold 188 distinct layouts. A row with no layout within its time limit is not infeasibility. The earlier minimum-slack diagnostics were logged without saving their layouts, so they are reported only as logged results.",
+ "allowed_wording": [
+  "Of 464 authorized rows, 412 were scored and 52 returned no allocation.",
+  "The scored rows contain 188 distinct layouts."
+ ],
+ "required_qualifiers": [
+  {"text": "Scored cases and distinct layouts are different counts: a layout shared by several scored rows is counted once.", "discharge": "sentence"},
+  {"text": "Optimization failure, independent-validation failure and future-window violation are separate quantities and are never pooled.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "413 layouts",
+  "results from superseded directories",
+  "the min-slack diagnostics show",
+  "replayed diagnostics",
+  "infeasible cells"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/analysis_audit.md", "sha256": "b8a7ed08317827ed0470077d8ef5e2a0e717be08231ec85435a89b57953b55ce", "locator": "lines 13-20 (six campaigns included); line 22 (four excluded as superseded); lines 28-36 (464 authorized, 52 no allocation, 412 scored); lines 44-46 (status detail)"},
+  {"path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md", "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71", "locator": "§3 lines 86-89 (denominators; superseded directories excluded); §5 lines 107-111; §7.3 lines 308-311 (six runs logged, not replayable)"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§1.1 lines 38-42"},
+  {"path": "reports/horizon_robustness_results/tables/case_frame.csv", "sha256": "0e9dc1f5f4c8dc5578e18cd1785a9426ba32900b68d646a0cd7fce6eda918ce0", "locator": "all 464 rows; scored rows' layout_hash (188 distinct)"},
+  {"path": "reports/horizon_robustness_results/WRITING_PLAN_20260914.md", "sha256": "ffd8157b6b5c0c2eadbb71be15b38288afc1cb42abbc99f978656a05bde813c9", "locator": "lines 66-70 (must not make: non-replayable diagnostics beyond 'logged'; superseded directories)"}
+ ],
+ "anchor_keys": ["acct.campaigns.analysed", "acct.campaigns.superseded", "acct.rows.authorized", "acct.rows.scored", "acct.rows.no_allocation", "acct.layouts.scored"],
+ "document_value_keys": ["audit.rows.authorized", "audit.rows.scored", "audit.rows.no_allocation"],
+ "unit": "count",
+ "denominator": "authorized manifest rows of the six analysed campaigns",
+ "display_rounding": {"count": 0},
+ "scope_boundary": "Q-009 resolution: acct.layouts.scored counts distinct layout_hash among scored rows. The reviewed plan's 413 matches no stored population and is recorded in interpretation_errata.md. The extra.* layout counts are context only.",
+ "supersedes": ["WRITING_EXECUTION_PLAN_REVIEWED_20260914.md line 60 '413 layouts'"]
+},
+{
+ "id": "C-30",
+ "type": "recommendation",
+ "endpoint_status": "not_applicable",
+ "p1_row": "none (P5b mandatory reader question on practice)",
+ "statement": "For a site that wants fewer station visits while keeping every station's workload share inside a band, the tested policy is to optimise inside a band tightened to reserve part of the policy band, and to examine the station-level variation in the site's own history against that reserve before adopting a layout. On this case the reserve of one percentage point was smaller than the incumbent's largest historical block deviation, and the tightened layouts still satisfied the band on the held-out window; the policy is untested at other sites, origins and reserve sizes.",
+ "allowed_wording": [
+  "A practitioner can reserve part of the band during optimisation and check the reserve against the station-level variation in the site's own history, treating the result as a policy tested on one case, not a validated rule."
+ ],
+ "required_qualifiers": [
+  {"text": "This is a policy tested on one case that still needs validation, not a calibrated or automatic margin rule.", "discharge": "sentence"},
+  {"text": "The incumbent's historical variation belongs to its own layout, so the check informs but does not set the reserve for an optimised layout.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "empirically calibrated margin rule",
+  "automatic margin calibration",
+  "set λ = 0.5",
+  "reserve one percentage point at every site",
+  "operationally certified",
+  "the method to adopt"
+ ],
+ "sources": [
+  {"path": "reports/horizon_robustness_results/WRITING_ORCHESTRATION_PLAN_20260914.md", "sha256": "c6b9746b70f40546b0e141979e4bf48731f180d13d618e2723a855fbc7e525f3", "locator": "P5b step 2 lines 812-813 (\"A tested policy still needing validation (§XIV): reserve part of the band, and check station-level history against the reserve before adopting a layout.\")"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§6 Step 4 lines 490-492 (forbidden: an empirically calibrated automatic margin rule)"},
+  {"path": "reports/horizon_robustness_results/tables/dispersion_survey.csv", "sha256": "74d52002a50ff8bf45e9b8de57f2dd05cc770336c9c806c05e29daacafa9ff72", "locator": "row BERNER, origin 199403, n = 21874 (file line 90), column max_abs_pp"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§13.2 lines 1187 and 1189 (TIGHT and HIST+ACT-T pass on every seed)"}
+ ],
+ "anchor_keys": ["ho.pass.TIGHT.count", "ho.pass.HIST_ACT_T.count", "disp.explor.n_P.max_abs"],
+ "document_value_keys": [],
+ "unit": "none",
+ "denominator": "one case, one held-out origin, three optimizer seeds",
+ "display_rounding": {"none": null},
+ "scope_boundary": "Recommendation; P4:G1 forbids a contribution resting only on this claim. Wording is subject to SCI-5 if disputed.",
+ "supersedes": []
+},
+{
+ "id": "C-31",
+ "type": "observation",
+ "endpoint_status": "additional_descriptive",
+ "p1_row": "none (first plan C6, certificate part; reviewed plan §3 contribution 4)",
+ "statement": "A station share can move from its pooled-history value by at most the total-variation distance between the future product mix and pooled history, so a layout inside the tightened band on pooled history stays inside the policy band on any future within the reserved margin of that history. This sufficient condition did not hold on any surveyed window: the held-out product mix lay at a distance of 0.195 from pooled history against a reserved margin of one percentage point, and the stored distances of the futures scored at the exploratory origin also exceed that margin. The margin arms nevertheless satisfied the band on the held-out window, which is consistent with product-level changes cancelling within stations but does not establish it.",
+ "allowed_wording": [
+  "The product-level total-variation certificate does not apply on these windows: the held-out distance of 0.195 is many times the reserved margin."
+ ],
+ "required_qualifiers": [
+  {"text": "The failure of a sufficient condition does not establish any particular alternative margin rule.", "discharge": "sentence"},
+  {"text": "These distances are ex post diagnostics, labelled as such and never used to choose a parameter.", "discharge": "sentence"}
+ ],
+ "forbidden_wording": [
+  "the TV bound is too loose, so margins must come from station dispersion",
+  "compliance rests on cancellation",
+  "the certificate is useless in general"
+ ],
+ "sources": [
+  {"path": "tools/horizon_robustness/drift_survey.py", "sha256": "fcf8168967ed04bf471177fe1f4e8b7bcb4ff46ef5a81f206dacb704ce74e85a", "locator": "lines 3-10 (|r_s(x, q) − r_s(x, qH)| <= TV(q, qH); TIGHT reserves rho = lambda * delta)"},
+  {"path": "reports/horizon_robustness_results/tables/drift_survey.csv", "sha256": "60e729006f50f274d58dced4267a457e26002de256176b30fbd812ff21f502bb", "locator": "rows BERNER (file lines 14-16) and BERNER@holdout (line 17), columns future_tv_ex_post, reserved_margin_rho and future_tv_within_rho"},
+  {"path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md", "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94", "locator": "§12.6 line 1162 (TV reading valid but vacuous here; rejected closing sentences in interpretation_errata.md)"},
+  {"path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md", "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989", "locator": "§3 line 131 (contribution 4: failure of a particular sufficient TV certificate); §2 line 100"}
+ ],
+ "anchor_keys": ["drift.holdout.future_tv", "drift.holdout.hist_tv_max"],
+ "document_value_keys": [],
+ "unit": "tv",
+ "denominator": "one held-out window and the futures scored at the exploratory origin",
+ "display_rounding": {"tv": 3},
+ "scope_boundary": "Exploratory-origin distances have no anchors and are not written as numbers. The reserved margin is λδ at the primary two-sided policy, written in words.",
+ "supersedes": ["WRITING_PLAN_20260914.md §1 C6 (line 62), total-variation part"]
+}
+]

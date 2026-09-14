@@ -1,0 +1,173 @@
+%% =====================================================================
+%%  Supplementary material. Standalone document with the main article's
+%%  preamble conventions; compiled separately on Overleaf. Sections are
+%%  numbered S1 to S6 and referred to by name from the main article.
+%% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[natbibapa]{apacite}
+
+\newcommand{\authorreview}[1]{\textcolor{red}{[AUTHOR REVIEW: #1]}}
+
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\theequation}{S\arabic{equation}}
+
+\title{Supplementary material for ``Station workload shares after re-slotting a pick-and-pass warehouse: a held-out comparison of reserved margins and historical scenarios''}
+\author{\authorreview{author list and affiliations}}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+This supplement gives the details to which the main article refers by section name. Notation follows Section~3 of the main article: $P$ is the catalogue, $S$ the set of evaluated stations, $H_t$ the orders before origin $t$, $\omega(W)$ the product mix of a window $W$, $r_s(x;\omega)$ the share of station $s$ under layout $x$, $b_s$ the frozen target, $\bar\delta=(1-\lambda)\delta$ the training half-width, $\Omega$ the set of historical block mixes together with the pooled history, and $P^0$ the products with no workload in $H_t$. Every value below is reused from the study's recorded evidence; none was recomputed for this document.
+
+% =====================================================================
+\section{Solver returns of the held-out solves}\label{sec:s-solver}
+% =====================================================================
+The held-out factorial ran 12 solves, one per arm and optimiser seed, on Hexaly with one thread and a time limit of 1,800~s per solve, 21,600~s configured in total. Every solve returned a time-capped layout without a proof of optimality. Table~\ref{tab:s-solver} gives the relative gap and the bound that the solver reported. Both refer to the training objective of the main article, the total order-station visits of the orders before the deployment origin, and not to visits on the future window. The bound is the same for all 12 solves and every relative gap lies between 98.45\% and 98.54\%, so the bound gives no evidence that any returned layout is near optimal on its training objective, and the visit differences between arms in the main article compare returned layouts, not optimal values. \authorreview{value: returned training objective, measured solve and build times, solver version and hardware of each held-out solve, if they are to be reported; none is among the accepted values}
+
+\begin{table}[htbp]
+\centering
+\caption{Solver returns of the 12 held-out solves at origin 243,151 with $n=21{,}874$: relative gap and bound on the training visit objective.}
+\label{tab:s-solver}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{Relative gap (\%)} & & \\
+\cmidrule(lr){2-4}
+Arm & Seed 11 & Seed 22 & Seed 33 & Bound (visits) & Time limit (s) \\
+\midrule
+NOM        & 98.49 & 98.48 & 98.45 & 11,517 & 1,800 \\
+TIGHT      & 98.49 & 98.49 & 98.49 & 11,517 & 1,800 \\
+HIST+ACT   & 98.49 & 98.49 & 98.50 & 11,517 & 1,800 \\
+HIST+ACT-T & 98.53 & 98.54 & 98.51 & 11,517 & 1,800 \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\begin{minipage}{\linewidth}\footnotesize
+Gap and bound as reported by the solver for the training objective over the orders before the origin; the bound is identical for every seed of every arm. The relative gap is given in percent to two decimals so that the solves can be told apart.
+\end{minipage}
+\end{table}
+
+% =====================================================================
+\section{Finite robust rows and their integer-count restatement}\label{sec:s-rows}
+% =====================================================================
+This section derives the finite form of the share-policy rows over the modelled set with activation, given in Section~3.3 of the main article, and shows that the integer-count restatement used in the solves defines the same set of layouts.
+
+\paragraph{Setting.} Fix a layout $x$, a binary matrix in which each product is stored at exactly one station, and a station $s$. Write $\Omega=\{\omega^1,\dots,\omega^m\}$ with $m=K_t+1$, $A_{sk}=r_s(x;\omega^k)$, and let $\ell=\ell_s(\bar\delta)$ and $u=u_s(\bar\delta)$ be the training band. Let $P^0$ be nonempty and $0\le\nu<1$, and let $h_s(x)=\max_{p\in P^0}x_{ps}$ and $g_s(x)=\min_{p\in P^0}x_{ps}$.
+
+\paragraph{Extreme shares.} Every $\omega$ in the activation set can be written $\omega=(1-a)\sum_{k}\theta_k\omega^k+a\,v$ with weights $\theta_k\ge0$ summing to one, $v$ a mix supported on $P^0$ and $0\le a\le\nu$. Because the share is linear in the mix,
+\begin{equation}
+r_s(x;\omega)=(1-a)\sum_{k=1}^{m}\theta_k A_{sk}+a\sum_{p\in P^0}x_{ps}v_p. \label{eq:s-share}
+\end{equation}
+As $v$ ranges over the mixes supported on $P^0$, the last sum ranges over $[g_s(x),h_s(x)]$, its ends attained at single-product mixes. For fixed $a$ the largest value of \eqref{eq:s-share} is $(1-a)\max_kA_{sk}+a\,h_s(x)$, which is affine in $a$, so its largest value over $a\in[0,\nu]$ is attained at $a=0$ or $a=\nu$. The smallest value follows in the same way with $\min_k$ and $g_s(x)$. Hence
+\begin{align}
+\max_{\omega}r_s(x;\omega)&=\max_k\ \max\{A_{sk},\ (1-\nu)A_{sk}+\nu\,h_s(x)\}, \label{eq:s-max}\\
+\min_{\omega}r_s(x;\omega)&=\min_k\ \min\{A_{sk},\ (1-\nu)A_{sk}+\nu\,g_s(x)\}, \label{eq:s-min}
+\end{align}
+and station $s$ satisfies the band over the whole set exactly when, for every $k$,
+\begin{equation}
+A_{sk}\le u,\qquad (1-\nu)A_{sk}+\nu h_s\le u,\qquad A_{sk}\ge\ell,\qquad (1-\nu)A_{sk}+\nu g_s\ge\ell. \label{eq:s-rows}
+\end{equation}
+When $P^0$ is empty the set is $\operatorname{conv}\Omega$ and only the first and third families remain; when the set is the pooled history alone, $m=1$ as well.
+
+\paragraph{Integer-count restatement.} Let $\Lambda_k$ be the total workload of the window behind $\omega^k$, a block or the whole history, and $L^k_p$ its product workloads. Both are integers and $\Lambda_k>0$, so $A_{sk}=\sum_px_{ps}L^k_p/\Lambda_k$. Write $\nu=N/M$ with integers $0\le N<M$. Multiplying the rows of \eqref{eq:s-rows} by $\Lambda_k$, and the activation rows also by $M$, gives the equivalent rows
+\begin{align}
+\textstyle\sum_px_{ps}L^k_p &\le u\,\Lambda_k, & (M-N)\textstyle\sum_px_{ps}L^k_p+N\Lambda_kh_s &\le M\,u\,\Lambda_k, \label{eq:s-upper}\\
+\textstyle\sum_px_{ps}L^k_p &\ge \ell\,\Lambda_k, & (M-N)\textstyle\sum_px_{ps}L^k_p+N\Lambda_kg_s &\ge M\,\ell\,\Lambda_k. \label{eq:s-lower}
+\end{align}
+For binary $x$, $h_s$ and $g_s$ every left-hand side is an integer. For an integer $y$ and a real $c$, $y\le c$ holds exactly when $y\le\lfloor c\rfloor$, and $y\ge c$ exactly when $y\ge\lceil c\rceil$. Replacing the right-hand sides of \eqref{eq:s-upper} by their floors and those of \eqref{eq:s-lower} by their ceilings therefore defines the same set of layouts: the restatement is neither a relaxation nor a tightening, and the band, the modelled set and the exact validator are unchanged. The thresholds are rational, because $b_s$ is a ratio of integers and $\bar\delta$ is rational, so the floors and ceilings are computed exactly. With $\nu=0.01$, $N=1$ and $M=100$.
+
+Three boundary cases agree with the continuous rows. When $u=1$ the first upper row reads $\sum_px_{ps}L^k_p\le\Lambda_k$ and is vacuous, as a station cannot receive more than all the workload. When $\ell=0$ the first lower row is vacuous. When $\nu=0$, $N=0$ and $M=1$, and the activation rows coincide with the rows without activation. The indicators $h_s$ and $g_s$ enter a linear model as described in Section~3.3 of the main article.
+
+The restatement serves numerical purposes only. With integer coefficients and integer thresholds, a violated row is violated by at least one unit, so a solver feasibility tolerance below one unit cannot accept a layout that violates a restated row. The largest attainable left-hand side is $M\Lambda_k$, and the implementation refuses to build a row whose left-hand side could exceed the 64-bit integer range. The exactness of the finite rows rests on this derivation; agreement among the solver interfaces, the exact validator and an independent vertex enumeration supports the implementation, not the mathematics.
+
+% =====================================================================
+\section{The corrected lower activation endpoint}\label{sec:s-trapped}
+% =====================================================================
+An earlier two-sided model used $(1-\nu)A_{sk}$ as the lowest share of station $s$ over the activation extension, which assumes that activation mass can always be placed on a historically inactive product stored elsewhere. When every product of $P^0$ is stored at $s$, no such product exists. Every mix supported on $P^0$ then places all its mass at $s$, and the lowest share over the endpoint pair is $\min\{A_{sk},(1-\nu)A_{sk}+\nu\}=A_{sk}$. The earlier lower activation row, $(M-N)\sum_px_{ps}L^k_p\ge\lceil M\ell\Lambda_k\rceil$, lacked the term $N\Lambda_kg_s$ of \eqref{eq:s-lower}. With $g_s=1$ it was stricter than the exact row and could exclude a layout that satisfies the band over the whole modelled set, while admitting no layout that the corrected row rejects; with $g_s=0$ the two rows coincide. The upper rows were not affected.
+
+The correction was made in the exact validator, in the integer row builder, in both solver interfaces through a per-station indicator of activation mass concentrated at that station, and in the minimum-slack helper. It was tested against an independent enumeration of the vertices of the modelled set on small fixtures.
+
+The correction changes no recorded result. The synthetic inactive sets are empty, so those models have no activation rows. No executed model with activation rows has a station holding every historically inactive product, so $g_s=0$ for every layout of those models, and the earlier and corrected rows define the same layouts there. Every stored layout was revalidated under the corrected code. This statement of zero impact rests on the executed models' placement of the historically inactive products and on that recorded revalidation; neither was re-run during the writing of this article.
+
+% =====================================================================
+\section{The movable decision pool and a freeze-mask edge case}\label{sec:s-freeze}
+% =====================================================================
+The industrial instance is read through the companion's data loader, which reconstructs the catalogue, the incumbent layout, the slot counts, the freeze mask and the order-retention rule from the whole export. The freeze mask applies the companion's site rule \citep[Supplementary Section S6]{belul_companion}, with the rule's order-frequency count taken over large orders. \authorreview{value: definition of a large order in the loader's frequency count; not among the accepted values} That count decides only which products form the movable decision pool, 15,975 movable and 5,899 frozen among 21,874 products. Orders of every size remain in the evaluation stream, in the station workloads and in the visit counts, and frozen products keep their stations while their workload changes from window to window. An independent reconstruction of the frequency rule reproduced the frozen pool exactly.
+
+The export contains duplicate entries for some product-order pairs in large orders. For one product, counting entries rather than distinct orders changes its classification: the loader's entry count leaves it movable, whereas a count of distinct orders would freeze it. The study keeps the loader's classification, which preserves the companion's partition of the catalogue, while every workload in the study counts distinct product-order pairs, so a duplicated entry contributes once to workloads and visits. The companion's description of the rule in terms of orders therefore has this one-product implementation edge case on the export.
+
+% =====================================================================
+\section{Exploratory campaigns}\label{sec:s-exploratory}
+% =====================================================================
+All campaigns in this section ran at the exploratory origin, order index 199,403, with one optimiser seed, horizons of 10,937, 21,874 and 43,748 complete orders, $\nu=0.01$ for the activation arm and $\lambda=0.5$ for TIGHT. They are exploratory and reported separately by rule, and none is pooled with another or with the held-out factorial. A cell with no layout returned within its time limit is reported as such and is not evidence of infeasibility. The Company~A pass counts of all four campaigns, with the number of distinct layouts behind them, are in the exploratory table of Section~5.2 of the main article.
+
+\subsection{Upper-only screen}
+The upper-only rule keeps only the caps $r_s\le u_s(\delta)$, here with $\delta=0.01$. On Company~A, HIST+ACT satisfied the caps at two of the three horizons, and NOM, TIGHT and HIST at none. NOM and TIGHT each contributed one layout scored at the three horizons, and HIST and HIST+ACT three layouts. The TIGHT layout required a training allowance of about 0.005, so half a percentage point was reserved, on the cap side only. Because caps limit increases only, an upper-only pass does not show that station profiles were preserved.
+
+On the synthetic benchmark the upper-only comparison of historical scenarios against tightening supports no single ranking of the arms. It is mixed across catalogue-size strata and rests on unequal scored denominators, because the scenario arms returned no layout within the time limit in part of the smallest family. On stationary synthetic data, differences between scenarios and tightening reflect finite-sample and solver behaviour, not robustness to drift. \authorreview{value: upper-only synthetic outcomes by catalogue-size stratum, arm and horizon, with paired outcomes within matched cells, scored and non-returned denominators and the synthetic instance count; no anchors or document values exist for them}
+
+\subsection{Two-sided screen at $\delta=0.02$}
+On Company~A, TIGHT satisfied the band at all three horizons, HIST+ACT at one, and NOM and HIST at none, with the same layout counts as above. The TIGHT layout required a training allowance of about 0.010, so one percentage point was reserved on each side. Summed over the three horizons, the misses comprised 0 cap and 3 floor breaches for HIST+ACT and 1 cap and 8 floor breaches for HIST. In every two-sided Company~A cell the realised future also fell below the lowest modelled share at some station; leaving the modelled set and breaching the band are different metrics.
+
+The two-sided synthetic evidence consists of 4 synthetic warehouses at the same origin with one seed. Their sets of historically inactive products are empty, so HIST+ACT is the same model as HIST on them, and that equality is an identity, not evidence that activation protection is costless or beneficial. The generator is stationary, so these instances are a control on finite-sample and solver effects. \authorreview{value: per-cell outcomes of the two-sided screen on the four synthetic warehouses (pass or miss, breaches by direction, visits and the cells with no returned layout); no anchors or document values exist for them}
+
+\subsection{Band-width sensitivity on Company~A}
+Each value of $\delta$ is a separately optimised model and a separate solve. With $\delta=0.03$, TIGHT satisfied the band at all three horizons and NOM, HIST and HIST+ACT at none; with $\delta=0.01$, TIGHT satisfied it at one horizon and the other arms at none. The layout counts are those given above. A wider band did not bring the scenario arms into compliance at this origin, and the narrower band was met once. The three values of $\delta$ form a sampled response, not a frontier; no lower bound was certified, so no band is shown to be out of reach, and no $\lambda$ frontier was run. \authorreview{value: per-horizon breach counts by direction, worst breaches and visits of the Company~A two-sided campaigns at $\delta=0.01$, $0.02$ and $0.03$, if they are to be reported; not among the accepted values}
+
+\subsection{Accounting}
+Six campaigns enter the analysis: the four exploratory campaigns above, the held-out factorial and an engineering pilot that contributes to no reported result. Four superseded campaign directories were excluded and never analysed. Across the six campaigns 464 cases were configured; 412 returned a layout that was scored on its future window and 52 returned no allocation. The 412 scored cases hold 188 distinct layouts, because a layout shared by several scored cases is counted once. Optimisation failure, failure of independent validation and violation on the future window are separate quantities and are never pooled.
+
+% =====================================================================
+\section{Like-for-like corrections for the drift and dispersion analyses}\label{sec:s-likeforlike}
+% =====================================================================
+Both analyses compare each historical block with the pooled history of the same prefix, which contains the block. Let $\beta$ be the mix of a block $B$, $\rho$ the mix of the rest of the history, and $w$ the block's share of the history's workload. The pooled mix is $\pi=w\beta+(1-w)\rho$, so $\beta-\pi=(1-w)(\beta-\rho)$ and
+\begin{equation}
+\mathrm{TV}(\beta,\pi)=(1-w)\,\mathrm{TV}(\beta,\rho). \label{eq:s-tv}
+\end{equation}
+For any layout $x$ and station $s$ the share is linear in the mix, so in the same way
+\begin{equation}
+r_s(x;\beta)-r_s(x;\pi)=(1-w)\bigl(r_s(x;\beta)-r_s(x;\rho)\bigr). \label{eq:s-disp}
+\end{equation}
+A stored block-versus-pooled value is therefore smaller, by the factor $1-w$, than the corresponding block-versus-rest value. A future window is not part of the history, so its distance from pooled history needs no correction; the like-for-like comparison sets it against the block-versus-rest values.
+
+Block line mass is not stored, so $w$ is taken by order count, as the number of orders in a block divided by the number of orders in the history. All blocks at one origin hold the same number of orders, so they share one factor, dividing by $1-w$ preserves their ordering, and the largest stored value maps to the largest like-for-like value. Fractions by line mass would give each block its own factor.
+
+\paragraph{Drift at the held-out origin.} For the history before order index 243,151 and blocks of $n=21{,}874$ orders there are 11 blocks, and $w$ by order count is about 0.09. The stored largest block distance is 0.194 and the stored mean 0.171; the like-for-like largest value is about 0.214, against 0.195 for the held-out window. The stored ordering, block maximum below the held-out value, reverses for any $w$ above $w^*$, one minus the ratio of the stored block maximum to the held-out distance; computed from the unrounded values, $w^*$ is about 0.0028. Table~\ref{tab:s-w} shows that the like-for-like maximum stays above the held-out value for other plausible choices of $w$. The distance was measured after the held-out window had been scored, and the reserved margin was not chosen from it. Total-variation distance measures change in the product mix, not change in station shares.
+
+\begin{table}[htbp]
+\centering
+\caption{Largest total-variation distance of a historical block from the rest of the history before order index 243,151 ($n=21{,}874$, 11 blocks), for several block mass fractions $w$, against the held-out window's distance from pooled history.}
+\label{tab:s-w}
+\small
+\begin{tabular}{@{}lc@{}}
+\toprule
+Reference and mass fraction & Largest block distance \\
+\midrule
+Pooled history containing the block (stored) & 0.194 \\
+Rest of the history, $w=0.05$ & about 0.205 \\
+Rest of the history, $w$ by order count (about 0.09) & about 0.214 \\
+Rest of the history, $w=1/11$ & about 0.214 \\
+Rest of the history, $w=0.10$ & about 0.216 \\
+\midrule
+Held-out window against pooled history (ex post) & 0.195 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Dispersion at the exploratory origin.} The dispersion statistic is the largest absolute deviation, over blocks and the 24 evaluated stations, of a block's station share under the incumbent layout from the pooled share $b_s$. For the history before order index 199,403 it is 1.70, 1.63 and 1.47 percentage points at $n=10{,}937$, $21{,}874$ and $43{,}748$. Applying \eqref{eq:s-disp} with $w$ by order count, $n$ divided by the number of orders in that history, gives about 1.80, 1.83 and 1.89 percentage points. These values belong to the incumbent layout and exist only for the exploratory history; none exists for the held-out history. The band half-width $\delta=0.02$ was chosen using this statistic, and no rule linking the reserved margin to it was tested. \authorreview{value: exploratory-origin total-variation distances of the historical blocks and of the scored futures, stored and like for like, if they are to be reported; not among the accepted values}
+
+\bibliographystyle{apacite}
+\bibliography{references}
+
+\end{document}

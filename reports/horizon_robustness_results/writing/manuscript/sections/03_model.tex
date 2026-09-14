@@ -1,0 +1,123 @@
+% =====================================================================
+\section{Information contract and share-policy formulation}\label{sec:model}
+% =====================================================================
+This section answers two questions: what a layout may use when it is chosen, and what its feasibility in the model promises for the orders that follow.
+
+\subsection{What is known at a deployment origin}\label{subsec:contract}
+The system is the companion's industrial system \citep{belul_companion}. $P$ is the catalogue of included products and $S$ the set of evaluated stations. Station $s$ has $\zeta_s$ storage locations, and $\sum_{s\in S}\zeta_s=|P|$. $P^{\mathrm{fix}}_s\subseteq P$ is the set of products frozen at station $s$, which keep that station in every layout. Every product occupies one slot whether or not its historical workload is zero, and it is movable unless it is frozen. The catalogue is closed: no product outside $P$ arrives in a later window. A layout is a binary matrix $x=(x_{ps})$, with $x_{ps}=1$ when product $p$ is stored at station $s$, that satisfies the assignment, slot-capacity and freeze rows \eqref{eq:assign}, \eqref{eq:cap} and \eqref{eq:fix} of Section~\ref{subsec:formulation}. Summing \eqref{eq:cap} over the stations bounds the number of placements by $\sum_{s}\zeta_s=|P|$, while \eqref{eq:assign} requires at least one placement per product, so each product is stored at exactly one station, every location is occupied, and a product can move only by exchange \citep{belul_companion}.
+
+The unit of time is the complete order of the retained stream \authorreview{definition: state the loader's criterion for a complete order; no accepted source defines it}. Complete orders are indexed $0,1,2,\dots$ in the sequence of their order identifiers. A deployment origin $t$ splits this stream into the history $H_t$, the orders with index below $t$, and, for a horizon of $n$ complete orders, the future window $F_{t,n}$ of the orders with index from $t$ to $t+n-1$. For any window $W$, $O(W)$ is its set of orders, $P_o\subseteq P$ the set of products requested by order $o$, and $L_p(W)$ the number of orders in $W$ that request product $p$. Workload thus counts distinct product-order pairs, the counterpart of the companion's order lines $L_p$. It is not normalised by the processing rate $V_s$; neither $V_s$ nor the companion's budget $T_s$ is a parameter of the model below, and both appear only where row forms are compared. With $\Lambda(W)=\sum_{p\in P}L_p(W)>0$ the total workload of the window, the product mix of $W$ is the vector $\omega(W)$ on the simplex over $P$ with
+\begin{equation}
+\omega_p(W)=\frac{L_p(W)}{\Lambda(W)}\qquad\forall p\in P. \label{eq:mix}
+\end{equation}
+For a layout $x$, the share of station $s$ under a mix $\omega$ is
+\begin{equation}
+r_s(x;\omega)=\sum_{p\in P}x_{ps}\,\omega_p,\qquad \sum_{s\in S}r_s(x;\omega)=1, \label{eq:share}
+\end{equation}
+where the shares sum to one because each product is stored at exactly one station. Frozen products keep their stations, but their terms in \eqref{eq:share} change with $\omega$: freezing an assignment does not freeze its workload.
+
+Let $x^0$ be the incumbent layout, the layout the site operates. The target of station $s$ is its historical share under that layout, computed once at the origin from the whole history and then frozen:
+\begin{equation}
+b_s=r_s\bigl(x^0;\omega(H_t)\bigr)\qquad\forall s\in S. \label{eq:target}
+\end{equation}
+Targets are never recomputed from the scored window or from the incumbent's profile on it. The information contract has two layers. Conditional on a snapshot of the catalogue, the incumbent layout, the slot counts, the freeze mask and the order-retention rule, all estimation (targets, training workloads and scenarios) uses only $H_t$, and each layout is written before its future window is scored. The snapshot itself is reconstructed from the whole export and assumed known before deployment, so the experiment is retrospective and snapshot-conditioned; prefix-only estimation under that snapshot is not evidence that the metadata were available at each historical origin. The order-retention rule is the loader's rule for which order lines, and hence which orders, are kept in the retained stream; it is reconstructed from the whole export and can depend on later orders \authorreview{definition: state the criteria of the order-retention rule, which the accepted sources do not give}. Section~\ref{subsec:data} describes the reconstruction.
+
+\subsection{Retained structure and share-policy rows}\label{subsec:formulation}
+The companion minimises total order-station visits subject to single-station assignment, slot capacity, linking rows and one-sided per-station workload budget rows \citep{belul_companion}. The extension keeps the objective and the assignment, capacity and linking rows, and it replaces the one-sided budget rows by two-sided share-policy rows. For a half-width $\delta\in(0,1)$ the two-sided absolute band of station $s$ is
+\begin{equation}
+\ell_s(\delta)=\max\{0,\ b_s-\delta\},\qquad u_s(\delta)=\min\{1,\ b_s+\delta\}. \label{eq:band}
+\end{equation}
+A layout satisfies the share policy on a window $W$ when $\ell_s(\delta)\le r_s(x;\omega(W))\le u_s(\delta)$ for every $s\in S$. The model is trained on the history with the training half-width
+\begin{equation}
+\bar\delta=(1-\lambda)\,\delta,\qquad 0\le\lambda<1, \label{eq:tight}
+\end{equation}
+so that $\lambda\delta$ is the margin reserved during optimisation. With $\lambda=0$ a layout is optimised at the full band; with $\lambda>0$ it is optimised inside a tightened band, and in both cases it is scored at $\delta$. For a modelled set $\mathcal U$ of product mixes (Section~\ref{subsec:uncertainty}) the training model reads
+\begin{align}
+\min\quad & \sum_{o\in O(H_t)}\sum_{s\in S} z_{os} \label{eq:obj}\\
+\text{s.t.}\quad & \sum_{s\in S}x_{ps}\ge 1 && \forall p\in P, \label{eq:assign}\\
+& \sum_{p\in P}x_{ps}\le\zeta_s && \forall s\in S, \label{eq:cap}\\
+& x_{ps}\le z_{os} && \forall o\in O(H_t),\ p\in P_o,\ s\in S, \label{eq:link}\\
+& x_{ps}=1 && \forall s\in S,\ p\in P^{\mathrm{fix}}_s, \label{eq:fix}\\
+& \ell_s(\bar\delta)\le r_s(x;\omega)\le u_s(\bar\delta) && \forall s\in S,\ \omega\in\mathcal U, \label{eq:sharerow}\\
+& x_{ps}\in\{0,1\},\quad z_{os}\in[0,1] && \forall o\in O(H_t),\ p\in P,\ s\in S. \label{eq:dom}
+\end{align}
+The objective \eqref{eq:obj} and rows \eqref{eq:assign} to \eqref{eq:link} and \eqref{eq:dom} are the companion's, written over the orders of the history; every such order counts, including orders that touch only frozen products. Row \eqref{eq:fix} states the frozen assignments, which the companion's industrial case expresses by handing the optimiser the residual slots of each station. The two-sided share-policy rows \eqref{eq:sharerow} replace the companion's one-sided budget rows; they are not added to them, and their floors have no counterpart in the companion's model. Share preservation is therefore a feasibility policy, and the objective remains the historical visit count. On the companion's set-variable representation, where $\Phi_s$ holds the products assigned to station $s$, the share is $r_s=\sum_{p\in\Phi_s}\omega_p$, and \eqref{eq:sharerow} restates on the partition $\{\Phi_s\}_{s\in S}$ as the companion's budget rows do.
+
+The band is absolute: every station receives the same allowance in share units whatever its target, so at $\delta=0.02$ each station may move two percentage points on either side. A band relative to $b_s$ was not studied, and findings about the absolute band do not transfer to it. The half-width $\delta$ is also not the companion's tolerance of 10\% above a station's legacy load \citep{belul_companion}.
+
+The share rows relate to budgets in one precise sense. The companion's budget row is $\sum_{p\in P}x_{ps}\,L_p/V_s\le T_s$ \citep{belul_companion}. Take a single scenario, $\mathcal U=\{\omega(W)\}$ for a fixed window $W$, with no activation. Multiplying the upper side of \eqref{eq:sharerow} by $\Lambda(W)$ gives $\sum_{p\in P}x_{ps}\,L_p(W)\le u_s(\bar\delta)\,\Lambda(W)$, which has the form of the companion's row with $V_s=1$ and $T_s=u_s(\bar\delta)\,\Lambda(W)$: a line-count budget proportional to the total workload of the window. Floors, rows over several scenarios and rows carrying activation terms are not budget rows. Multiplying every $L_p(W)$ by a common factor $c>0$ leaves every share, and so feasibility, unchanged, which is why the policy needs no absolute workload level. This is the only sense in which share rows stand in for budgets. Uniform scaling does not make the learned layout or its future compliance independent of the horizon: another $n$ changes the mix of the scored window and, through the historical blocks below, the modelled set.
+
+\subsection{Modelled sets: pooled history, historical blocks and activation}\label{subsec:uncertainty}
+The arms of the study differ in the modelled set $\mathcal U$ and in $\lambda$ (Table~\ref{tab:arms}). The smallest set is pooled history alone, $\mathcal U=\{\omega(H_t)\}$. Historical variation enters through blocks of the same length $n$ as the scored window. With $K_t=\lfloor t/n\rfloor$, block $B_k$ holds the orders with index from $t-kn$ to $t-(k-1)n-1$ for $k=1,\dots,K_t$, so the blocks are aligned at the origin, and
+\begin{equation}
+\Omega=\bigl\{\omega(B_1),\dots,\omega(B_{K_t}),\ \omega(H_t)\bigr\},\qquad \mathcal U^{\mathrm{H}}=\operatorname{conv}\Omega. \label{eq:hull}
+\end{equation}
+Products with no workload in the history, $P^0=\{p\in P:\ L_p(H_t)=0\}$, can still carry work later. When $P^0$ is nonempty, activation protection admits a workload mass of at most $\nu$ on them:
+\begin{equation}
+\mathcal U^{\mathrm{HA}}_\nu=\bigl\{(1-a)\,\omega+a\,v:\ \omega\in\operatorname{conv}\Omega,\ v\in\Delta(P^0),\ 0\le a\le\nu\bigr\}, \label{eq:activation}
+\end{equation}
+where $\Delta(P^0)$ is the set of mixes supported on $P^0$. When $P^0$ is empty, $\mathcal U^{\mathrm{HA}}_\nu$ is defined as $\operatorname{conv}\Omega$, and the model has no activation rows. The parameter $\nu$ is a mass budget shared by all of $P^0$, not a probability and not a budget per product. When $P^0$ is empty or $\nu=0$, $\mathcal U^{\mathrm{HA}}_\nu=\mathcal U^{\mathrm{H}}$ and the two corresponding arms are the same model.
+
+The arm names follow this construction: NOM is the nominal model on pooled history, TIGHT the same model inside the tightened band, HIST the model over the historical block hull, and HIST+ACT the model over that hull with activation protection, while the suffix -T marks the tightened band.
+
+\begin{table}[htbp]
+\centering
+\caption{Arms of the study. Each arm is the training model \eqref{eq:obj} to \eqref{eq:dom} with the modelled set and training half-width shown, and every arm is scored on its future window at the full half-width $\delta$.}
+\label{tab:arms}
+\small
+\begin{tabular}{llll}
+\toprule
+Arm & Modelled set $\mathcal U$ & Training half-width & Held-out cell \\
+\midrule
+NOM & $\{\omega(H_t)\}$ & $\delta$ & (0,\,0) \\
+TIGHT & $\{\omega(H_t)\}$ & $(1-\lambda)\delta$ & (0,\,1) \\
+HIST & $\operatorname{conv}\Omega$ & $\delta$ & not run \\
+HIST+ACT & $\mathcal U^{\mathrm{HA}}_\nu$ & $\delta$ & (1,\,0) \\
+HIST+ACT-T & $\mathcal U^{\mathrm{HA}}_\nu$ & $(1-\lambda)\delta$ & (1,\,1) \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\begin{minipage}{0.92\linewidth}\footnotesize
+Held-out cell: levels of (historical scenarios with activation, reserved margin) in the held-out factorial of Section~\ref{subsec:stages}. HIST ran only in the exploratory campaigns and HIST+ACT-T only in the held-out factorial.
+\end{minipage}
+\end{table}
+
+For a fixed layout the share \eqref{eq:share} is linear in $\omega$ and in $v$ and affine in $a$. For nonempty $P^0$ its extremes over \eqref{eq:activation} are therefore attained at an element of $\Omega$, at an endpoint $a\in\{0,\nu\}$ and at a vertex $v=e_p$ with $p\in P^0$, where $e_p$ is the mix that places all workload on $p$. Write $\omega^k$ for the $k$-th element of $\Omega$ and $A_{sk}=r_s(x;\omega^k)$. For nonempty $P^0$, let $h_s(x)=\max_{p\in P^0}x_{ps}$, which is 1 when at least one product of $P^0$ is stored at $s$, and $g_s(x)=\min_{p\in P^0}x_{ps}$, which is 1 when every product of $P^0$ is stored at $s$. Then
+\begin{align}
+\max_{\omega\in\mathcal U^{\mathrm{HA}}_\nu}r_s(x;\omega) &= \max_{k}\ \max\bigl\{A_{sk},\ (1-\nu)A_{sk}+\nu\,h_s(x)\bigr\}, \label{eq:maxshare}\\
+\min_{\omega\in\mathcal U^{\mathrm{HA}}_\nu}r_s(x;\omega) &= \min_{k}\ \min\bigl\{A_{sk},\ (1-\nu)A_{sk}+\nu\,g_s(x)\bigr\}, \label{eq:minshare}
+\end{align}
+because activation mass can raise the share of station $s$ only if some product of $P^0$ sits there, and can be kept away from $s$ only if some product of $P^0$ sits elsewhere. Over this set the rows \eqref{eq:sharerow} are therefore finitely many rows, linear in $x$ once $h_s$ and $g_s$ are represented; for the smaller sets the activation terms, or the blocks, drop out. In a linear model $h_s,g_s\in\{0,1\}$ are variables with $h_s\ge x_{ps}$ and $g_s\le x_{ps}$ for every $p\in P^0$. This is exact: $h_s$ enters only upper rows and $g_s$ only lower rows, each with a positive coefficient on the constrained side, so a layout satisfies the rows for some admissible $h_s$ and $g_s$ exactly when it satisfies them at $h_s(x)$ and $g_s(x)$. An earlier implementation omitted the term $\nu\,g_s$, which covers activation mass concentrated at one station; the correction changes no recorded result (Supplementary Section S3).
+
+Multiplying each row by the integer workload total of its scenario, and the activation rows also by the denominator of $\nu$, gives rows with integer left-hand sides; replacing the thresholds by their floors in upper rows and their ceilings in lower rows defines the same set of layouts. The purpose is numerical: a solver whose feasibility tolerance is below one unit cannot accept a layout that violates an integer row. Exactness rests on the derivation in Supplementary Section S2. A solver return in finite precision is not an exact certificate, so every stored layout was revalidated in exact rational arithmetic by code that shares nothing with the solvers.
+
+The first exploratory campaign (Section~\ref{subsec:stages}) used an upper-only rule, which keeps only the right-hand inequality of \eqref{eq:sharerow}. Because shares sum to one, caps alone imply only $r_s\ge\max\{0,\ 1-\sum_{j\ne s}u_j(\bar\delta)\}$, which on 24 stations in principle allows one station to lose far more than $\delta$ while the others absorb the work. Caps therefore bound a station's decrease of share only through that weak inequality, whereas floors bound it directly.
+
+\subsection{Conditional feasibility, a sufficient margin condition and observed compliance}\label{subsec:conditional}
+Feasibility in \eqref{eq:sharerow} is a statement about the futures in $\mathcal U$ and about nothing else.
+
+\begin{proposition}
+If a layout $x$ satisfies \eqref{eq:sharerow} for a modelled set $\mathcal U$ and the product mix $\omega(F_{t,n})$ of the future window lies in $\mathcal U$, then $\ell_s(\bar\delta)\le r_s(x;\omega(F_{t,n}))\le u_s(\bar\delta)$ holds for every $s\in S$ simultaneously, and so does the band with half-width $\delta\ge\bar\delta$.
+\end{proposition}
+
+The model provides conditional robust feasibility for its set under these assumptions. Nothing in it establishes that a future window lies in $\mathcal U$, and it assigns no probability to compliance; observed compliance on a scored window is one realisation. Membership can, however, be refuted station by station. If the realised share of some station lies above $\max_{\omega\in\mathcal U}r_s(x;\omega)$ or below $\min_{\omega\in\mathcal U}r_s(x;\omega)$, the future was outside $\mathcal U$; if every station lies within its range, membership is not proved. When $\mathcal U$ is the single point $\{\omega(H_t)\}$, the range of station $s$ is the single value $r_s(x;\omega(H_t))$, the layout's own share on history, and the station leaves it unless $r_s(x;\omega(F_{t,n}))=r_s(x;\omega(H_t))$. Membership is also a narrow condition. The hull $\operatorname{conv}\Omega$ of $K_t+1$ mixes has affine dimension at most $K_t$, whereas a mix has $|P|$ coordinates, and activation widens the set only in the directions of the inactive products; the set also contains fractional mixes that no window of $n$ orders produces.
+
+A second, sufficient condition applies to arms that reserve a margin and whose set contains pooled history, that is TIGHT and HIST+ACT-T.
+
+\begin{proposition}
+For every layout $x$, station $s$ and mixes $\omega,\omega'$,
+\begin{equation}
+\bigl|r_s(x;\omega)-r_s(x;\omega')\bigr|\le\mathrm{TV}(\omega,\omega'):=\tfrac12\sum_{p\in P}|\omega_p-\omega'_p|. \label{eq:tv}
+\end{equation}
+Consequently, if $\ell_s\bigl((1-\lambda)\delta\bigr)\le r_s(x;\omega(H_t))\le u_s\bigl((1-\lambda)\delta\bigr)$ for every $s\in S$ and $\mathrm{TV}\bigl(\omega(F_{t,n}),\omega(H_t)\bigr)\le\lambda\delta$, then $x$ satisfies the band with half-width $\delta$ on $F_{t,n}$.
+\end{proposition}
+
+Because each product is stored at exactly one station, the share of $s$ is the mass that a mix places on the products stored at $s$, and two mixes differ on any set of products by at most their total-variation distance, which gives \eqref{eq:tv}. Hence $r_s(x;\omega(F_{t,n}))\le\min\{1,b_s+(1-\lambda)\delta\}+\lambda\delta\le b_s+\delta$, and since no share exceeds one, $r_s\le u_s(\delta)$; the floor follows in the same way. The condition is sufficient, not necessary, and the distance of a future window can only be measured after that window has been observed.
+
+How much of its allowance a layout uses is measured by its minimum required slack on its own modelled set,
+\begin{equation}
+\eta(x;\mathcal U)=\max\Bigl\{0,\ \max_{s\in S}\max\bigl\{\max_{\omega\in\mathcal U}r_s(x;\omega)-b_s,\ \ b_s-\min_{\omega\in\mathcal U}r_s(x;\omega)\bigr\}\Bigr\}. \label{eq:slack}
+\end{equation}
+Because shares lie in $[0,1]$, the clipping in \eqref{eq:band} does not bind, and a layout satisfies \eqref{eq:sharerow} exactly when $\eta(x;\mathcal U)\le\bar\delta$. By \eqref{eq:target}, $\eta(x^0;\{\omega(H_t)\})=0$: the incumbent needs no slack on pooled history, whereas an optimised layout may spend its whole allowance. This asymmetry follows from defining the targets as the incumbent's own shares, and Section~\ref{sec:results} states it before the first comparison against the incumbent.
+
+The parameters have distinct roles: $\delta$ is the policy half-width at which every layout is scored, $\lambda$ the fraction of it reserved during optimisation, and $\nu$ the activation mass of the modelled set. None of them is a numerical tolerance of the solver.

@@ -1,0 +1,17 @@
+{
+  "gate": "P0:G6",
+  "check": "MANUAL",
+  "expect": "environment.md and verification_inventory.md cover plan P0 steps 3 and 6",
+  "exit_code": null,
+  "token_found": null,
+  "output_sha256": null,
+  "ts": "2026-09-14T10:34:29Z",
+  "negative_control": "EXEMPT: manual gate has no automated fault to inject",
+  "evidence_refs": [
+    "FILE:reports/horizon_robustness_results/writing/governance/environment.md",
+    "FILE:reports/horizon_robustness_results/writing/evidence/verification_inventory.md",
+    "V-001",
+    "V-002"
+  ],
+  "status": "MET"
+}

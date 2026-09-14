@@ -1,0 +1,683 @@
+{
+  "version": 1,
+  "note": "Required-gate registry (addendum A-001 item 1, A-002, A-004). Paths: W = reports/horizon_robustness_results/writing. 'self': true marks the governance gate being evaluated, which is exempt from its own completeness check. Evidence kinds: FILE {path}; DR {q_card} (DR must pass rule d); VERDICT {agent_type, token_any, artifacts_include?}; RTP {phase}; any_of [[...], [...]] (at least one alternative fully present). Waiver tests follow DR-001: exit_code, exact_lines, requires_gates_met.",
+  "phases": {
+    "P0": [
+      {
+        "gate": "P0:G1",
+        "type": "runnable",
+        "check": "PY W/tools/check_inputs.py",
+        "expect": [
+          "INPUTS UNCHANGED"
+        ]
+      },
+      {
+        "gate": "P0:G2",
+        "type": "runnable",
+        "check": "PY tools/horizon_robustness/check_protected_sources.py",
+        "expect": [
+          "PROTECTED SOURCES UNCHANGED"
+        ],
+        "negative_control": "exempt",
+        "waivable_by": [
+          {
+            "decision": "U5",
+            "condition": "exit_code 1 and the stored output is exactly the covered MODIFIED lines with no other line (A-001 S3; A-002)",
+            "exit_code": 1,
+            "exact_lines": [
+              "MODIFIED protected file: IJPR_CSLAP_v4.tex",
+              "MODIFIED protected file: IJPR_CSLAP_v4_supplementary.tex"
+            ]
+          }
+        ]
+      },
+      {
+        "gate": "P0:G3",
+        "type": "runnable",
+        "check": "PY tools/horizon_robustness/verify_campaign.py --all --authorization",
+        "expect": [
+          "CAMPAIGN ACCOUNTING VERIFIED",
+          "AUTHORIZATION VERIFIED"
+        ],
+        "negative_control": "exempt"
+      },
+      {
+        "gate": "P0:G4",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P0",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true,
+        "required_evidence": [
+          {
+            "kind": "VERDICT",
+            "agent_type": "code-reviewer",
+            "token_any": [
+              "VERDICT: PASS"
+            ],
+            "note": "DR-001 amendment R: formats sections 9-19 take effect, and P0:G4 can be MET, only after a code-reviewer re-review of the P0 checkers returns VERDICT: PASS (finding F-031)."
+          }
+        ]
+      },
+      {
+        "gate": "P0:G5",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --probe",
+        "expect": [
+          "MODEL FAMILIES AVAILABLE"
+        ]
+      },
+      {
+        "gate": "P0:G6",
+        "type": "manual",
+        "required_evidence": [
+          {
+            "kind": "FILE",
+            "path": "reports/horizon_robustness_results/writing/governance/environment.md"
+          },
+          {
+            "kind": "FILE",
+            "path": "reports/horizon_robustness_results/writing/evidence/verification_inventory.md"
+          },
+          {
+            "kind": "VERDICT",
+            "agent_type": "plan-reviewer",
+            "token_any": [
+              "PLAN_SOLID"
+            ]
+          }
+        ]
+      }
+    ],
+    "P1": [
+      {
+        "gate": "P1:G1",
+        "type": "runnable",
+        "check": "PY W/tools/compare_anchors.py",
+        "expect": [
+          "ANCHORS CROSS-CHECK PASSED"
+        ]
+      },
+      {
+        "gate": "P1:G2",
+        "type": "runnable",
+        "check": "PY W/tools/compare_anchors.py --documents",
+        "expect": [
+          "DOCUMENT VALUES CROSS-CHECK PASSED"
+        ]
+      },
+      {
+        "gate": "P1:G3",
+        "type": "runnable",
+        "check": "PY W/tools/check_claims.py",
+        "expect": [
+          "CLAIMS TRACE PASSED"
+        ]
+      },
+      {
+        "gate": "P1:G4",
+        "type": "runnable",
+        "check": "PY W/tools/check_claims.py --schema",
+        "expect": [
+          "CLAIMS SCHEMA PASSED"
+        ]
+      },
+      {
+        "gate": "P1:G5",
+        "type": "runnable",
+        "check": "PY W/tools/check_claims.py --coverage",
+        "expect": [
+          "REQUIREMENTS COVERED"
+        ]
+      },
+      {
+        "gate": "P1:G6",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P1",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true
+      }
+    ],
+    "P2": [
+      {
+        "gate": "P2:G1",
+        "type": "runnable",
+        "check": "PY W/tools/check_sources.py",
+        "expect": [
+          "SOURCE REGISTER VALID"
+        ]
+      },
+      {
+        "gate": "P2:G2",
+        "type": "runnable",
+        "check": "PY W/tools/check_sources.py --anchors",
+        "expect": [
+          "ANCHORS ACCOUNTED"
+        ]
+      },
+      {
+        "gate": "P2:G3",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P2",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true
+      }
+    ],
+    "P3": [
+      {
+        "gate": "P3:G1",
+        "type": "runnable",
+        "check": "PY W/math/tools/enumerate_edge_cases.py",
+        "expect": [
+          "EDGE CASES AGREE"
+        ]
+      },
+      {
+        "gate": "P3:G2",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P3",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true,
+        "required_evidence": [
+          {
+            "kind": "any_of",
+            "alternatives": [
+              [
+                {
+                  "kind": "FILE",
+                  "path": "reports/horizon_robustness_results/writing/math/derivation_agreement.md"
+                }
+              ],
+              [
+                {
+                  "kind": "DR",
+                  "q_card": "Q-MATH"
+                }
+              ]
+            ]
+          },
+          {
+            "kind": "VERDICT",
+            "agent_type": "formulation-reviewer",
+            "token_any": [
+              "VERDICT: PASS"
+            ]
+          },
+          {
+            "kind": "VERDICT",
+            "agent_type": "code-reviewer",
+            "token_any": [
+              "VERDICT: PASS"
+            ]
+          }
+        ]
+      }
+    ],
+    "P4": [
+      {
+        "gate": "P4:G1",
+        "type": "runnable",
+        "check": "PY W/tools/check_claims.py --argument",
+        "expect": [
+          "ARGUMENT TRACE PASSED"
+        ]
+      },
+      {
+        "gate": "P4:G2",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P4",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true,
+        "required_evidence": [
+          {
+            "kind": "DR",
+            "q_card": "Q-NOVELTY"
+          },
+          {
+            "kind": "DR",
+            "q_card": "Q-ARGUMENT"
+          },
+          {
+            "kind": "RTP",
+            "phase": "P4"
+          }
+        ]
+      }
+    ],
+    "P5": [
+      {
+        "gate": "P5:G1",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P5",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true,
+        "required_evidence": [
+          {
+            "kind": "DR",
+            "q_card": "Q-CANON-CONTENT"
+          },
+          {
+            "kind": "DR",
+            "q_card": "Q-CANON-FORMAT"
+          },
+          {
+            "kind": "DR",
+            "q_card": "Q-CANON-COMPLETE"
+          }
+        ]
+      },
+      {
+        "gate": "P5:G2",
+        "type": "runnable",
+        "check": "PY W/tools/check_blueprint.py",
+        "expect": [
+          "BLUEPRINT CHRONOLOGY PASSED"
+        ]
+      },
+      {
+        "gate": "P5:G3",
+        "type": "manual",
+        "required_evidence": [
+          {
+            "kind": "any_of",
+            "alternatives": [
+              [
+                {
+                  "kind": "VERDICT",
+                  "agent_type": "plan-reviewer",
+                  "token_any": [
+                    "PLAN_SOLID"
+                  ]
+                }
+              ],
+              [
+                {
+                  "kind": "DR",
+                  "q_card": "Q-BLUEPRINT-DISSENT"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    ],
+    "P6": [
+      {
+        "gate": "P6:G1",
+        "type": "runnable",
+        "check": "PY W/tools/check_determinism.py",
+        "expect": [
+          "EVIDENCE DETERMINISTIC"
+        ]
+      },
+      {
+        "gate": "P6:G2",
+        "type": "runnable",
+        "check": "PY W/tools/check_determinism.py --imports",
+        "expect": [
+          "GENERATOR IMPORTS ALLOWED"
+        ]
+      },
+      {
+        "gate": "P6:G3",
+        "type": "runnable",
+        "check": "PY W/tools/check_numbers.py",
+        "expect": [
+          "NUMBERS TRACE PASSED"
+        ]
+      },
+      {
+        "gate": "P6:G4",
+        "type": "runnable",
+        "check": "PY W/tools/check_numbers.py --coverage",
+        "expect": [
+          "DISPLAY AND MACRO COVERAGE PASSED"
+        ]
+      },
+      {
+        "gate": "P6:G5",
+        "type": "runnable",
+        "check": "PY W/tools/check_anonymisation_writing.py",
+        "expect": [
+          "WRITING ANONYMISATION PASSED"
+        ]
+      },
+      {
+        "gate": "P6:G6",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P6",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true
+      }
+    ],
+    "P7": [
+      {
+        "gate": "P7:G1",
+        "type": "runnable",
+        "check": "PY W/checks/ck_ext.py all",
+        "expect": [
+          "CK_EXT ALL PASSED"
+        ]
+      },
+      {
+        "gate": "P7:G2",
+        "type": "runnable",
+        "check": "PY W/tools/check_manuscript_claims.py",
+        "expect": [
+          "MANUSCRIPT CLAIMS PASSED"
+        ]
+      },
+      {
+        "gate": "P7:G3",
+        "type": "runnable",
+        "check": "PY W/tools/check_latex_static.py",
+        "expect": [
+          "LATEX STATIC PASSED"
+        ]
+      },
+      {
+        "gate": "P7:G4",
+        "type": "runnable",
+        "check": "PY W/tools/overlap_scan.py",
+        "expect": [
+          "OVERLAP DISPOSITIONED"
+        ]
+      },
+      {
+        "gate": "P7:G5",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P7",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true
+      }
+    ],
+    "P8": [
+      {
+        "gate": "P8:G1-ck_ext",
+        "type": "runnable",
+        "check": "PY W/checks/ck_ext.py all",
+        "expect": [
+          "CK_EXT ALL PASSED"
+        ]
+      },
+      {
+        "gate": "P8:G1-claims",
+        "type": "runnable",
+        "check": "PY W/tools/check_manuscript_claims.py",
+        "expect": [
+          "MANUSCRIPT CLAIMS PASSED"
+        ]
+      },
+      {
+        "gate": "P8:G1-numbers",
+        "type": "runnable",
+        "check": "PY W/tools/check_numbers.py",
+        "expect": [
+          "NUMBERS TRACE PASSED"
+        ]
+      },
+      {
+        "gate": "P8:G1-numbers-coverage",
+        "type": "runnable",
+        "check": "PY W/tools/check_numbers.py --coverage",
+        "expect": [
+          "DISPLAY AND MACRO COVERAGE PASSED"
+        ]
+      },
+      {
+        "gate": "P8:G1-overlap",
+        "type": "runnable",
+        "check": "PY W/tools/overlap_scan.py",
+        "expect": [
+          "OVERLAP DISPOSITIONED"
+        ]
+      },
+      {
+        "gate": "P8:G1-anonymisation",
+        "type": "runnable",
+        "check": "PY W/tools/check_anonymisation_writing.py",
+        "expect": [
+          "WRITING ANONYMISATION PASSED"
+        ]
+      },
+      {
+        "gate": "P8:G1-latex",
+        "type": "runnable",
+        "check": "PY W/tools/check_latex_static.py",
+        "expect": [
+          "LATEX STATIC PASSED"
+        ]
+      },
+      {
+        "gate": "P8:G1-edit-invariants",
+        "type": "runnable",
+        "check": "PY W/tools/check_edit_invariants.py",
+        "expect": [
+          "EDIT INVARIANTS PASSED"
+        ]
+      },
+      {
+        "gate": "P8:G1-verdicts",
+        "type": "manual",
+        "required_evidence": [
+          {
+            "kind": "any_of",
+            "alternatives": [
+              [
+                {
+                  "kind": "VERDICT",
+                  "agent_type": "scientific-reviewer",
+                  "token_any": [
+                    "STATUS: ACCEPTED"
+                  ]
+                },
+                {
+                  "kind": "VERDICT",
+                  "agent_type": "narrative-reviewer",
+                  "token_any": [
+                    "NARRATIVE_VERDICT: ACCEPTED"
+                  ],
+                  "min_count": 2
+                },
+                {
+                  "kind": "VERDICT",
+                  "agent_type": "academic-prose-auditor",
+                  "token_any": [
+                    "PROSE_VERDICT: ACCEPTED"
+                  ]
+                },
+                {
+                  "kind": "VERDICT",
+                  "agent_type": "results-integrity-reviewer",
+                  "token_any": [
+                    "VERDICT: PASS"
+                  ]
+                },
+                {
+                  "kind": "VERDICT",
+                  "agent_type": "formulation-reviewer",
+                  "token_any": [
+                    "VERDICT: PASS"
+                  ]
+                },
+                {
+                  "kind": "VERDICT",
+                  "agent_type": "positioning-reviewer",
+                  "token_any": [
+                    "VERDICT: PASS"
+                  ]
+                }
+              ],
+              [
+                {
+                  "kind": "FILE",
+                  "path": "reports/horizon_robustness_results/writing/review/P8_DISCLOSURES.md"
+                }
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "gate": "P8:G1-governance",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P8",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true
+      }
+    ],
+    "P9": [
+      {
+        "gate": "P9:G1-ck_ext",
+        "type": "runnable",
+        "check": "PY W/checks/ck_ext.py all",
+        "expect": [
+          "CK_EXT ALL PASSED"
+        ]
+      },
+      {
+        "gate": "P9:G1-claims",
+        "type": "runnable",
+        "check": "PY W/tools/check_manuscript_claims.py",
+        "expect": [
+          "MANUSCRIPT CLAIMS PASSED"
+        ]
+      },
+      {
+        "gate": "P9:G1-numbers",
+        "type": "runnable",
+        "check": "PY W/tools/check_numbers.py",
+        "expect": [
+          "NUMBERS TRACE PASSED"
+        ]
+      },
+      {
+        "gate": "P9:G1-numbers-coverage",
+        "type": "runnable",
+        "check": "PY W/tools/check_numbers.py --coverage",
+        "expect": [
+          "DISPLAY AND MACRO COVERAGE PASSED"
+        ]
+      },
+      {
+        "gate": "P9:G1-overlap",
+        "type": "runnable",
+        "check": "PY W/tools/overlap_scan.py",
+        "expect": [
+          "OVERLAP DISPOSITIONED"
+        ]
+      },
+      {
+        "gate": "P9:G1-anonymisation-writing",
+        "type": "runnable",
+        "check": "PY W/tools/check_anonymisation_writing.py",
+        "expect": [
+          "WRITING ANONYMISATION PASSED"
+        ]
+      },
+      {
+        "gate": "P9:G1-latex",
+        "type": "runnable",
+        "check": "PY W/tools/check_latex_static.py",
+        "expect": [
+          "LATEX STATIC PASSED"
+        ]
+      },
+      {
+        "gate": "P9:G1-latex-export",
+        "type": "runnable",
+        "check": "PY W/tools/check_latex_static.py --root W/export",
+        "expect": [
+          "LATEX STATIC PASSED"
+        ]
+      },
+      {
+        "gate": "P9:G1-inputs",
+        "type": "runnable",
+        "check": "PY W/tools/check_inputs.py",
+        "expect": [
+          "INPUTS UNCHANGED"
+        ]
+      },
+      {
+        "gate": "P9:G1-protected",
+        "type": "runnable",
+        "check": "PY tools/horizon_robustness/check_protected_sources.py",
+        "expect": [
+          "PROTECTED SOURCES UNCHANGED"
+        ],
+        "negative_control": "exempt",
+        "waivable_by": [
+          {
+            "decision": "U5",
+            "condition": "exit_code 1 and the stored output is exactly the covered MODIFIED lines with no other line (A-001 S3; A-002)",
+            "exit_code": 1,
+            "exact_lines": [
+              "MODIFIED protected file: IJPR_CSLAP_v4.tex",
+              "MODIFIED protected file: IJPR_CSLAP_v4_supplementary.tex"
+            ],
+            "requires_gates_met": [
+              "P9:G1-inputs"
+            ]
+          }
+        ]
+      },
+      {
+        "gate": "P9:G1-anonymisation-repo",
+        "type": "runnable",
+        "check": "PY tools/horizon_robustness/check_anonymisation.py",
+        "expect": [
+          "ANONYMISATION"
+        ],
+        "negative_control": "exempt",
+        "note": "exact token recorded from the script source in P9"
+      },
+      {
+        "gate": "P9:G1-campaigns",
+        "type": "runnable",
+        "check": "PY tools/horizon_robustness/verify_campaign.py --all --authorization",
+        "expect": [
+          "CAMPAIGN ACCOUNTING VERIFIED",
+          "AUTHORIZATION VERIFIED"
+        ],
+        "negative_control": "exempt"
+      },
+      {
+        "gate": "P9:G2",
+        "type": "runnable",
+        "check": "PY W/tools/check_governance.py --phase P9",
+        "expect": [
+          "GOVERNANCE CONSISTENT"
+        ],
+        "self": true,
+        "required_evidence": [
+          {
+            "kind": "DR",
+            "q_card": "Q-READINESS"
+          },
+          {
+            "kind": "RTP",
+            "phase": "P9"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+% =====================================================================
+\section{Data, protocol and staged design}\label{sec:protocol}
+% =====================================================================
+This section specifies how the undated order stream is split into training and scoring windows, in which order the campaigns ran, and which metrics report them.
+
+\subsection{Data and preprocessing}\label{subsec:data}
+The data are the Company~A order export used by the companion, read through the companion's data loader without modification. The export records product, order, quantity, station and box fields and carries no dates. Horizons are therefore counted in complete orders taken in order-identifier sequence. That this sequence matches the creation, release, picking and delivery sequence on site is an assumption, which sorting does not establish. A dated protocol, such as the companion's unseen-week test, is a deferred alternative that this study does not disprove, and nothing here shows that dates are unnecessary for operational decisions in general. % AUTHOR-CONFIRM: whether order dates exist operationally at the site (AUTHOR_QUESTIONS.md, item 8).
+
+The retained system has 284,862 complete orders, a catalogue of 21,874 products in 21,874 slots and 24 evaluated stations, with 5,899 products frozen and 15,975 movable. The companion reports 26 stations and evaluates the same 24, so no station is newly excluded here; the two other stations and their products enter neither the catalogue, the workloads, the visit counts nor any denominator. Stations are identified by the companion's aliases S1 to S24. Products are frozen by the companion's site rule \citep[Supplementary Section S6]{belul_companion}, whose order-frequency count the loader takes over large orders. That filter decides only which products form the movable decision pool: orders of every size remain in the evaluation stream, in the workloads and in the visit counts, and frozen products keep their stations while their changing demand still counts. On this export one product is an edge case, because duplicate entries in large orders leave it movable under the loader's count whereas a count of distinct orders would freeze it. The loader's classification, which preserves the companion's partition, is used, and workloads count distinct pairs throughout (Supplementary Section S4).
+
+Industrial workload counts distinct retained product-order pairs, not units ordered or processing hours. Every included product occupies a slot even when its historical workload is zero, and no product outside the catalogue arrives in a later window; the catalogue is a closed snapshot, and an export cannot show that never-ordered physical inventory is complete.
+
+\subsection{Order-indexed, horizon-conditioned protocol}\label{subsec:orderprotocol}
+At a deployment origin $t$ the protocol computes the targets \eqref{eq:target}, the training workloads and the historical blocks from the orders before $t$ only, solves the training model of the arm, writes the returned layout, and only then scores it on the next $n$ complete orders $F_{t,n}$. Relative to the companion, whose unseen-week test splits a dated extract, this is an order-indexed evaluation with a later held-out deployment. The design has a single held-out period (Sections~\ref{subsec:rw_oos} and~\ref{subsec:scope}).
+
+Horizons are counted in complete orders. At the exploratory origin the grid is $n\in\{\lceil|P|/2\rceil,\ |P|,\ 2|P|\}=\{10{,}937,\ 21{,}874,\ 43{,}748\}$, a declared sensitivity design rather than a recommended planning interval, and the historical blocks \eqref{eq:hull} of each run use the same $n$ as its scored window. At one origin, when the longer horizon is an integer multiple of the shorter, every block of the longer horizon is a union of blocks of the shorter one, so its modelled set is contained in the shorter horizon's set. This nesting constrains the model only. It implies nothing monotone about realised future compliance or about the visits of time-capped returned layouts, and it does not carry over to other horizons or origins. The held-out deployment uses $n=|P|$ only.
+
+\subsection{Staged design}\label{subsec:stages}
+The evidence comes from campaigns run in the order of Table~\ref{tab:design}. The order matters, because the policy of the held-out campaign was shaped by the exploratory ones.
+
+The first campaign screened the arms NOM, TIGHT, HIST and HIST+ACT (Table~\ref{tab:arms}) under the upper-only rule with $\delta=0.01$, at the exploratory origin, order index 199,403, with one optimiser seed and the three horizons above, on a synthetic benchmark and on Company~A. After that campaign had been completed and reviewed, the rule was restated as two-sided, every station within $\pm\delta$ of its target. The primary half-width $\delta=0.02$ was chosen using the incumbent's largest station-share deviation in a single historical block on the exploratory prefix, and the reserved margin is $\lambda\delta$; no rule linking the margin to that statistic was tested (Section~\ref{subsec:descriptive}). A two-sided screen at $\delta=0.02$ on four synthetic warehouses and Company~A followed at the same origin, together with two sensitivity campaigns at $\delta=0.01$ and $\delta=0.03$ on Company~A. Their design was predeclared before their solves but after the same futures had been examined under the upper-only rule, so these campaigns are exploratory. \authorreview{value: solver, model representation and per-solve time limits of the exploratory campaigns, and the model representation of the held-out solves; not among the accepted values}
+
+The held-out factorial was predeclared before any of its solves. It crosses two factors at two levels, historical scenarios with activation (absent or present) and the reserved margin (absent or present), which gives the arms NOM (0,\,0), TIGHT (0,\,1), HIST+ACT (1,\,0) and HIST+ACT-T (1,\,1). HIST was not run, because on Company~A it differs from HIST+ACT only by activation, which is not a factor of the design. The deployment origin is order index 243,151, the end of the furthest future scored at the exploratory origin, so the training history of the held-out deployment contains the exploratory origin's data and every future scored there. The policy was frozen before the held-out window was read: two-sided rule, $n=|P|=21{,}874$, $\delta=0.02$, $\nu=0.01$, $\lambda=0.5$, and optimiser seeds 11, 22 and 33. The 12 solves ran on Hexaly with one thread and a limit of 1,800~s each, 21,600~s configured in total. The scored window is the order index interval $[243{,}151,\ 265{,}025)$.
+
+The retained stream holds 284,862 orders, so 19,837 retained orders follow the held-out window. They were used by no solve, score or analysis of this study, although the snapshot reconstruction of Section~\ref{subsec:data} read the whole export. That tail is shorter than $|P|$ orders but long enough for a smaller horizon; it was not read for this article, it is not designated for a further test, and it is not an independent warehouse.
+
+\begin{table}[htbp]
+\centering
+\caption{Staged design of the study, in the order in which the campaigns were run.}
+\label{tab:design}
+\small
+\begin{tabular}{@{}p{2.4cm}p{3.3cm}p{3.6cm}p{3.3cm}@{}}
+\toprule
+ & Upper-only screen & Two-sided screen and sensitivity & Held-out factorial \\
+\midrule
+Status & Exploratory & Exploratory; predeclared before its solves & Predeclared before any of its solves \\
+Rule & Caps only & Two-sided band & Two-sided band \\
+Half-width $\delta$ & 0.01 & 0.02 (screen); 0.01 and 0.03 (sensitivity) & 0.02 \\
+$\nu$, $\lambda$ & 0.01, 0.5 & 0.01, 0.5 & 0.01, 0.5 \\
+Origin (order index) & 199,403 & 199,403 & 243,151 \\
+Horizons $n$ & 10,937; 21,874; 43,748 & 10,937; 21,874; 43,748 & 21,874 \\
+Arms & NOM, TIGHT, HIST, HIST+ACT & NOM, TIGHT, HIST, HIST+ACT & NOM, TIGHT, HIST+ACT, HIST+ACT-T \\
+Optimiser seeds & One & One & Three (11, 22, 33) \\
+Data & Synthetic benchmark; Company~A & Four synthetic warehouses and Company~A (screen); Company~A (sensitivity) & Company~A \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\begin{minipage}{\linewidth}\footnotesize
+Upper-only and two-sided results are reported separately and never pooled, and neither is pooled with the held-out factorial. Arms are defined in Table~\ref{tab:arms}; $\lambda$ applies to the tightened arms and $\nu$ to the arms with activation.
+\end{minipage}
+\end{table}
+
+Across the analysed campaigns 412 cases returned a layout that was scored on its future window; because a layout shared by several cases is counted once, these cases hold 188 distinct layouts, and Supplementary Section S5 gives the full accounting.
+
+\subsection{Metrics, endpoints and denominators}\label{subsec:metrics}
+Every returned layout is scored on its future window with exact integer counts against rational thresholds, at zero tolerance. The metrics are the following.
+\begin{itemize}
+\item \textbf{Band compliance.} All 24 evaluated stations lie inside $[\ell_s(\delta),u_s(\delta)]$ on the window. Held-out counts are over three optimiser seeds; exploratory counts are over three horizons, read with the distinct layouts behind them.
+\item \textbf{Breaches by direction.} The number of stations above the cap and below the floor, and the largest excess on each side in percentage points; the worst breach is the larger of the two.
+\item \textbf{Largest deviation from target.} $\max_{s\in S}|r_s(x;\omega(F_{t,n}))-b_s|$ in percentage points, whether or not a station breaches.
+\item \textbf{Visits.} Mean future station visits per order, that is the visits of the window's orders divided by $n$, and the saving in percent against the incumbent layout scored on the same window.
+\item \textbf{Minimum required slack.} $\eta(x;\mathcal U)$ of \eqref{eq:slack} on the arm's own training set, as a share.
+\item \textbf{Departures from the modelled set.} The number of stations, out of 24, whose realised share lies above $\max_{\omega\in\mathcal U}r_s$ or below $\min_{\omega\in\mathcal U}r_s$.
+\end{itemize}
+
+The predeclared primary endpoint required TIGHT to satisfy the band on the held-out window for at least two of the three optimiser seeds; failure would have closed the fixed-policy claim, and passing supports a bounded case-study claim only. The predeclared secondary reading is descriptive: for each arm, the seed-wise pass count, the breach magnitudes in both directions, the mean visits relative to the incumbent on the same window, and the departures from the modelled set in both directions. The comparison of largest deviations between arms, the visit ratio between arms, the minimum required slack, and the drift, dispersion and total-variation readings of Section~\ref{subsec:descriptive} were not predeclared and are reported as additional descriptive analyses. The incumbent is scored on the same window as context, not as a feasibility standard for the optimised arms. For each held-out solve the solver's relative gap and bound are recorded; both refer to the training visit objective \eqref{eq:obj}, not to future visits.
+
+\subsection{Scope of the evidence}\label{subsec:scope}
+The held-out evidence is one industrial warehouse, one deployment origin at order index 243,151, one horizon of $n=21{,}874$ complete orders and three optimiser seeds under one frozen policy with $\delta=0.02$, $\nu=0.01$ and $\lambda=0.5$. The seeds describe optimiser variability at that origin, not variation in future demand. They are averaged within the origin and never counted as separate futures, so no significance test or interval is computed, and nothing is claimed about other origins, horizons or warehouses. The study cannot separate historical scenarios from activation, which are bundled in the factorial, cannot isolate the reserved margin from solver and layout effects, and ran no $\lambda$, $\delta$ or $\nu$ frontier at the held-out origin. Every held-out layout is the best the solver returned within its time limit, so visit differences compare returned layouts, not optima. The exploratory campaigns have one seed at one origin, their three horizons share that origin, and they are reported separately from the held-out evidence.

@@ -1,0 +1,824 @@
+{
+ "audit.rows.authorized": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 30,
+   "path": "reports/horizon_robustness_results/analysis_audit.md",
+   "quoted_text": "| Authorized rows | 464 |",
+   "sha256": "b8a7ed08317827ed0470077d8ef5e2a0e717be08231ec85435a89b57953b55ce"
+  },
+  "unit": "count",
+  "value_exact": "464"
+ },
+ "audit.rows.no_allocation": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 33,
+   "path": "reports/horizon_robustness_results/analysis_audit.md",
+   "quoted_text": "| Returned no allocation | 52 |",
+   "sha256": "b8a7ed08317827ed0470077d8ef5e2a0e717be08231ec85435a89b57953b55ce"
+  },
+  "unit": "count",
+  "value_exact": "52"
+ },
+ "audit.rows.scored": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 35,
+   "path": "reports/horizon_robustness_results/analysis_audit.md",
+   "quoted_text": "| Scored on its future horizon | 412 |",
+   "sha256": "b8a7ed08317827ed0470077d8ef5e2a0e717be08231ec85435a89b57953b55ce"
+  },
+  "unit": "count",
+  "value_exact": "412"
+ },
+ "comp.budget.definition": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 69
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 70
+   }
+  ],
+  "source": {
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "line": 584,
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8",
+   "quoted_text": "each station's budget $T_s$ is $110\\%$ of the complete legacy load it carried, frozen and movable products together."
+  },
+  "unit": "text",
+  "value_exact": "each station's budget $T_s$ is $110\\%$ of the complete legacy load it carried, frozen and movable products together."
+ },
+ "comp.products": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 569,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "21{,}874 products and 26 picking stations. We evaluate 24 stations;",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "count",
+  "value_exact": "21,874"
+ },
+ "comp.saving.heldout.high": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 640,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "on unseen weeks the same method removes 6.6\\% and 7.4\\% (Table~\\ref{tab:temporal})",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "pct",
+  "value_exact": "7.4"
+ },
+ "comp.saving.heldout.low": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 640,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "on unseen weeks the same method removes 6.6\\% and 7.4\\% (Table~\\ref{tab:temporal})",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "pct",
+  "value_exact": "6.6"
+ },
+ "comp.saving.in_sample": {
+  "alt_source_line": 640,
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 611,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "The set-variable formulation removes 13.7\\% within the tolerance.",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "pct",
+  "value_exact": "13.7"
+ },
+ "comp.stations.evaluated": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 569,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "21{,}874 products and 26 picking stations. We evaluate 24 stations;",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "count",
+  "value_exact": "24"
+ },
+ "comp.stations.reported": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 569,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "21{,}874 products and 26 picking stations. We evaluate 24 stations;",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "count",
+  "value_exact": "26"
+ },
+ "comp.supp.sections": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 64,
+   "path": "IJSSOL_CSLAP_v1_supplementary.tex",
+   "quoted_text": "\\section{Community bound scaling across warehouse geometries}\\label{sup:capsweep}",
+   "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8"
+  },
+  "unit": "text",
+  "value_exact": "[\"S1 Community bound scaling across warehouse geometries\", \"S2 Threshold sensitivity of the clustering heuristic\", \"S3 Paired statistical testing of the synthetic benchmark\", \"S4 Implementation, hardware and baseline parameters\", \"S5 Proofs of the bounding claims\", \"S6 The Company~A instance\", \"S7 The industrial community-bound search\", \"S8 Per-instance column-generation convergence record\"]"
+ },
+ "comp.supp.temporal.details": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 513,
+   "path": "IJSSOL_CSLAP_v1_supplementary.tex",
+   "quoted_text": "Planning horizon & 13 weeks, 1 Sept.\\ to 30 Nov.\\ 2021 \\\\",
+   "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8"
+  },
+  "unit": "text",
+  "value_exact": "UNAVAILABLE"
+ },
+ "comp.supp.workload.definition": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 33
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 34
+   }
+  ],
+  "source": {
+   "line": 532,
+   "path": "IJSSOL_CSLAP_v1_supplementary.tex",
+   "quoted_text": "the workload budget $T_s$ is $110\\%$",
+   "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8"
+  },
+  "unit": "text",
+  "value_exact": "the workload budget $T_s$ is $110\\%$ of a station's complete legacy load, the $10\\%$ being the tolerance the site operates to."
+ },
+ "comp.temporal.label": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 661,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "\\label{tab:temporal}",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "text",
+  "value_exact": "tab:temporal"
+ },
+ "comp.temporal.section": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 633,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "\\subsection{Robustness on unseen weeks}\\label{sec:temporal}",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "text",
+  "value_exact": "Robustness on unseen weeks"
+ },
+ "handoff.q2.incumbent_headroom": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 58
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 59
+   }
+  ],
+  "source": {
+   "path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md",
+   "line": 1028,
+   "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94",
+   "quoted_text": "Because b is the"
+  },
+  "unit": "text",
+  "value_exact": "Because b is the incumbent's own historical share, the incumbent starts with the full δ of headroom while any optimizer spends it."
+ },
+ "pred.holdout.configured_seconds": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 443,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**Budget:** 4 arms × 3 seeds × 1 horizon = **12 unique solves, 21,600 s",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "seconds",
+  "value_exact": "21600"
+ },
+ "pred.holdout.delta": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 440,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**Policy, frozen:** two-sided rule, δ = 0.02, ν = 0.01, λ = 0.5, seed set",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "share",
+  "value_exact": "0.02"
+ },
+ "pred.holdout.lambda": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 440,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**Policy, frozen:** two-sided rule, δ = 0.02, ν = 0.01, λ = 0.5, seed set",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "fraction",
+  "value_exact": "0.5"
+ },
+ "pred.holdout.n": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 436,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**Horizon:** n = P = 21,874 only (the tail cannot hold 2P; P/2 would cost as much",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "count",
+  "value_exact": "21874"
+ },
+ "pred.holdout.nu": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 440,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**Policy, frozen:** two-sided rule, δ = 0.02, ν = 0.01, λ = 0.5, seed set",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "fraction",
+  "value_exact": "0.01"
+ },
+ "pred.holdout.origin": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 429,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**Deployment origin:** order index **243,151**, the end of the furthest future",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "count",
+  "value_exact": "243151"
+ },
+ "pred.holdout.seeds": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 441,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "{11, 22, 33}, Hexaly, one thread, 1800 s per solve, 600 s build allowance,",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "text",
+  "value_exact": "{11, 22, 33}"
+ },
+ "pred.holdout.solves": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 443,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**Budget:** 4 arms × 3 seeds × 1 horizon = **12 unique solves, 21,600 s",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "count",
+  "value_exact": "12"
+ },
+ "pred.twosided.block_deviation_quoted": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 355,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "1.70 pp in a single historical block relative to its pooled share, so **±1 is",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "pp",
+  "value_exact": "1.70"
+ },
+ "pred.twosided.delta_primary": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 363,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**δ = 0.02** — primary, data-supported.",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "share",
+  "value_exact": "0.02"
+ },
+ "prov.fixed": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 13,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Frozen / movable products | 5,899 / 15,975 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "5899"
+ },
+ "prov.movable": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 13,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Frozen / movable products | 5,899 / 15,975 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "15975"
+ },
+ "prov.products": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 11,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Included catalogue products / modeled slots | 21,874 / 21,874 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "21874"
+ },
+ "prov.stations_evaluated": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 12,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Included stations | 24 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "24"
+ },
+ "prov.stream_end": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "semantics": "length",
+  "source": {
+   "line": 14,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Complete retained orders | 284,862 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "284862"
+ },
+ "prov.tail_start": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 1172,
+   "path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md",
+   "quoted_text": "the focal horizon n = 21,874 (future [243,151, 265,025)), the two-sided rule at δ = 0.02, ν = 0.01, λ = 0.5, seeds 11, 22, 33.",
+   "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94"
+  },
+  "unit": "count",
+  "value_exact": "265025"
+ },
+ "prov.tail_unused": {
+  "computation": "prov.stream_end - prov.tail_start = 284862 - 265025 (semantics length)",
+  "derived_by": "ORCH (Q-013)",
+  "unit": "count",
+  "value_exact": "19837"
+ },
+ "reviewed.layouts.count": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 29
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 30
+   }
+  ],
+  "source": {
+   "line": 60,
+   "path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md",
+   "quoted_text": "These are checks of stored evidence, not a fresh replay of all 413 layouts or a",
+   "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989"
+  },
+  "unit": "count",
+  "value_exact": "413"
+ },
+ "pred.upperonly.delta": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 49
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 50
+   }
+  ],
+  "source": {
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "line": 62,
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71",
+   "quoted_text": "δ = 0.01 and ν = 0.01 remain the primary settings for every"
+  },
+  "unit": "share",
+  "value_exact": "0.01"
+ },
+ "pred.twosided.delta_aspiration": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 49
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 50
+   }
+  ],
+  "source": {
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "line": 364,
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71",
+   "quoted_text": "δ = 0.01** — the user's preferred rule, run as the *aspiration*"
+  },
+  "unit": "share",
+  "value_exact": "0.01"
+ },
+ "pred.twosided.delta_fallback": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 49
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 50
+   }
+  ],
+  "source": {
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "line": 366,
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71",
+   "quoted_text": "δ = 0.03** — the user's stated fallback."
+  },
+  "unit": "share",
+  "value_exact": "0.03"
+ },
+ "pred.exploratory.origin": {
+  "extracted_by": [
+   {
+    "agent_type": "optimization-coder",
+    "family": "sonnet",
+    "seq": 49
+   },
+   {
+    "agent_type": "general-purpose",
+    "family": "opus",
+    "seq": 50
+   }
+  ],
+  "source": {
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "line": 430,
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71",
+   "quoted_text": "ever scored in this study (first origin 199,403 plus 2P)."
+  },
+  "unit": "count",
+  "value_exact": "199403"
+ }
+}

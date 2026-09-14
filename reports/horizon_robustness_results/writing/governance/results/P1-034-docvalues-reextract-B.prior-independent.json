@@ -1,0 +1,333 @@
+{
+ "audit.rows.authorized": {
+  "source": {
+   "line": 30,
+   "path": "reports/horizon_robustness_results/analysis_audit.md",
+   "quoted_text": "| Authorized rows | 464 |",
+   "sha256": "b8a7ed08317827ed0470077d8ef5e2a0e717be08231ec85435a89b57953b55ce"
+  },
+  "unit": "count",
+  "value_exact": "464"
+ },
+ "audit.rows.no_allocation": {
+  "source": {
+   "line": 33,
+   "path": "reports/horizon_robustness_results/analysis_audit.md",
+   "quoted_text": "| Returned no allocation | 52 |",
+   "sha256": "b8a7ed08317827ed0470077d8ef5e2a0e717be08231ec85435a89b57953b55ce"
+  },
+  "unit": "count",
+  "value_exact": "52"
+ },
+ "audit.rows.scored": {
+  "source": {
+   "line": 35,
+   "path": "reports/horizon_robustness_results/analysis_audit.md",
+   "quoted_text": "| Scored on its future horizon | 412 |",
+   "sha256": "b8a7ed08317827ed0470077d8ef5e2a0e717be08231ec85435a89b57953b55ce"
+  },
+  "unit": "count",
+  "value_exact": "412"
+ },
+ "comp.budget.definition": {
+  "source": {
+   "line": 584,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "each station's budget $T_s$ is $110\\%$ of the complete legacy load it carried, frozen and movable products together",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "text",
+  "value_exact": "110% of legacy load"
+ },
+ "comp.products": {
+  "source": {
+   "line": 569,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "21{,}874 products and 26 picking stations",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "count",
+  "value_exact": "21874"
+ },
+ "comp.saving.heldout.high": {
+  "source": {
+   "line": 640,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "on unseen weeks the same method removes 6.6\\% and 7.4\\%",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "pct",
+  "value_exact": "7.4"
+ },
+ "comp.saving.heldout.low": {
+  "source": {
+   "line": 640,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "on unseen weeks the same method removes 6.6\\% and 7.4\\%",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "pct",
+  "value_exact": "6.6"
+ },
+ "comp.saving.in_sample": {
+  "source": {
+   "line": 640,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "The 13.7\\% of Table~\\ref{tab:industrial} is in sample",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "pct",
+  "value_exact": "13.7"
+ },
+ "comp.stations.evaluated": {
+  "source": {
+   "line": 569,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "We evaluate 24 stations;",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "count",
+  "value_exact": "24"
+ },
+ "comp.stations.reported": {
+  "source": {
+   "line": 569,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "21{,}874 products and 26 picking stations",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "count",
+  "value_exact": "26"
+ },
+ "comp.supp.sections": {
+  "source": {
+   "line": 64,
+   "path": "IJSSOL_CSLAP_v1_supplementary.tex",
+   "quoted_text": "\\section{Community bound scaling across warehouse geometries}\\label{sup:capsweep}",
+   "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8"
+  },
+  "unit": "text",
+  "value_exact": "[\"S1 Community bound scaling across warehouse geometries\", \"S2 Threshold sensitivity of the clustering heuristic\", \"S3 Paired statistical testing of the synthetic benchmark\", \"S4 Implementation, hardware and baseline parameters\", \"S5 Proofs of the bounding claims\", \"S6 The Company~A instance\", \"S7 The industrial community-bound search\", \"S8 Per-instance column-generation convergence record\"]"
+ },
+ "comp.supp.temporal.details": {
+  "source": {
+   "line": 513,
+   "path": "IJSSOL_CSLAP_v1_supplementary.tex",
+   "quoted_text": "Planning horizon & 13 weeks, 1 Sept.\\ to 30 Nov.\\ 2021",
+   "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8"
+  },
+  "unit": "text",
+  "value_exact": "UNAVAILABLE"
+ },
+ "comp.supp.workload.definition": {
+  "source": {
+   "line": 532,
+   "path": "IJSSOL_CSLAP_v1_supplementary.tex",
+   "quoted_text": "and the workload budget $T_s$ is $110\\%$",
+   "sha256": "e5a65a053a8aacfad25d24692c452902e8ed727c27a029b143864efd1c11eab8"
+  },
+  "unit": "text",
+  "value_exact": "Workload is load sum_p L_p/V_s (lines normalised by the station's processing rate V_s); the workload budget T_s is 110% of a station's complete legacy load, the 10% being the tolerance the site operates to"
+ },
+ "comp.temporal.label": {
+  "source": {
+   "line": 661,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "\\label{tab:temporal}",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "text",
+  "value_exact": "tab:temporal"
+ },
+ "comp.temporal.section": {
+  "source": {
+   "line": 633,
+   "path": "IJSSOL_CSLAP_v1.tex",
+   "quoted_text": "\\subsection{Robustness on unseen weeks}\\label{sec:temporal}",
+   "sha256": "441f7fd2e2fa49f96077f1ca2151eaf371bc55aeb1d29d474789d0e9b838b6b8"
+  },
+  "unit": "text",
+  "value_exact": "Robustness on unseen weeks"
+ },
+ "handoff.q2.incumbent_headroom": {
+  "source": {
+   "line": 1030,
+   "path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md",
+   "quoted_text": "headroom while any optimizer spends it.",
+   "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94"
+  },
+  "unit": "text",
+  "value_exact": "Because b is the incumbent's own historical share, the incumbent starts with the full δ of headroom while any optimizer spends it."
+ },
+ "pred.holdout.configured_seconds": {
+  "source": {
+   "line": 443,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**12 unique solves, 21,600 s",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "seconds",
+  "value_exact": "21600"
+ },
+ "pred.holdout.delta": {
+  "source": {
+   "line": 440,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "two-sided rule, δ = 0.02, ν = 0.01, λ = 0.5, seed set",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "share",
+  "value_exact": "0.02"
+ },
+ "pred.holdout.lambda": {
+  "source": {
+   "line": 440,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "two-sided rule, δ = 0.02, ν = 0.01, λ = 0.5, seed set",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "fraction",
+  "value_exact": "0.5"
+ },
+ "pred.holdout.n": {
+  "source": {
+   "line": 436,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "n = P = 21,874 only",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "count",
+  "value_exact": "21874"
+ },
+ "pred.holdout.nu": {
+  "source": {
+   "line": 440,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "two-sided rule, δ = 0.02, ν = 0.01, λ = 0.5, seed set",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "fraction",
+  "value_exact": "0.01"
+ },
+ "pred.holdout.origin": {
+  "source": {
+   "line": 429,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "order index **243,151**",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "count",
+  "value_exact": "243151"
+ },
+ "pred.holdout.seeds": {
+  "source": {
+   "line": 441,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "{11, 22, 33}, Hexaly, one thread, 1800 s per solve",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "text",
+  "value_exact": "{11, 22, 33}"
+ },
+ "pred.holdout.solves": {
+  "source": {
+   "line": 443,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**12 unique solves, 21,600 s",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "count",
+  "value_exact": "12"
+ },
+ "pred.twosided.block_deviation_quoted": {
+  "source": {
+   "line": 355,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "1.70 pp in a single historical block relative to its pooled share",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "pp",
+  "value_exact": "1.70"
+ },
+ "pred.twosided.delta_primary": {
+  "source": {
+   "line": 363,
+   "path": "reports/horizon_robustness_results/CAMPAIGN_PREDECLARATION.md",
+   "quoted_text": "**δ = 0.02** — primary, data-supported.",
+   "sha256": "9e122abb0eb27623e3ac4248e06bf9cde28cdc3b9987217f527603ce78824d71"
+  },
+  "unit": "share",
+  "value_exact": "0.02"
+ },
+ "prov.fixed": {
+  "source": {
+   "line": 13,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Frozen / movable products | 5,899 / 15,975 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "5899"
+ },
+ "prov.movable": {
+  "source": {
+   "line": 13,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Frozen / movable products | 5,899 / 15,975 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "15975"
+ },
+ "prov.products": {
+  "source": {
+   "line": 11,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Included catalogue products / modeled slots | 21,874 / 21,874 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "21874"
+ },
+ "prov.stations_evaluated": {
+  "source": {
+   "line": 12,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Included stations | 24 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "24"
+ },
+ "prov.stream_end": {
+  "semantics": "length",
+  "source": {
+   "line": 14,
+   "path": "reports/horizon_robustness_results/DATA_PROVENANCE.md",
+   "quoted_text": "| Complete retained orders | 284,862 |",
+   "sha256": "d592b49606d2ea4e36830ba4e9c0590432dfa3200664ebcb5cf284353c71fb0c"
+  },
+  "unit": "count",
+  "value_exact": "284862"
+ },
+ "prov.tail_start": {
+  "source": {
+   "line": 1172,
+   "path": "reports/horizon_robustness_results/EXPERIMENT_REVIEW_HANDOFF.md",
+   "quoted_text": "future [243,151, 265,025)",
+   "sha256": "5b39596c024a9810bf52288987d476d7b690a1f376826067d8372c710edc6b94"
+  },
+  "unit": "count",
+  "value_exact": "265025"
+ },
+ "reviewed.layouts.count": {
+  "source": {
+   "line": 60,
+   "path": "reports/horizon_robustness_results/WRITING_EXECUTION_PLAN_REVIEWED_20260914.md",
+   "quoted_text": "not a fresh replay of all 413 layouts",
+   "sha256": "1118dea21c6dc1089ea981875bbf4a2b2e63905e1ca530303c0938f2b3dd6989"
+  },
+  "unit": "count",
+  "value_exact": "413"
+ }
+}

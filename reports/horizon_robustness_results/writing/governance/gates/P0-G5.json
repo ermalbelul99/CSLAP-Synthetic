@@ -1,0 +1,21 @@
+{
+  "gate": "P0:G5",
+  "check": "PY reports/horizon_robustness_results/writing/tools/check_governance.py --probe",
+  "expect": "MODEL FAMILIES AVAILABLE",
+  "exit_code": 0,
+  "token_found": true,
+  "output_sha256": "9bb64d3b14341a64b47236a6821af7f165dfe402c3b4d192f32ad8e6a413cfa3",
+  "output_file": ".unlazy/horizon-writing/gate_outputs/P0-G5.txt",
+  "ts": "2026-09-14T10:34:29Z",
+  "negative_control": {
+    "fixture": ".unlazy/horizon-writing/fixtures/check_governance/probe_sonnet_missing/",
+    "exit_code": 1,
+    "token_found": false,
+    "output_file": ".unlazy/horizon-writing/gate_outputs/nc_probe_sonnet_missing.txt",
+    "output_sha256": "518ef387538b578e913ccccb6277c0aec86f9683eb9ab365c69c857ea39dc828",
+    "matches_expected": true
+  },
+  "evidence_refs": [],
+  "status": "MET",
+  "rerecorded": "re-run with the reviewed checkers (author seq 23, reviewer seq 24); previous output kept as .unlazy/horizon-writing/gate_outputs/P0-G5.r2.txt"
+}

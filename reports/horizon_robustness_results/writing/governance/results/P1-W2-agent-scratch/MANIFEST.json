@@ -1,0 +1,152 @@
+{
+ "note": "Files written by P1-W2 DBR builders into the ORCH session scratchpad (outside the repository); preserved for the record, not evidence. See P1-028-anchors-B-failed.md and finding F-059.",
+ "files": [
+  {
+   "name": "anchors_A.py",
+   "bytes": 29447,
+   "mtime_local": "2026-09-14 13:32:27",
+   "sha256": "b7563ae441a062b37af2d23043b0ff9d31bac3681712c14d7818a683e3d5a73c",
+   "attribution": "builder A (named in its reply)"
+  },
+  {
+   "name": "chunk_00",
+   "bytes": 23948,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "f0c09b0628032c8b717d43e25f2c9dba977deabb02ca6fa8e0598244f10f6354",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "chunk_01",
+   "bytes": 23754,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "36082bc7bde9eb99d64e777f5b92865ba07efacb544ca0e240886bfd691bd40e",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "chunk_02",
+   "bytes": 23971,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "d0908dd7b050bc2dfce35d8b404859d57f5b5811c476710c1fe0fba9eb533560",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "chunk_03",
+   "bytes": 23564,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "c97ac535b55e2ba2785f2b56f3f4dc06e394e6e7bad69e2e085a546e1d19dd82",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "chunk_04",
+   "bytes": 23874,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "1d5cf583755035c5320ea9cccf27e3631f064d84ea96af0d71ec2ffcc4b6cc1a",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "chunk_05",
+   "bytes": 22825,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "a91f80ab4d671969dd4362e39c51ced9ac00541db9f8ede7e4019e7dc354e1b5",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "chunk_06",
+   "bytes": 23261,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "91e046add7a345ed8857ec1037fdbefec688239eece80de4fba12818ec0593cb",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "chunk_07",
+   "bytes": 2295,
+   "mtime_local": "2026-09-14 13:33:13",
+   "sha256": "0649991372e3e0c82bbbd07bc659df4a8e4f7a09d6cf2498df1d6d073cba5518",
+   "attribution": "unattributed (likely builder B reply chunks, timing)"
+  },
+  {
+   "name": "err.txt",
+   "bytes": 0,
+   "mtime_local": "2026-09-14 13:30:12",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "attribution": "unattributed"
+  },
+  {
+   "name": "err_A.txt",
+   "bytes": 1230,
+   "mtime_local": "2026-09-14 13:32:46",
+   "sha256": "4b7bb64b6026c68b4df6ecfb6bf727a9f15be79661f7fb0fa94be270ed907e5a",
+   "attribution": "builder A (name)"
+  },
+  {
+   "name": "ev.py",
+   "bytes": 613,
+   "mtime_local": "2026-09-14 13:19:59",
+   "sha256": "e9bab76b389c9190e6afa058f469050cc3ad9bf451d3becbab993639ebea1a63",
+   "attribution": "unattributed"
+  },
+  {
+   "name": "ex2.py",
+   "bytes": 2324,
+   "mtime_local": "2026-09-14 13:20:52",
+   "sha256": "4476b0de42dd543ffc89d585ee66aed1c94b92681453a457fbc9579b2b522eec",
+   "attribution": "unattributed"
+  },
+  {
+   "name": "ex3.py",
+   "bytes": 1501,
+   "mtime_local": "2026-09-14 13:21:01",
+   "sha256": "e133c1fd4c06b6f30c927e9bb8e0cebc7b03dcb383fc03bf84d92ae33ff55c9d",
+   "attribution": "unattributed"
+  },
+  {
+   "name": "ex4.py",
+   "bytes": 2915,
+   "mtime_local": "2026-09-14 13:22:49",
+   "sha256": "2b93acae7cd06b2e050bfc49f270bda116718776cda15d618a645269ae7175a5",
+   "attribution": "unattributed"
+  },
+  {
+   "name": "out.json",
+   "bytes": 130126,
+   "mtime_local": "2026-09-14 13:30:14",
+   "sha256": "f61398a1aaee3149a1aa77f08657bbe4f1bd54ab43f2ae67753c8c2c68a7c671",
+   "attribution": "unattributed (likely builder B, timing)"
+  },
+  {
+   "name": "out_A.json",
+   "bytes": 167492,
+   "mtime_local": "2026-09-14 13:32:46",
+   "sha256": "2054aab277e6f9abf6241375387b24fad5ed02c3b79e7599fb0e631e96804883",
+   "attribution": "builder A (named in its reply)"
+  },
+  {
+   "name": "out_A_v1.json",
+   "bytes": 198497,
+   "mtime_local": "2026-09-14 13:29:40",
+   "sha256": "d75e7191a9a3634a7241e873b8d7db12294d583ae38b0a44a2f9a8ffa9da94b0",
+   "attribution": "builder A (name)"
+  },
+  {
+   "name": "out_perkey.json",
+   "bytes": 130738,
+   "mtime_local": "2026-09-14 13:32:54",
+   "sha256": "92bc13ac074b9ffabb2484e8b6281c7678a0736f160ff300bab47b8ced95e47f",
+   "attribution": "unattributed (likely builder B, timing)"
+  },
+  {
+   "name": "p1_anchors_B_script.py",
+   "bytes": 29005,
+   "mtime_local": "2026-09-14 13:30:06",
+   "sha256": "87b0cfbb1089327d8d658116d9d0b051c476d881187d893f1895869dfface4ca",
+   "attribution": "builder B (name)"
+  },
+  {
+   "name": "tree.py",
+   "bytes": 1209,
+   "mtime_local": "2026-09-14 13:19:43",
+   "sha256": "2f7d08412c7574bf38140ee1dbbc4b28f93e282225bdd4ccb6dc80843a108f28",
+   "attribution": "unattributed"
+  }
+ ]
+}

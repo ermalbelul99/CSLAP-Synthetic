@@ -1,0 +1,21 @@
+{
+  "gate": "P0:G1",
+  "check": "PY reports/horizon_robustness_results/writing/tools/check_inputs.py ",
+  "expect": "INPUTS UNCHANGED",
+  "exit_code": 0,
+  "token_found": true,
+  "output_sha256": "be65d1aa821737987abb76d6b42d665501f17a1fd796ddeca4ca4c048919e76d",
+  "output_file": ".unlazy/horizon-writing/gate_outputs/P0-G1.txt",
+  "ts": "2026-09-14T10:34:29Z",
+  "negative_control": {
+    "fixture": ".unlazy/horizon-writing/fixtures/check_inputs/modified/",
+    "exit_code": 1,
+    "token_found": false,
+    "output_file": ".unlazy/horizon-writing/gate_outputs/nc_modified.txt",
+    "output_sha256": "64379db1c0005cbd3f88620ecef8703071b28b41afc427def0100077b81fa216",
+    "matches_expected": true
+  },
+  "evidence_refs": [],
+  "status": "MET",
+  "rerecorded": "re-run with the reviewed checkers (author seq 23, reviewer seq 24); previous output kept as .unlazy/horizon-writing/gate_outputs/P0-G1.r1.txt"
+}

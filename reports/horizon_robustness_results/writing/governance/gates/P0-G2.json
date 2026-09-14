@@ -1,0 +1,24 @@
+{
+  "gate": "P0:G2",
+  "check": "PY tools/horizon_robustness/check_protected_sources.py",
+  "expect": "PROTECTED SOURCES UNCHANGED",
+  "exit_code": 1,
+  "token_found": false,
+  "output_sha256": "62cf6a5bbe562e62fe2c860f12cdd5cc84768e5e76b055d77c5b26f2e1368100",
+  "ts": "2026-09-14T07:29:26Z",
+  "output_file": ".unlazy/horizon-writing/gate_outputs/P0-G2.txt",
+  "negative_control": "EXEMPT: the repository script hardcodes its own ledger; fault injection would modify protected files (H2)",
+  "evidence_refs": [
+    "DR-001"
+  ],
+  "status": "UNMET",
+  "note": "Reports MODIFIED IJPR_CSLAP_v4.tex and IJPR_CSLAP_v4_supplementary.tex (ledger recorded 2026-09-08). Both changed by user-authored commit 16b6003 (2026-09-13 23:37 +0200, 'docs(ijpr): author's v4 manuscript revisions and cover letter'), before the go. Correction: the orchestrator's first question to the user named only the supplement; the stored output lists both files.",
+  "waiver": {
+    "by": "USER",
+    "decision": "U5",
+    "file": "reports/horizon_robustness_results/writing/governance/user_decisions.md",
+    "ts": "2026-09-14",
+    "text": "IJSSOL v1 is the submitted baseline; IJPR versions are not a baseline for the extension.",
+    "condition": "exit_code 1 and the stored output is exactly 'MODIFIED protected file: IJPR_CSLAP_v4.tex' and 'MODIFIED protected file: IJPR_CSLAP_v4_supplementary.tex' with no other line (A-001 amendment S3)"
+  }
+}
